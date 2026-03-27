@@ -1,22 +1,39 @@
 # Bounded Contexts
 
+Status: approved
+Owner: architecture
+Last Updated: 2026-03-27
+
 ## Identity / Organization
-Tenant, User, Role, Department, Branch, Location, Permissions
+Service owner: user-service
+
+Entities:
+- Tenant
+- User
+- Role
+- Department
+- Branch
+- Location
+
+Note:
+Permissions упомянуты в исходных материалах bounded context, но пока не включены
+в минимальную Foundation-модель до отдельного ADR по role / permission model.
 
 ## Asset Management
-Asset, Assignment, Transfer, Retirement
+Service owner: asset-service
 
-## Ticketing
-Request, Incident, Assignee, Status
+Entities:
+- Asset
+- AssetAssignment
+- AssetTransfer
+- AssetRetirement
 
-## Inventory / Warehouse
-Warehouse, Stock, InventorySession
+Note:
+В Foundation Slice v1 полноценные workflow/API для AssetAssignment / AssetTransfer /
+AssetRetirement не входят в generic CRUD и должны проектироваться отдельно.
 
-## Software Management
-Software, License, Allocation
-
-## Maintenance
-Repair, Vendor, MaintenanceRecord
-
-## Audit / Reporting
-AuditEvent, Reports, Export
+## Cross-Context Rules
+- между contexts передаем reference IDs;
+- прямое чтение чужой БД запрещено;
+- asset-service валидирует tenant-scoped ссылки на user/location через API user-service;
+- взаимодействие сервисов — через API first, позже возможно API + events.
