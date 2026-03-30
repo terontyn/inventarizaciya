@@ -1,0 +1,16 @@
+spring:
+  application:
+    name: user-service
+  jackson:
+    property-naming-strategy: SNAKE_CASE
+  datasource:
+    url: ${USER_SERVICE_DB_URL:jdbc:postgresql://localhost:5432/user_service}
+    username: ${USER_SERVICE_DB_USERNAME:postgres}
+    password: ${USER_SERVICE_DB_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+server:
+  port: ${SERVER_PORT:8080}

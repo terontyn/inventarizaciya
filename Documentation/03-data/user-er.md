@@ -94,6 +94,33 @@ Last Updated: 2026-03-30
 - Этот документ намеренно не фиксирует прямую обязательную связь `User` с `Branch` или `Location`.
 - Этот документ отражает data consequences уже принятых ADR-0001 / ADR-0002 / ADR-0003.
 
+## Minimal Business Fields for Slice 1
+
+Чтобы реализация Slice 1 могла быть выполнена без выдумывания business attributes,
+в Foundation Slice v1 фиксируется следующий минимальный physical field set.
+
+### tenants
+Дополнительно к `id`:
+- `name`
+
+### departments
+Дополнительно к `id`, `tenant_id`:
+- `name`
+
+### branches
+Дополнительно к `id`, `tenant_id`:
+- `name`
+
+### locations
+Дополнительно к `id`, `tenant_id`, `branch_id`:
+- `name`
+
+## Notes on Minimality
+- Это минимальный business field set только для Slice 1.
+- Поля вроде `code`, `description`, `address`, `external_id`, `created_at`, `updated_at` пока не фиксируются как часть канона.
+- Если позже понадобится richer model, она должна добавляться отдельным изменением docs, а не выдумываться в реализации.
+
+
 ## Open Questions
 - какие именно бизнес-атрибуты входят в payload и физическую модель `Tenant / User / Role / Department / Branch / Location`;
 - как именно будет выражен API-контракт для назначения ролей пользователям;

@@ -97,6 +97,72 @@ Clarifications:
 - create/update branch
 - create/update location
 
+## Canonical Payload Minimum for Slice 1
+
+Этот раздел фиксирует только минимальный payload minimum для сущностей Slice 1.
+Он нужен, чтобы реализация Slice 1 могла быть выполнена без выдумывания business attributes.
+
+### Tenant
+
+#### POST /api/v1/tenants
+Request minimum:
+- `name`
+
+Response minimum:
+- `id`
+- `name`
+
+### Department
+
+#### POST /api/v1/departments
+Request minimum:
+- `name`
+
+#### PATCH /api/v1/departments/{id}
+Request minimum:
+- `name`
+
+Response minimum:
+- `id`
+- `name`
+
+### Branch
+
+#### POST /api/v1/branches
+Request minimum:
+- `name`
+
+#### PATCH /api/v1/branches/{id}
+Request minimum:
+- `name`
+
+Response minimum:
+- `id`
+- `name`
+
+### Location
+
+#### POST /api/v1/locations
+Request minimum:
+- `name`
+- `branch_id`
+
+#### PATCH /api/v1/locations/{id}
+Request minimum:
+- `name`
+- `branch_id`
+
+Response minimum:
+- `id`
+- `name`
+- `branch_id`
+
+## Payload Rules
+- `tenant_id` не передается как свободный бизнес-параметр в request payload;
+- tenant scope определяется на API boundary из аутентифицированного контекста;
+- `branch_id` для Location должен указывать на Branch того же tenant;
+- этот раздел фиксирует только minimum для Slice 1 и не канонизирует более широкую response schema, error model или pagination/filter parameters.
+
 ## Not Fixed In This Document
 Намеренно не фиксируются:
 - request body fields;
