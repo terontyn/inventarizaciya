@@ -13,10 +13,9 @@ IT Asset Management SaaS для учета активов, оргструкту�
 ## Foundation Slice
 Foundation Slice = Tenant + User/Org + Asset + Audit.
 
-Цель Foundation Slice:
-- не начинать asset-service в вакууме;
-- получить минимальный архитектурный фундамент;
-- дать первую бизнес-ценность уже на раннем этапе.
+На текущем этапе Foundation Slice реализуется через два сервиса:
+- user-service
+- asset-service
 
 ## MVP Definition
 Первый релиз фиксируется как Asset Accountability MVP.
@@ -42,10 +41,12 @@ MVP должен позволять одному tenant:
 - Maintenance
 - Reporting
 
-## Current Foundation Services
-На текущем этапе Foundation Slice состоит из двух сервисов:
-- user-service
-- asset-service
+## Accepted ADRs
+- ADR-0001 Tenancy model: Foundation Slice uses shared DB/shared schema with mandatory tenant_id and tenant enforcement at API/repository boundaries.
+- ADR-0002 Role / permission model: tenant-scoped RBAC; User ↔ Role is many-to-many; permissions are attached to roles only.
+- ADR-0003 Org hierarchy: no separate Org entity; Department is managerial dimension; Branch / Location are physical dimensions; Location belongs to Branch.
+- ADR-0004 Asset CRUD vs history: generic CRUD manages only Asset master record; responsibility-changing operations use dedicated flows.
+- ADR-0007 Audit contract: critical writes produce durable local audit records and are delivered asynchronously to central audit storage.
 
 ## Architectural Rules
 - каждый сервис владеет своей БД;
@@ -53,15 +54,9 @@ MVP должен позволять одному tenant:
 - взаимодействие между сервисами идет через API и/или events;
 - tenant isolation обязателен;
 - API должен быть versioned;
-- критичные write-операции должны уходить в audit;
+- критичные write-операции должны попадать в audit;
 - важные архитектурные решения фиксируются в ADR.
 
 ## Open ADR Backlog
-- tenancy model
-- tenant resolution & enforcement
-- role / permission model
-- org hierarchy
-- asset CRUD vs domain history
 - asset delete semantics
 - service integration pattern
-- audit integration contract

@@ -1,35 +1,44 @@
-# ADR-0002 Role Permission Model
+# ADR-0002 Ролевая и permission-модель для Foundation Slice
 
-Status: proposed
+Status: accepted
 Date: 2026-03-27
 
 ## Context
-В bounded context упомянуты Permissions, но они не раскрыты в текущих domain docs.
-Также не зафиксирована кардинальность User ↔ Role.
+В bounded context упомянуты Permissions, но минимальная модель Foundation Slice их не раскрывает.
+Также ранее не была зафиксирована кардинальность User ↔ Role.
+
+## Options
+1. One user = one role
+2. Many-to-many User ↔ Role, permissions только через roles
+3. Many-to-many User ↔ Role + direct user permissions
+4. ABAC / policy-based model в Foundation Slice
 
 ## Decision
-Для Foundation Slice:
-- поддерживать many-to-many между User и Role через relation table user_roles;
-- отдельную доменную модель Permissions не вводить в MVP;
-- роль считать tenant-scoped.
+Для Foundation Slice принимается:
+- tenant-scoped RBAC;
+- User ↔ Role = many-to-many;
+- permissions назначаются только ролям;
+- direct user permissions не вводятся;
+- ABAC / policy engine не входит в MVP.
 
-## Why
-- это безопаснее, чем жестко принять one-role-per-user без подтверждения;
-- не блокирует базовый RBAC;
-- не заставляет сейчас выдумывать полноценную permission system.
+В physical model v1 достаточно:
+- roles
+- user_roles
+
+Permission catalog может быть документирован отдельно и не обязан быть отдельной таблицей в Foundation Slice.
 
 ## Consequences
 Плюсы:
-- гибкость;
-- минимальный RBAC уже возможен;
-- меньше риск переделки security слоя.
+- закрывается вопрос кардинальности User ↔ Role;
+- появляется достаточная модель для MVP и pilot readiness;
+- security-слой остается простым и расширяемым.
 
 Минусы:
-- permissions появятся позже отдельным слоем;
-- часть авторизации на MVP будет завязана на role-level semantics.
+- прямые user overrides откладываются;
+- потребуется отдельная permission matrix;
+- later возможна эволюция модели авторизации.
 
-## Follow-up
-Обновить:
-- /docs/02-domain/user-domain.md
-- /docs/03-data/user-er.md
-- /docs/04-api/user-api.md
+## Rejected For MVP
+- one-role-per-user как жесткая модель
+- direct user permissions
+- ABAC / policy engine

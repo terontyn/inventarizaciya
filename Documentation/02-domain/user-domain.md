@@ -1,6 +1,6 @@
 # User Domain
 
-Status: draft
+Status: approved
 Owner: architecture
 Last Updated: 2026-03-27
 
@@ -15,23 +15,33 @@ User Domain реализуется внутри user-service и покрывае
 - Branch
 - Location
 
+## Confirmed Decisions
+- User ↔ Role = many-to-many.
+- Foundation Slice использует tenant-scoped RBAC.
+- Permissions назначаются только ролям.
+- Direct user permissions в Foundation Slice не поддерживаются.
+- Department — организационная / управленческая ось.
+- Branch и Location — физические измерения.
+- Location принадлежит Branch.
+- User обязан быть tenant-scoped.
+- User может иметь reference на Department.
+- Прямая обязательная привязка User к Branch / Location не требуется для MVP.
+
 ## Confirmed Rules
 - пользователь принадлежит tenant;
 - роли и права ограничены tenant;
 - филиалы, отделы и локации принадлежат tenant;
-- активы и заявки в других доменах будут ссылаться на user / org structure.
+- активы и другие домены ссылаются на user/org structure через API user-service;
+- cross-tenant references недопустимы.
 
-## Temporary Modeling Rule
-До утверждения ADR по tenancy:
-- все tenant-scoped записи считаются имеющими tenant_id.
-
-## Temporary RBAC Rule
-До утверждения ADR по role / permission model:
-- связь User ↔ Role не считается окончательно зафиксированной;
-- если RBAC assignment нужен уже в Foundation Slice, допускается временная relation table user_roles.
+## Not Included Yet
+Намеренно не фиксируются:
+- отдельная таблица permissions;
+- ABAC / policy engine;
+- direct user permission overrides;
+- обязательная привязка User к Branch / Location.
 
 ## Open Questions
-- кардинальность User ↔ Role;
-- нужны ли отдельные Permissions уже в Foundation Slice;
-- иерархия Department / Branch / Location;
-- привязывается ли User к Department / Branch / Location напрямую.
+- точный список permission keys для permission matrix;
+- нужны ли later прямые user overrides;
+- нужны ли later дополнительные user-org references сверх Department.

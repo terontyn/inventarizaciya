@@ -1,36 +1,41 @@
-# ADR-0003 Org Hierarchy
+# ADR-0003 Оргструктура Foundation Slice
 
-Status: proposed
+Status: accepted
 Date: 2026-03-27
 
 ## Context
-В Foundation Slice org-часть представлена как Department / Branch / Location.
-Отдельной сущности Org в source docs нет.
-Но точная иерархия между Department / Branch / Location пока не зафиксирована.
+В source of truth нет отдельной сущности Org.
+Вместо нее есть Department, Branch, Location.
+Нужно зафиксировать минимальную модель без искусственной универсальной иерархии.
+
+## Options
+1. Одна строгая иерархия: Branch → Department → Location
+2. Две оси: Department как орг-ось, Branch / Location как физическая ось
+3. Универсальное дерево org nodes
 
 ## Decision
-Для MVP:
-- не вводить отдельную сущность organizations;
-- считать Department, Branch и Location tenant-scoped org references;
-- не фиксировать жесткую иерархию parent-child до появления отдельного бизнес-требования;
-- прямую обязательную привязку User к Department / Branch / Location не считать утвержденной в MVP.
-
-## Why
-- это не добавляет выдуманной сложности;
-- соответствует текущему source of truth;
-- не ломает Foundation Slice.
+Для Foundation Slice принимается:
+- отдельной сущности Org нет;
+- Department — организационная / управленческая ось;
+- Branch — физическая площадка;
+- Location — физическая локация внутри Branch;
+- Location принадлежит Branch;
+- Department не является родителем Location;
+- Asset ссылается на Location, а не на Branch напрямую;
+- User может быть связан с Department;
+- обязательная прямая привязка User к Branch / Location в MVP не требуется.
 
 ## Consequences
 Плюсы:
-- минимум выдуманных полей и связей;
-- проще стартовая модель.
+- минимальная и понятная модель;
+- нет выдуманной “универсальной орг-иерархии”;
+- проще разнести managerial и physical dimensions.
 
 Минусы:
-- полноценная орг-иерархия будет уточняться позже;
-- некоторые отчеты и сложные права позже могут потребовать расширения модели.
+- later может понадобиться расширение модели workplace / location;
+- часть сложных отчетных и security-сценариев будет вводиться позже.
 
-## Follow-up
-Обновить:
-- /docs/01-architecture/bounded-contexts.md
-- /docs/02-domain/user-domain.md
-- /docs/03-data/user-er.md
+## Rejected For MVP
+- отдельная сущность Org
+- универсальное дерево org nodes
+- жесткая единая parent-child иерархия для всех org dimensions

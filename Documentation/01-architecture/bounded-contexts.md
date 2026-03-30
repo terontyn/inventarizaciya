@@ -15,9 +15,12 @@ Entities:
 - Branch
 - Location
 
-Note:
-Permissions упомянуты в исходных материалах bounded context, но пока не включены
-в минимальную Foundation-модель до отдельного ADR по role / permission model.
+Clarifications:
+- отдельной сущности Org в Foundation Slice нет;
+- Department — организационная / управленческая ось;
+- Branch и Location — физическая ось;
+- Location принадлежит Branch;
+- Permissions описываются как часть role model, но direct user permissions в Foundation Slice не поддерживаются.
 
 ## Asset Management
 Service owner: asset-service
@@ -28,12 +31,13 @@ Entities:
 - AssetTransfer
 - AssetRetirement
 
-Note:
-В Foundation Slice v1 полноценные workflow/API для AssetAssignment / AssetTransfer /
-AssetRetirement не входят в generic CRUD и должны проектироваться отдельно.
+Clarifications:
+- в Foundation Slice v1 публичный CRUD покрывает только мастер-запись Asset;
+- AssetAssignment / AssetTransfer / AssetRetirement остаются частью asset-domain, но реализуются как отдельные flows, а не как generic PATCH.
 
 ## Cross-Context Rules
-- между contexts передаем reference IDs;
+- между bounded contexts передаются только reference IDs;
 - прямое чтение чужой БД запрещено;
-- asset-service валидирует tenant-scoped ссылки на user/location через API user-service;
-- взаимодействие сервисов — через API first, позже возможно API + events.
+- asset-service хранит tenant-scoped reference IDs на user/org entities;
+- валидация assigned_user_id и location_id выполняется через API user-service;
+- cross-context checks всегда выполняются в tenant scope.
