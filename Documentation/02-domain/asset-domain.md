@@ -53,3 +53,9 @@ Delete semantics пока не утверждена.
 - final delete semantics: hard delete / soft delete / no delete / retire only;
 - когда именно появляются отдельные command endpoints для AssetAssignment / AssetTransfer / AssetRetirement;
 - какая модель хранения history будет финальной после MVP.
+
+## Related Workflow Docs
+Детальные workflow для responsibility-changing operations описаны отдельно:
+- /docs/05-workflows/asset-assignment.md
+- /docs/05-workflows/asset-transfer.md
+- /docs/05-workflows/asset-retirement.md

@@ -2,7 +2,7 @@
 
 Status: draft
 Owner: architecture
-Last Updated: 2026-03-27
+Last Updated: 2026-03-30
 
 ## Purpose
 Минимальная ER-модель Foundation Slice для asset-service.
@@ -11,12 +11,13 @@ Last Updated: 2026-03-27
 Этот документ покрывает только мастер-запись `Asset` для CRUD v1.
 
 ## Modeling Rules
-1. До утверждения tenancy ADR таблица `assets` использует явный `tenant_id`.
+1. Таблица `assets` использует обязательный `tenant_id`.
 2. Таблица использует технический PK `id`.
 3. CRUD v1 ограничен только мастер-записью `Asset`.
 4. Таблицы `asset_assignments`, `asset_transfers`, `asset_retirements` пока не добавляются в каноническую ER-модель v1.
 5. `assigned_user_id` и `location_id` — это cross-service reference IDs; их нельзя валидировать прямым чтением БД user-service.
-6. `DELETE` для Asset не включается в v1 до отдельного ADR по delete semantics.
+6. `assigned_user_id` и `location_id` являются history-sensitive fields и исключены из generic PATCH.
+7. `DELETE` для Asset не включается в v1 до отдельного ADR по delete semantics.
 
 ## Table
 
@@ -44,8 +45,9 @@ Last Updated: 2026-03-27
 ## Constraints
 - `UNIQUE (tenant_id, asset_tag)` — обязательное ограничение;
 - актив всегда принадлежит tenant;
+- cross-tenant references недопустимы;
 - история назначения и перемещений не должна теряться;
-- generic update нельзя рассматривать как “любое поле можно переписать без доменных последствий”.
+- generic update нельзя рассматривать как право менять history-sensitive fields.
 
 ## Domain Boundary
 Следующие сущности существуют в домене, но **не включаются в ER v1**, потому что их минимальный набор полей еще не зафиксирован:
@@ -54,22 +56,23 @@ Last Updated: 2026-03-27
 - AssetRetirement
 
 ## Generic Update Restriction
-До ADR по lifecycle/history не считать безопасным generic PATCH для:
+Generic PATCH **не должен** менять:
 - `assigned_user_id`
 - `location_id`
 
-Эти поля влияют на доменную историю ответственности и перемещений.
+Эти поля меняются только отдельными responsibility flows вне generic CRUD v1.
 
 ## Notes
 - Валидация `assigned_user_id` и `location_id` должна идти через API user-service.
 - Прямой доступ к БД другого сервиса запрещен.
+- Все tenant-aware запросы и проверки должны выполняться в tenant scope.
 - В v1 этот файл описывает только минимальный реестр активов.
 
 ## Open Questions
 - delete semantics: hard delete / soft delete / no delete / retire only;
 - нужен ли отдельный asset history store уже в следующем slice;
 - когда именно появляются `AssetAssignment / AssetTransfer / AssetRetirement` как отдельные таблицы;
-- можно ли менять `assigned_user_id` и `location_id` через generic PATCH или только через отдельные domain actions.
+- какая модель хранения history будет финальной после MVP.
 
 ## Not Included Yet
 Намеренно не добавлены поля из раннего широкого blueprint, например:
@@ -96,4 +99,4 @@ Last Updated: 2026-03-27
 - `updated_by`
 - `version`
 
-Они полезны как future candidate fields, но не должны считаться каноном Foundation Slice v1 без отдельного подтверждения.
+Они не должны считаться каноном Foundation Slice v1 без отдельного подтверждения.

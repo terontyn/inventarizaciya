@@ -1,84 +1,61 @@
-# Asset Responsibility Workflow
+# Asset Assignment Workflow
 
 Status: draft
 Owner: architecture
-Last Updated: 2026-03-27
+Last Updated: 2026-03-30
 
 ## Purpose
-Описать операции ответственности за актив:
-- assign
-- transfer
-- return
-- retire
+Описать доменный flow назначения актива пользователю в пределах одного tenant.
 
 ## Scope
-Этот документ задает только доменные правила для responsibility flows.
+Документ задает только доменные правила assignment flow.
 Точный API-контракт и точные payload schema фиксируются отдельно.
 
 ## Core Rule
-Операции, меняющие ответственность или операционную локацию актива, не должны маскироваться под generic PATCH Asset.
+Assignment не является частью generic PATCH Asset.
+Изменение текущей ответственности должно выполняться только через dedicated domain flow.
 
-## Flows
+## Preconditions
+- Asset существует.
+- Target User существует.
+- Asset и User принадлежат одному tenant.
+- Cross-context validation выполняется через API user-service.
+- Операция проходит tenant-scoped validation.
+- Asset должен быть допустим для назначения.
 
-### Assign
-Цель:
-назначить актив пользователю.
+## Flow
+1. Определить tenant scope, actor и correlation id из request context.
+2. Найти Asset в tenant scope.
+3. Валидировать target User через API user-service.
+4. Проверить, что изменение ответственности выполняется dedicated flow, а не generic PATCH.
+5. Создать append-only запись доменного изменения ответственности.
+6. Обновить текущее состояние Asset как мастер-записи в части текущей ответственности.
+7. Создать durable local audit record в той же транзакции.
+8. Передать audit в central audit storage асинхронно.
 
-Проверки:
-- актив существует;
-- пользователь существует;
-- оба принадлежат одному tenant;
-- актив доступен для назначения.
+## Exceptions
+- Asset not found.
+- User not found.
+- Tenant mismatch.
+- Asset is not eligible for assignment.
+- Cross-context validation failed.
+- Responsibility change attempted via generic PATCH.
 
-Результат:
-- создается запись доменного изменения ответственности;
-- обновляется текущее состояние актива;
-- в audit уходит критичное write-событие.
+## Audit implications
+- Assignment является critical write.
+- Audit record должен быть создан durably в producer transaction.
+- Canonical audit envelope должен содержать tenant scope, actor, entity, action, time, correlation id и change payload.
 
-### Transfer
-Цель:
-передать актив другому пользователю и/или в другую локацию.
+## History implications
+- История ответственности append-only.
+- Назначение не должно затирать предыдущую историю.
+- Текущее состояние Asset не заменяет историю, а отражает только актуальную ответственность.
 
-Проверки:
-- актив существует;
-- новый пользователь и/или новая локация существуют;
-- все сущности принадлежат одному tenant.
+## Explicit non-generic-PATCH rule
+- assigned_user_id нельзя считать обычным PATCH-полем.
+- Если change responsibility требует изменение текущего состояния актива, это все равно не generic PATCH, а результат dedicated assignment flow.
 
-Результат:
-- история ответственности пополняется append-only записью;
-- текущее состояние актива обновляется;
-- в audit уходит критичное write-событие.
-
-### Return
-Цель:
-снять актив с текущего пользователя.
-
-Проверки:
-- актив существует;
-- актив сейчас назначен;
-- tenant scope корректен.
-
-Результат:
-- история ответственности пополняется append-only записью;
-- assigned_user_id меняется только через этот flow, а не через generic PATCH;
-- в audit уходит критичное write-событие.
-
-### Retire
-Цель:
-вывести актив из эксплуатации.
-
-Проверки:
-- актив существует;
-- tenant scope корректен;
-- выполняются доменные условия вывода из эксплуатации.
-
-Результат:
-- актив переводится в retirement-related state;
-- история сохраняется;
-- в audit уходит критичное write-событие.
-
-## Architectural Constraints
-- прямой доступ к БД user-service запрещен;
-- cross-context validation выполняется через API user-service;
-- история ответственности append-only;
-- delete semantics не покрывается этим документом.
+## Open Decisions / STOP
+- Не зафиксирован точный доменный смысл правила "asset available for assignment".
+- Не зафиксировано, должен ли assignment всегда одновременно фиксировать операционную локацию.
+- Не зафиксирована точная граница между first-time assignment и reassignment, если актив ранее не был назначен.
