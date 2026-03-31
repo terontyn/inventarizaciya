@@ -27,6 +27,9 @@ public abstract class IntegrationTestSupport {
     @BeforeEach
     void cleanDatabase() {
         jdbcTemplate.update("DELETE FROM local_audit_records");
+        jdbcTemplate.update("DELETE FROM user_roles");
+        jdbcTemplate.update("DELETE FROM users");
+        jdbcTemplate.update("DELETE FROM roles");
         jdbcTemplate.update("DELETE FROM locations");
         jdbcTemplate.update("DELETE FROM branches");
         jdbcTemplate.update("DELETE FROM departments");
@@ -71,6 +74,38 @@ public abstract class IntegrationTestSupport {
             name
         );
         return id;
+    }
+
+    protected UUID insertUser(UUID tenantId, String name, UUID departmentId) {
+        UUID id = UUID.randomUUID();
+        jdbcTemplate.update(
+            "INSERT INTO users (id, tenant_id, name, department_id) VALUES (?, ?, ?, ?)",
+            id,
+            tenantId,
+            name,
+            departmentId
+        );
+        return id;
+    }
+
+    protected UUID insertRole(UUID tenantId, String name) {
+        UUID id = UUID.randomUUID();
+        jdbcTemplate.update(
+            "INSERT INTO roles (id, tenant_id, name) VALUES (?, ?, ?)",
+            id,
+            tenantId,
+            name
+        );
+        return id;
+    }
+
+    protected void insertUserRole(UUID tenantId, UUID userId, UUID roleId) {
+        jdbcTemplate.update(
+            "INSERT INTO user_roles (tenant_id, user_id, role_id) VALUES (?, ?, ?)",
+            tenantId,
+            userId,
+            roleId
+        );
     }
 
     protected int countRows(String tableName) {

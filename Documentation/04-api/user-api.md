@@ -102,6 +102,47 @@ Clarifications:
 Этот раздел фиксирует только минимальный payload minimum для сущностей Slice 1.
 Он нужен, чтобы реализация Slice 1 могла быть выполнена без выдумывания business attributes.
 
+## Canonical Payload Minimum for Slice 2
+
+Этот раздел фиксирует только минимальный payload minimum для сущностей Slice 2.
+Он нужен, чтобы реализация Slice 2 могла быть выполнена без выдумывания business attributes.
+
+### User
+
+#### POST /api/v1/users
+Request minimum:
+- `name`
+- `department_id` (optional)
+
+#### PATCH /api/v1/users/{id}
+Request minimum:
+- `name`
+- `department_id` (optional)
+
+Response minimum:
+- `id`
+- `name`
+- `department_id`
+
+### Role
+
+#### POST /api/v1/roles
+Request minimum:
+- `name`
+
+#### PATCH /api/v1/roles/{id}
+Request minimum:
+- `name`
+
+Response minimum:
+- `id`
+- `name`
+
+## Slice 2 Payload Rules
+- `tenant_id` не передается как свободный бизнес-параметр в request payload;
+- `department_id`, если передан для User, должен указывать на Department того же tenant;
+- этот раздел фиксирует только minimum для Slice 2 и не канонизирует более широкую response schema, error model, pagination/filter parameters или public role-binding contract.
+
 ### Tenant
 
 #### POST /api/v1/tenants
@@ -182,7 +223,7 @@ Response minimum:
 - отдельные role-binding endpoints, пока они не подтверждены в scope
 
 ## Open Questions
-- какие поля входят в payload для каждой сущности;
+- какие дополнительные поля сверх зафиксированного minimum входят в payload для каждой сущности;
 - нужен ли `GET /api/v1/tenants` в v1;
 - как именно выражается API-контракт назначения ролей пользователям;
 - какой документ станет каноническим источником permission keys / permission matrix.

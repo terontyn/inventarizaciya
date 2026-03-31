@@ -66,4 +66,15 @@ public class JdbcDepartmentRepository implements DepartmentRepository {
         );
         return updated == 0 ? Optional.empty() : findById(scopedTenantId, id);
     }
+
+    @Override
+    public boolean exists(UUID tenantId, UUID id) {
+        UUID scopedTenantId = SqlTenantScope.requireTenantId(tenantId);
+        Integer count = jdbcTemplate.queryForObject(
+            "SELECT COUNT(*) FROM departments WHERE tenant_id = :tenantId AND id = :id",
+            Map.of("tenantId", scopedTenantId, "id", id),
+            Integer.class
+        );
+        return count != null && count > 0;
+    }
 }

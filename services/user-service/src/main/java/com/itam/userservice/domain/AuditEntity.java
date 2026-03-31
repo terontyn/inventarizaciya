@@ -4,5 +4,8 @@ public enum AuditEntity {
     TENANT,
     DEPARTMENT,
     BRANCH,
-    LOCATION
+    LOCATION,
+    USER,
+    ROLE,
+    USER_ROLE
 }

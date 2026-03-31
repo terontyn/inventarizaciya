@@ -13,4 +13,6 @@ public interface DepartmentRepository {
     Optional<Department> findById(UUID tenantId, UUID id);
 
     Optional<Department> update(UUID tenantId, UUID id, String name);
+
+    boolean exists(UUID tenantId, UUID id);
 }

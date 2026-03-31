@@ -6,6 +6,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.itam.userservice.domain.BranchRepository;
 import com.itam.userservice.domain.DepartmentRepository;
 import com.itam.userservice.domain.LocationRepository;
+import com.itam.userservice.domain.RoleRepository;
+import com.itam.userservice.domain.UserRepository;
+import com.itam.userservice.domain.UserRoleRepository;
 import com.itam.userservice.infrastructure.SqlTenantScope;
 import java.lang.reflect.Method;
 import java.util.UUID;
@@ -18,6 +21,9 @@ class TenantScopedRepositoryContractTest {
         assertTenantScopeFirstParameter(DepartmentRepository.class);
         assertTenantScopeFirstParameter(BranchRepository.class);
         assertTenantScopeFirstParameter(LocationRepository.class);
+        assertTenantScopeFirstParameter(UserRepository.class);
+        assertTenantScopeFirstParameter(RoleRepository.class);
+        assertTenantScopeFirstParameter(UserRoleRepository.class);
     }
 
     @Test

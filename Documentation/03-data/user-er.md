@@ -90,7 +90,7 @@ Last Updated: 2026-03-30
 - отдельная таблица `permissions` не входит в Foundation Slice v1.
 
 ## Notes
-- Этот документ намеренно не фиксирует бизнес-атрибуты вроде `name`, `code` и другие поля, не подтвержденные в domain docs.
+- Этот документ фиксирует только минимальные business fields, подтвержденные для Slice 1 и Slice 2, и не фиксирует более широкие атрибуты вроде `code` и другие поля, не подтвержденные в domain docs.
 - Этот документ намеренно не фиксирует прямую обязательную связь `User` с `Branch` или `Location`.
 - Этот документ отражает data consequences уже принятых ADR-0001 / ADR-0002 / ADR-0003.
 
@@ -98,6 +98,25 @@ Last Updated: 2026-03-30
 
 Чтобы реализация Slice 1 могла быть выполнена без выдумывания business attributes,
 в Foundation Slice v1 фиксируется следующий минимальный physical field set.
+
+## Minimal Business Fields for Slice 2
+
+Чтобы реализация Slice 2 могла быть выполнена без выдумывания business attributes,
+в Foundation Slice v1 фиксируется следующий минимальный physical field set.
+
+### users
+Дополнительно к `id`, `tenant_id`, `department_id`:
+- `name`
+
+### roles
+Дополнительно к `id`, `tenant_id`:
+- `name`
+
+## Notes on Slice 2 Minimality
+- Это минимальный business field set только для Slice 2.
+- `department_id` у User остается optional same-tenant reference.
+- Поля вроде `email`, `employee_code`, `description`, `is_active`, `created_at`, `updated_at` пока не фиксируются как часть канона.
+- Если позже понадобится richer model, она должна добавляться отдельным изменением docs, а не выдумываться в реализации.
 
 ### tenants
 Дополнительно к `id`:
@@ -122,7 +141,7 @@ Last Updated: 2026-03-30
 
 
 ## Open Questions
-- какие именно бизнес-атрибуты входят в payload и физическую модель `Tenant / User / Role / Department / Branch / Location`;
+- какие дополнительные бизнес-атрибуты сверх уже зафиксированного minimum входят в payload и физическую модель `Tenant / User / Role / Department / Branch / Location`;
 - как именно будет выражен API-контракт для назначения ролей пользователям;
 - какой документ станет каноническим для permission keys / permission matrix;
 - нужны ли later дополнительные user-org references сверх `department_id`.
