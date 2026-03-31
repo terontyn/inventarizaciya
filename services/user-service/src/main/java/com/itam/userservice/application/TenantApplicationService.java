@@ -4,7 +4,6 @@ import com.itam.userservice.domain.AuditAction;
 import com.itam.userservice.domain.AuditEntity;
 import com.itam.userservice.domain.Tenant;
 import com.itam.userservice.domain.TenantRepository;
-import java.util.Optional;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -37,8 +36,8 @@ public class TenantApplicationService {
         return tenant;
     }
 
-    public Tenant getById(UUID id, Optional<UUID> authenticatedTenantId) {
-        if (authenticatedTenantId.isPresent() && !authenticatedTenantId.get().equals(id)) {
+    public Tenant getById(UUID id, UUID authenticatedTenantId) {
+        if (!authenticatedTenantId.equals(id)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Authenticated tenant mismatch");
         }
 

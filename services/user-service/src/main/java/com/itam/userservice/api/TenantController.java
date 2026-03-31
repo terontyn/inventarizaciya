@@ -49,7 +49,7 @@ public class TenantController {
     @GetMapping("/{id}")
     public TenantResponse get(@PathVariable UUID id, HttpServletRequest servletRequest) {
         return TenantResponse.from(
-            tenantApplicationService.getById(id, requestContextExtractor.findTenantId(servletRequest))
+            tenantApplicationService.getById(id, requestContextExtractor.requireTenantId(servletRequest))
         );
     }
 

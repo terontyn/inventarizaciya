@@ -52,4 +52,23 @@ class TenantControllerIntegrationTest extends IntegrationTestSupport {
                 .header(AUTHENTICATED_TENANT_HEADER, authenticatedTenantId))
             .andExpect(status().isForbidden());
     }
+
+    @Test
+    void getTenantSucceedsWhenAuthenticatedTenantMatchesPathId() throws Exception {
+        UUID tenantId = insertTenant("Tenant One");
+
+        mockMvc.perform(get("/api/v1/tenants/{id}", tenantId)
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.id").value(tenantId.toString()))
+            .andExpect(jsonPath("$.name").value("Tenant One"));
+    }
+
+    @Test
+    void getTenantFailsFastWhenAuthenticatedTenantContextIsMissing() throws Exception {
+        UUID tenantId = insertTenant("Tenant One");
+
+        mockMvc.perform(get("/api/v1/tenants/{id}", tenantId))
+            .andExpect(status().isBadRequest());
+    }
 }

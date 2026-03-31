@@ -22,3 +22,8 @@ Thumbs.db
 services/*/build/
 services/*/out/
 ops/docker/.env
+
+.gradle-user-home/
+.gradle/
+build/
+out/
