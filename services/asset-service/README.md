@@ -19,3 +19,8 @@ Assignment / transfer / return / retire remain outside this slice.
 ## Source of Truth
 
 Use the root `Documentation/` directory for architecture, domain, API, and ADR decisions.
+
+## Test Verification
+
+- Asset-service tests require Java 17.
+- Canonical command: `./gradlew :services:asset-service:test`
