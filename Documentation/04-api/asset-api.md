@@ -63,6 +63,54 @@ asset-service в Foundation Slice v1 владеет:
 - generic PATCH не используется для responsibility-changing operations;
 - assignment / transfer / return / retire не считаются частью generic CRUD v1.
 
+## Canonical Payload Minimum for Slice 3
+
+Этот раздел фиксирует только минимальный payload minimum для Asset Registry Core.
+Он нужен, чтобы реализация Slice 3 могла быть выполнена без выдумывания public API contract.
+
+### Asset
+
+#### POST /api/v1/assets
+Request minimum:
+- `asset_tag`
+- `serial_number`
+- `asset_type`
+- `status`
+- `assigned_user_id` (optional)
+- `location_id` (optional)
+
+Response minimum:
+- `id`
+- `asset_tag`
+- `serial_number`
+- `asset_type`
+- `status`
+- `assigned_user_id`
+- `location_id`
+
+#### PATCH /api/v1/assets/{id}
+Request minimum:
+- `asset_tag`
+- `serial_number`
+- `asset_type`
+- `status`
+
+Response minimum:
+- `id`
+- `asset_tag`
+- `serial_number`
+- `asset_type`
+- `status`
+- `assigned_user_id`
+- `location_id`
+
+## Slice 3 Payload Rules
+- `tenant_id` не передается как свободный бизнес-параметр в request payload;
+- `assigned_user_id`, если передан на create-path, должен указывать на User того же tenant;
+- `location_id`, если передан на create-path, должен указывать на Location того же tenant;
+- generic PATCH не канонизирует изменение `assigned_user_id` и `location_id`;
+- этот раздел фиксирует только minimum для Slice 3 и не канонизирует более широкую response schema, error model, pagination/filter parameters или responsibility-flow APIs.
+
 ## Not Fixed In This Document
 Намеренно не фиксируются:
 - request body fields;
@@ -89,4 +137,4 @@ asset-service в Foundation Slice v1 владеет:
 - какая delete semantics будет принята: hard delete / soft delete / no delete / retire only;
 - когда появляются отдельные API для AssetAssignment / AssetTransfer / AssetRetirement;
 - какая модель хранения history будет канонической после MVP;
-- какие поля входят в payload Asset v1 сверх уже подтвержденного минимума.
+- какие дополнительные поля сверх уже зафиксированного minimum входят в payload Asset v1.

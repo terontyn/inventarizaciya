@@ -68,6 +68,27 @@ Generic PATCH **не должен** менять:
 - Все tenant-aware запросы и проверки должны выполняться в tenant scope.
 - В v1 этот файл описывает только минимальный реестр активов.
 
+## Minimal Business Fields for Slice 3
+
+Чтобы реализация Slice 3 могла быть выполнена без выдумывания business attributes,
+в Foundation Slice v1 фиксируется следующий минимальный physical field set для Asset master record.
+
+### assets
+Дополнительно к `id`, `tenant_id`:
+- `asset_tag`
+- `serial_number`
+- `asset_type`
+- `status`
+- `assigned_user_id` (optional)
+- `location_id` (optional)
+
+## Notes on Slice 3 Minimality
+- Это минимальный business field set только для Slice 3.
+- `assigned_user_id` и `location_id` остаются history-sensitive fields.
+- Generic PATCH не должен менять `assigned_user_id` и `location_id`.
+- Поля вроде `barcode`, `qr_code`, `model_id`, `manufacturer_id`, `purchase_date`, `cost`, `condition_status`, `notes`, `created_at`, `updated_at` пока не фиксируются как часть канона.
+- Если позже понадобится richer model, она должна добавляться отдельным изменением docs, а не выдумываться в реализации.
+
 ## Open Questions
 - delete semantics: hard delete / soft delete / no delete / retire only;
 - нужен ли отдельный asset history store уже в следующем slice;

@@ -4,17 +4,17 @@
 
 ## Current State
 
-- Bootstrap skeleton only
-- No asset CRUD implementation
-- No business endpoints
-- No DTO or payload definitions
-- No domain entities or repositories
-- No domain migrations
+- Asset Registry Core for Asset master record
+- Versioned CRUD v1 for `Asset`
+- Tenant-scoped storage and repository enforcement
+- Local durable audit for create/update asset
+- GET-based tenant-scoped validation of `assigned_user_id` and `location_id` via `user-service`
+- No delete semantics or responsibility-flow public APIs
 
 ## Intent
 
-This module exists so Slice 3 can start without reshaping the repository structure.
-Until then, it stays implementation-free.
+This module intentionally keeps responsibility-changing flows out of generic CRUD.
+Assignment / transfer / return / retire remain outside this slice.
 
 ## Source of Truth
 

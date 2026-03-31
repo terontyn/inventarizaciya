@@ -1,11 +1,11 @@
 package com.itam.assetservice.boot;
 
-public final class AssetServiceApplication {
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
 
-    private AssetServiceApplication() {
-    }
-
+@SpringBootApplication(scanBasePackages = "com.itam.assetservice")
+public class AssetServiceApplication {
     public static void main(String[] args) {
-        System.out.println("asset-service bootstrap skeleton");
+        SpringApplication.run(AssetServiceApplication.class, args);
     }
 }
