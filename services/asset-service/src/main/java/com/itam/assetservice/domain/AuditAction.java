@@ -2,5 +2,8 @@ package com.itam.assetservice.domain;
 
 public enum AuditAction {
     CREATE,
-    UPDATE
+    UPDATE,
+    ASSIGN,
+    TRANSFER,
+    RETURN
 }

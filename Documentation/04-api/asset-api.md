@@ -2,7 +2,7 @@
 
 Status: draft
 Owner: architecture
-Last Updated: 2026-03-30
+Last Updated: 2026-04-01
 
 ## Purpose
 Минимальный API-контракт Foundation Slice для asset-service.
@@ -25,10 +25,11 @@ Last Updated: 2026-03-30
 asset-service в Foundation Slice v1 владеет:
 - Asset
 
-Следующие доменные концепты существуют, но их полноценные workflow/API не входят в этот документ:
-- AssetAssignment
-- AssetTransfer
-- AssetRetirement
+Следующие responsibility-changing operations существуют как отдельные command flows и не являются частью generic CRUD v1:
+- assign
+- transfer
+- return
+- retire
 
 ## Endpoints v1
 - `POST /api/v1/assets`
@@ -36,105 +37,167 @@ asset-service в Foundation Slice v1 владеет:
 - `GET /api/v1/assets/{id}`
 - `PATCH /api/v1/assets/{id}`
 
-## Confirmed Asset Fields Relevant To API
-- `asset_tag`
-- `serial_number`
-- `asset_type`
-- `status`
+## Responsibility Flow Command Layer (candidate for next slice)
+
+Этот раздел фиксирует только минимальный command contract layer,
+достаточный для следующего design / implementation шага.
+Он не канонизирует полный public API surface, полный error model или richer payload schema.
+
+### 1. Assign
+
+#### Candidate endpoint
+- `POST /api/v1/assets/{id}/assign`
+
+#### Command intent
+- установить текущую пользовательскую ответственность за Asset
+
+#### Request minimum
+- `target_user_id`
+
+#### Response minimum
+- `id`
+- `assigned_user_id`
+
+#### Success outcome
+- создан append-only факт assignment;
+- текущее состояние Asset отражает новую текущую пользовательскую ответственность;
+- операция считается critical write и должна попадать в audit.
+
+#### Not fixed yet
+- должен ли assignment одновременно фиксировать операционную локацию;
+- exact eligibility rules for assignment;
+- richer request fields;
+- richer response schema.
+
+### 2. Transfer
+
+#### Candidate endpoint
+- `POST /api/v1/assets/{id}/transfer`
+
+#### Command intent
+- изменить текущую пользовательскую ответственность и/или текущую операционную локацию как одно непрерывное доменное изменение
+
+#### Request minimum
+- как минимум одно из:
+  - `target_user_id`
+  - `target_location_id`
+
+#### Response minimum
+- `id`
 - `assigned_user_id`
 - `location_id`
 
-## Business Rules
-- актив принадлежит tenant;
-- `asset_tag` уникален внутри tenant;
-- история назначения и перемещений не должна теряться;
-- `assigned_user_id` и `location_id` являются cross-service reference IDs;
-- cross-service reference IDs должны валидироваться через API user-service в tenant scope;
-- `assigned_user_id` и `location_id` являются history-sensitive fields;
-- generic PATCH не должен менять `assigned_user_id` и `location_id`.
+#### Success outcome
+- произошло effective change хотя бы по одной из двух доменных осей;
+- создан append-only факт transfer;
+- текущее состояние Asset отражает новое текущее состояние;
+- операция считается critical write и должна попадать в audit.
+
+#### Boundary rule
+- если у Asset нет текущей пользовательской ответственности, создание новой текущей пользовательской ответственности относится к `assign`, а не к `transfer`;
+- `transfer` без текущего assigned user допустим только для location-only scenario.
+
+#### Not fixed yet
+- отдельные top-level endpoints для user-only / location-only / combined variants;
+- richer eligibility rules;
+- richer request fields;
+- richer response schema.
+
+### 3. Return
+
+#### Candidate endpoint
+- `POST /api/v1/assets/{id}/return`
+
+#### Command intent
+- завершить текущую пользовательскую ответственность без назначения нового пользователя в том же flow
+
+#### Request minimum
+- body minimum не фиксируется; asset identity в path достаточно для минимального command contract
+
+#### Response minimum
+- `id`
+
+#### Success outcome
+- создан append-only факт return;
+- у Asset больше нет активной текущей пользовательской ответственности;
+- операция считается critical write и должна попадать в audit.
+
+#### Boundary rule
+- `return` не канонизирует изменение `location_id`;
+- `return` не требует `target location`.
+
+#### Not fixed yet
+- exact post-return `status`;
+- exact response representation отсутствия активной текущей ответственности;
+- richer request fields;
+- richer response schema.
+
+### 4. Retire
+
+#### Candidate endpoint
+- `POST /api/v1/assets/{id}/retire`
+
+#### Command intent
+- вывести Asset из эксплуатации с сохранением audit и истории
+
+#### Request minimum
+- body minimum не фиксируется; asset identity в path достаточно для минимального command contract
+
+#### Response minimum
+- `id`
+
+#### Success outcome
+- создан append-only факт retirement;
+- operational use Asset завершен;
+- если существовала текущая активная пользовательская ответственность, после retirement она больше не считается активной;
+- операция считается critical write и должна попадать в audit.
+
+#### Boundary rule
+- `retire` не является delete workflow;
+- предварительный `return` перед `retire` не является обязательным precondition.
+
+#### Not fixed yet
+- exact retirement-related `status`;
+- eligibility rules for retirement;
+- richer request fields;
+- richer response schema.
 
 ## Write Operations Requiring Audit
 Следующие write-операции считаются критичными и должны попадать в audit:
 - create asset
 - update asset
+- assign asset
+- transfer asset
+- return asset
+- retire asset
 
 ## Restrictions
 - `DELETE /api/v1/assets/{id}` не включается в v1;
 - generic PATCH не используется для responsibility-changing operations;
-- assignment / transfer / return / retire не считаются частью generic CRUD v1.
-
-## Canonical Payload Minimum for Slice 3
-
-Этот раздел фиксирует только минимальный payload minimum для Asset Registry Core.
-Он нужен, чтобы реализация Slice 3 могла быть выполнена без выдумывания public API contract.
-
-### Asset
-
-#### POST /api/v1/assets
-Request minimum:
-- `asset_tag`
-- `serial_number`
-- `asset_type`
-- `status`
-- `assigned_user_id` (optional)
-- `location_id` (optional)
-
-Response minimum:
-- `id`
-- `asset_tag`
-- `serial_number`
-- `asset_type`
-- `status`
-- `assigned_user_id`
-- `location_id`
-
-#### PATCH /api/v1/assets/{id}
-Request minimum:
-- `asset_tag`
-- `serial_number`
-- `asset_type`
-- `status`
-
-Response minimum:
-- `id`
-- `asset_tag`
-- `serial_number`
-- `asset_type`
-- `status`
-- `assigned_user_id`
-- `location_id`
-
-## Slice 3 Payload Rules
-- `tenant_id` не передается как свободный бизнес-параметр в request payload;
-- `assigned_user_id`, если передан на create-path, должен указывать на User того же tenant;
-- `location_id`, если передан на create-path, должен указывать на Location того же tenant;
-- generic PATCH не канонизирует изменение `assigned_user_id` и `location_id`;
-- этот раздел фиксирует только minimum для Slice 3 и не канонизирует более широкую response schema, error model, pagination/filter parameters или responsibility-flow APIs.
+- `assigned_user_id` и `location_id` не меняются через generic PATCH.
 
 ## Not Fixed In This Document
 Намеренно не фиксируются:
-- request body fields;
-- response body fields;
+- full request body schema;
+- full response body schema;
 - error model;
 - pagination/filter parameter names;
 - delete semantics;
-- отдельные command endpoints для assignment / transfer / return / retire;
-- asset history storage model;
+- exact status vocabulary;
+- final history storage schema;
+- отдельная canonical entity/table `AssetReturn`;
 - event contract;
-- audit payload format.
+- audit payload format beyond already accepted minimal audit envelope.
 
 ## Out of Scope
-- `DELETE /api/v1/assets/{id}`
-- `POST /api/v1/assets/{id}/assign`
-- `POST /api/v1/assets/{id}/transfer`
-- `POST /api/v1/assets/{id}/return`
-- `POST /api/v1/assets/{id}/retire`
-- bulk import/export
+- delete workflow
+- bulk command APIs
 - attachment API
 - barcode / QR workflows
+- separate top-level command resources beyond asset-scoped command layer
 
 ## Open Questions
-- какая delete semantics будет принята: hard delete / soft delete / no delete / retire only;
-- когда появляются отдельные API для AssetAssignment / AssetTransfer / AssetRetirement;
-- какая модель хранения history будет канонической после MVP;
-- какие дополнительные поля сверх уже зафиксированного minimum входят в payload Asset v1.
+- exact status vocabulary;
+- eligibility rules for `assignment / return / retirement`;
+- final physical history storage schema;
+- нужно ли later расширять command responses beyond current minimum.

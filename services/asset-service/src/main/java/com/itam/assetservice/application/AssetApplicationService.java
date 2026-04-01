@@ -16,16 +16,16 @@ import org.springframework.web.server.ResponseStatusException;
 public class AssetApplicationService {
 
     private final AssetRepository assetRepository;
-    private final UserServiceReferenceLookup userServiceReferenceLookup;
+    private final AssetReferenceValidator assetReferenceValidator;
     private final AuditWriter auditWriter;
 
     public AssetApplicationService(
         AssetRepository assetRepository,
-        UserServiceReferenceLookup userServiceReferenceLookup,
+        AssetReferenceValidator assetReferenceValidator,
         AuditWriter auditWriter
     ) {
         this.assetRepository = assetRepository;
-        this.userServiceReferenceLookup = userServiceReferenceLookup;
+        this.assetReferenceValidator = assetReferenceValidator;
         this.auditWriter = auditWriter;
     }
 
@@ -45,8 +45,8 @@ public class AssetApplicationService {
         String normalizedAssetType = InputNormalizer.requiredTrimmed(assetType, "asset_type");
         String normalizedStatus = InputNormalizer.requiredTrimmed(status, "status");
 
-        requireUserInSameTenant(tenantId, assignedUserId);
-        requireLocationInSameTenant(tenantId, locationId);
+        assetReferenceValidator.requireUserInSameTenant(tenantId, assignedUserId, "assigned_user_id");
+        assetReferenceValidator.requireLocationInSameTenant(tenantId, locationId, "location_id");
 
         try {
             Asset asset = assetRepository.create(
@@ -148,46 +148,6 @@ public class AssetApplicationService {
             throw new ResponseStatusException(
                 HttpStatus.CONFLICT,
                 "asset_tag must be unique within tenant",
-                exception
-            );
-        }
-    }
-
-    private void requireUserInSameTenant(UUID tenantId, UUID assignedUserId) {
-        if (assignedUserId == null) {
-            return;
-        }
-        try {
-            if (!userServiceReferenceLookup.userExists(tenantId, assignedUserId)) {
-                throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "assigned_user_id must reference a user in the same tenant"
-                );
-            }
-        } catch (ReferenceLookupUnavailableException exception) {
-            throw new ResponseStatusException(
-                HttpStatus.SERVICE_UNAVAILABLE,
-                "Unable to validate assigned_user_id via user-service",
-                exception
-            );
-        }
-    }
-
-    private void requireLocationInSameTenant(UUID tenantId, UUID locationId) {
-        if (locationId == null) {
-            return;
-        }
-        try {
-            if (!userServiceReferenceLookup.locationExists(tenantId, locationId)) {
-                throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "location_id must reference a location in the same tenant"
-                );
-            }
-        } catch (ReferenceLookupUnavailableException exception) {
-            throw new ResponseStatusException(
-                HttpStatus.SERVICE_UNAVAILABLE,
-                "Unable to validate location_id via user-service",
                 exception
             );
         }

@@ -2,7 +2,7 @@
 
 Status: draft
 Owner: architecture
-Last Updated: 2026-03-30
+Last Updated: 2026-04-01
 
 ## Purpose
 Минимальная ER-модель Foundation Slice для asset-service.
@@ -89,11 +89,20 @@ Generic PATCH **не должен** менять:
 - Поля вроде `barcode`, `qr_code`, `model_id`, `manufacturer_id`, `purchase_date`, `cost`, `condition_status`, `notes`, `created_at`, `updated_at` пока не фиксируются как часть канона.
 - Если позже понадобится richer model, она должна добавляться отдельным изменением docs, а не выдумываться в реализации.
 
+## Responsibility History Clarification
+ER v1 по-прежнему не канонизирует physical tables для responsibility history flows.
+
+На текущем этапе фиксируется только следующее:
+- отдельная canonical entity/table `AssetReturn` не вводится;
+- history model должна уметь хранить distinguishable append-only fact type для `Return`;
+- final physical storage schema для responsibility history остается open decision;
+- command contracts `assign / transfer / return / retire` не требуют добавления новых канонических master-record полей в таблицу `assets`.
+
 ## Open Questions
 - delete semantics: hard delete / soft delete / no delete / retire only;
 - нужен ли отдельный asset history store уже в следующем slice;
-- когда именно появляются `AssetAssignment / AssetTransfer / AssetRetirement` как отдельные таблицы;
-- какая модель хранения history будет финальной после MVP.
+- какая final physical storage model будет использоваться для append-only responsibility history, включая distinguishable fact type для `Return`;
+- нужны ли later отдельные canonical history tables после отдельного решения.
 
 ## Not Included Yet
 Намеренно не добавлены поля из раннего широкого blueprint, например:

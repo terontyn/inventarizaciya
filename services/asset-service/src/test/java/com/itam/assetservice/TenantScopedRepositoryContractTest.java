@@ -3,6 +3,7 @@ package com.itam.assetservice;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.itam.assetservice.domain.AssetResponsibilityFactRepository;
 import com.itam.assetservice.domain.AssetRepository;
 import com.itam.assetservice.infrastructure.SqlTenantScope;
 import java.lang.reflect.Method;
@@ -14,6 +15,7 @@ class TenantScopedRepositoryContractTest {
     @Test
     void tenantScopedRepositoryMethodsRequireTenantIdAsFirstParameter() {
         assertTenantScopeFirstParameter(AssetRepository.class);
+        assertTenantScopeFirstParameter(AssetResponsibilityFactRepository.class);
     }
 
     @Test

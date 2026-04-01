@@ -28,4 +28,11 @@ public interface AssetRepository {
         String assetType,
         String status
     );
+
+    Optional<Asset> updateCurrentState(
+        UUID tenantId,
+        UUID id,
+        UUID assignedUserId,
+        UUID locationId
+    );
 }

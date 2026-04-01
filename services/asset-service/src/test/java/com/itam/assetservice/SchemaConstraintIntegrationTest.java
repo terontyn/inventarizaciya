@@ -40,4 +40,31 @@ class SchemaConstraintIntegrationTest extends IntegrationTestSupport {
             )
         ).isInstanceOf(DataIntegrityViolationException.class);
     }
+
+    @Test
+    void responsibilityFactsRequireTenantScopedAssetReference() {
+        UUID tenantA = UUID.randomUUID();
+        UUID tenantB = UUID.randomUUID();
+        UUID assetId = insertAsset(tenantA, "LAP-001", "SN-001", "Laptop", "IN_STOCK", null, null);
+
+        assertThatThrownBy(() ->
+            jdbcTemplate.update(
+                "INSERT INTO asset_responsibility_facts (id, asset_id, fact_type, occurred_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP)",
+                UUID.randomUUID(),
+                assetId,
+                "ASSIGN"
+            )
+        ).isInstanceOf(DataIntegrityViolationException.class);
+
+        assertThatThrownBy(() ->
+            jdbcTemplate.update(
+                "INSERT INTO asset_responsibility_facts (id, tenant_id, asset_id, fact_type, occurred_at) "
+                    + "VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)",
+                UUID.randomUUID(),
+                tenantB,
+                assetId,
+                "ASSIGN"
+            )
+        ).isInstanceOf(DataIntegrityViolationException.class);
+    }
 }

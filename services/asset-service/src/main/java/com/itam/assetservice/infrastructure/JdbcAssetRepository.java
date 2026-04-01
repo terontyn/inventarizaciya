@@ -119,4 +119,25 @@ public class JdbcAssetRepository implements AssetRepository {
         );
         return updated == 0 ? Optional.empty() : findById(scopedTenantId, id);
     }
+
+    @Override
+    public Optional<Asset> updateCurrentState(
+        UUID tenantId,
+        UUID id,
+        UUID assignedUserId,
+        UUID locationId
+    ) {
+        UUID scopedTenantId = SqlTenantScope.requireTenantId(tenantId);
+        MapSqlParameterSource parameters = new MapSqlParameterSource()
+            .addValue("tenantId", scopedTenantId)
+            .addValue("id", id)
+            .addValue("assignedUserId", assignedUserId)
+            .addValue("locationId", locationId);
+        int updated = jdbcTemplate.update(
+            "UPDATE assets SET assigned_user_id = :assignedUserId, location_id = :locationId "
+                + "WHERE tenant_id = :tenantId AND id = :id",
+            parameters
+        );
+        return updated == 0 ? Optional.empty() : findById(scopedTenantId, id);
+    }
 }

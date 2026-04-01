@@ -2,7 +2,7 @@
 
 Status: draft
 Owner: architecture
-Last Updated: 2026-03-30
+Last Updated: 2026-04-01
 
 ## Purpose
 Описать доменный flow вывода актива из эксплуатации с сохранением audit и истории.
@@ -11,9 +11,27 @@ Last Updated: 2026-03-30
 Документ задает только доменные правила retirement flow.
 Точный API-контракт и точные payload schema фиксируются отдельно.
 
+## Boundary Reference
+Канонические границы между `assign`, `transfer`, `return`, `retire` задаются в `/Documentation/02-domain/asset-domain.md`, section `Responsibility Flow Boundaries`.
+Этот документ должен интерпретироваться в согласовании с этим section.
+
 ## Core Rule
 Retirement не является частью generic PATCH Asset.
 Retirement также не должен трактоваться как delete workflow.
+
+## Boundary Clarifying Note
+`Retirement` не совпадает с `return`.
+
+`Return` завершает текущую пользовательскую ответственность за Asset.
+`Retirement` завершает эксплуатационное использование Asset с сохранением audit и истории.
+
+Предварительный `return` перед `retirement` не является обязательным precondition в текущем каноне.
+
+Если на момент `retirement` у Asset существует текущая активная пользовательская ответственность, после `retirement` она больше не считается активной.
+
+`Retirement` не канонизирует обязательное изменение `location_id`.
+
+Конкретное retirement-related значение `status` в текущем каноне не зафиксировано.
 
 ## Preconditions
 - Asset существует.
@@ -53,8 +71,7 @@ Retirement также не должен трактоваться как delete w
 - Любое изменение текущего состояния актива в связи с retirement должно быть следствием dedicated retirement flow.
 
 ## Open Decisions / STOP
-- Не зафиксированы точные доменные условия вывода из эксплуатации.
-- Не зафиксировано, должен ли актив быть предварительно возвращен перед retirement.
-- Не зафиксировано, как retirement влияет на текущую ответственность и location_id.
-- Не зафиксировано точное retirement-related state value.
-- Delete semantics остаётся open question и не покрывается этим документом.
+- Не зафиксированы точные доменные условия eligibility для `retirement`.
+- Конкретное retirement-related значение `status` не канонизировано.
+- Финальная physical history model для retirement-related facts остается open decision.
+- Public API для `retirement` не канонизирован в этом документе.

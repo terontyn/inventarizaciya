@@ -2,10 +2,12 @@ package com.itam.assetservice.api;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.itam.assetservice.application.AssetApplicationService;
+import com.itam.assetservice.application.AssetResponsibilityApplicationService;
 import com.itam.assetservice.domain.Asset;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import java.net.URI;
 import java.util.List;
 import java.util.UUID;
@@ -25,13 +27,16 @@ import org.springframework.web.bind.annotation.RestController;
 public class AssetController {
 
     private final AssetApplicationService assetApplicationService;
+    private final AssetResponsibilityApplicationService assetResponsibilityApplicationService;
     private final AuthenticatedRequestContextExtractor requestContextExtractor;
 
     public AssetController(
         AssetApplicationService assetApplicationService,
+        AssetResponsibilityApplicationService assetResponsibilityApplicationService,
         AuthenticatedRequestContextExtractor requestContextExtractor
     ) {
         this.assetApplicationService = assetApplicationService;
+        this.assetResponsibilityApplicationService = assetResponsibilityApplicationService;
         this.requestContextExtractor = requestContextExtractor;
     }
 
@@ -90,6 +95,53 @@ public class AssetController {
         ));
     }
 
+    @PostMapping("/{id}/assign")
+    public AssignAssetResponse assign(
+        @PathVariable UUID id,
+        @Valid @RequestBody AssignAssetRequest request,
+        HttpServletRequest servletRequest
+    ) {
+        UUID tenantId = requestContextExtractor.requireTenantId(servletRequest);
+        AssetResponsibilityApplicationService.AssignResult result = assetResponsibilityApplicationService.assign(
+            tenantId,
+            id,
+            request.targetUserId(),
+            requestContextExtractor.requireAuditMetadata(servletRequest)
+        );
+        return new AssignAssetResponse(result.id(), result.assignedUserId());
+    }
+
+    @PostMapping("/{id}/transfer")
+    public TransferAssetResponse transfer(
+        @PathVariable UUID id,
+        @Valid @RequestBody TransferAssetRequest request,
+        HttpServletRequest servletRequest
+    ) {
+        UUID tenantId = requestContextExtractor.requireTenantId(servletRequest);
+        AssetResponsibilityApplicationService.TransferResult result = assetResponsibilityApplicationService.transfer(
+            tenantId,
+            id,
+            request.targetUserId(),
+            request.targetLocationId(),
+            requestContextExtractor.requireAuditMetadata(servletRequest)
+        );
+        return new TransferAssetResponse(result.id(), result.assignedUserId(), result.locationId());
+    }
+
+    @PostMapping("/{id}/return")
+    public ReturnAssetResponse returnAsset(
+        @PathVariable UUID id,
+        HttpServletRequest servletRequest
+    ) {
+        UUID tenantId = requestContextExtractor.requireTenantId(servletRequest);
+        AssetResponsibilityApplicationService.ReturnResult result = assetResponsibilityApplicationService.returnAsset(
+            tenantId,
+            id,
+            requestContextExtractor.requireAuditMetadata(servletRequest)
+        );
+        return new ReturnAssetResponse(result.id());
+    }
+
     public record AssetCreateRequest(
         @NotBlank String assetTag,
         @NotBlank String serialNumber,
@@ -138,5 +190,20 @@ public class AssetController {
                 asset.locationId()
             );
         }
+    }
+
+    public record AssignAssetRequest(@NotNull UUID targetUserId) {
+    }
+
+    public record TransferAssetRequest(UUID targetUserId, UUID targetLocationId) {
+    }
+
+    public record AssignAssetResponse(UUID id, UUID assignedUserId) {
+    }
+
+    public record TransferAssetResponse(UUID id, UUID assignedUserId, UUID locationId) {
+    }
+
+    public record ReturnAssetResponse(UUID id) {
     }
 }

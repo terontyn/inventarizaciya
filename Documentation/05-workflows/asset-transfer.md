@@ -2,7 +2,7 @@
 
 Status: draft
 Owner: architecture
-Last Updated: 2026-03-30
+Last Updated: 2026-04-01
 
 ## Purpose
 Описать доменный flow передачи актива другому пользователю и/или в другую операционную локацию в пределах одного tenant.
@@ -11,9 +11,27 @@ Last Updated: 2026-03-30
 Документ задает только доменные правила transfer flow.
 Точный API-контракт и точные payload schema фиксируются отдельно.
 
+## Boundary Reference
+Канонические границы между `assign`, `transfer`, `return`, `retire` задаются в `/Documentation/02-domain/asset-domain.md`, section `Responsibility Flow Boundaries`.
+Этот документ должен интерпретироваться в согласовании с этим section.
+
 ## Core Rule
 Transfer не является частью generic PATCH Asset.
 Изменение текущей ответственности и/или операционной локации должно выполняться только через dedicated domain flow.
+
+## Boundary Clarifying Note
+`Transfer` является одним каноническим responsibility flow.
+
+В рамках этого flow допустимы три варианта доменного изменения:
+- `user-only transfer`
+- `location-only transfer`
+- `combined user + location transfer`
+
+`Transfer` используется, когда доменное намерение состоит в непрерывной передаче текущей ответственности и/или операционной локации как одного доменного изменения.
+
+Если у Asset нет текущей пользовательской ответственности, операция, создающая новую текущую пользовательскую ответственность, должна рассматриваться как `assignment`, а не как `transfer`.
+
+`Transfer` без текущего assigned user допустим только для `location-only` scenario.
 
 ## Preconditions
 - Asset существует.
@@ -58,6 +76,6 @@ Transfer не является частью generic PATCH Asset.
 - Любое изменение этих полей должно быть следствием dedicated transfer flow.
 
 ## Open Decisions / STOP
-- Не зафиксировано, можно ли использовать transfer для актива без текущего assigned user.
-- Не зафиксировано, считаются ли user-only transfer и location-only transfer одним каноническим flow или разными подтипами.
-- Не зафиксирована граница между transfer и return + subsequent assignment для отдельных операционных сценариев.
+- Не зафиксированы точные eligibility rules для `transfer` сверх tenant scope, existence checks и effective change requirement.
+- Не зафиксированы точные operational distinctions для отдельных transfer scenarios beyond already accepted boundary canon.
+- Public API для `transfer` не канонизирован в этом документе.

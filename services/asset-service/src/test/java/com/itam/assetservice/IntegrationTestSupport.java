@@ -47,6 +47,7 @@ public abstract class IntegrationTestSupport {
 
     @BeforeEach
     void setUp() {
+        jdbcTemplate.update("DELETE FROM asset_responsibility_facts");
         jdbcTemplate.update("DELETE FROM local_audit_records");
         jdbcTemplate.update("DELETE FROM assets");
         mockUserService = MockRestServiceServer.createServer(userServiceRestTemplate);
@@ -103,6 +104,52 @@ public abstract class IntegrationTestSupport {
         );
     }
 
+    protected ResponsibilityFactRow latestResponsibilityFactRow() {
+        return jdbcTemplate.query(
+            "SELECT tenant_id, asset_id, fact_type, previous_assigned_user_id, new_assigned_user_id, "
+                + "previous_location_id, new_location_id "
+                + "FROM asset_responsibility_facts ORDER BY occurred_at DESC, id DESC LIMIT 1",
+            resultSet -> {
+                if (!resultSet.next()) {
+                    throw new AssertionError("Expected at least one responsibility fact");
+                }
+                return new ResponsibilityFactRow(
+                    resultSet.getObject("tenant_id", UUID.class),
+                    resultSet.getObject("asset_id", UUID.class),
+                    resultSet.getString("fact_type"),
+                    resultSet.getObject("previous_assigned_user_id", UUID.class),
+                    resultSet.getObject("new_assigned_user_id", UUID.class),
+                    resultSet.getObject("previous_location_id", UUID.class),
+                    resultSet.getObject("new_location_id", UUID.class)
+                );
+            }
+        );
+    }
+
+    protected AssetRow assetRow(UUID tenantId, UUID assetId) {
+        return jdbcTemplate.query(
+            "SELECT id, tenant_id, asset_tag, serial_number, asset_type, status, assigned_user_id, location_id "
+                + "FROM assets WHERE tenant_id = ? AND id = ?",
+            resultSet -> {
+                if (!resultSet.next()) {
+                    throw new AssertionError("Expected asset row to exist");
+                }
+                return new AssetRow(
+                    resultSet.getObject("id", UUID.class),
+                    resultSet.getObject("tenant_id", UUID.class),
+                    resultSet.getString("asset_tag"),
+                    resultSet.getString("serial_number"),
+                    resultSet.getString("asset_type"),
+                    resultSet.getString("status"),
+                    resultSet.getObject("assigned_user_id", UUID.class),
+                    resultSet.getObject("location_id", UUID.class)
+                );
+            },
+            tenantId,
+            assetId
+        );
+    }
+
     protected void expectUserLookup(UUID tenantId, UUID userId, HttpStatus responseStatus) {
         expectReferenceLookup("/api/v1/users/" + userId, tenantId, responseStatus);
     }
@@ -127,6 +174,29 @@ public abstract class IntegrationTestSupport {
         String actionType,
         String correlationId,
         String changePayload
+    ) {
+    }
+
+    protected record ResponsibilityFactRow(
+        UUID tenantId,
+        UUID assetId,
+        String factType,
+        UUID previousAssignedUserId,
+        UUID newAssignedUserId,
+        UUID previousLocationId,
+        UUID newLocationId
+    ) {
+    }
+
+    protected record AssetRow(
+        UUID id,
+        UUID tenantId,
+        String assetTag,
+        String serialNumber,
+        String assetType,
+        String status,
+        UUID assignedUserId,
+        UUID locationId
     ) {
     }
 }

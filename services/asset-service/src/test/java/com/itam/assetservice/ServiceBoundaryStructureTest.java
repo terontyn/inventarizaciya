@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.itam.assetservice.api.AssetController;
 import com.itam.assetservice.application.AssetApplicationService;
+import com.itam.assetservice.application.AssetReferenceValidator;
+import com.itam.assetservice.application.AssetResponsibilityApplicationService;
 import com.itam.assetservice.application.AuditWriter;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -19,6 +21,8 @@ class ServiceBoundaryStructureTest {
         List<Class<?>> boundaryClasses = List.of(
             AssetController.class,
             AssetApplicationService.class,
+            AssetResponsibilityApplicationService.class,
+            AssetReferenceValidator.class,
             AuditWriter.class
         );
 
