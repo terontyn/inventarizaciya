@@ -5,5 +5,6 @@ public enum AuditAction {
     UPDATE,
     ASSIGN,
     TRANSFER,
-    RETURN
+    RETURN,
+    RETIRE
 }

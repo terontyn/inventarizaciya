@@ -142,6 +142,20 @@ public class AssetController {
         return new ReturnAssetResponse(result.id());
     }
 
+    @PostMapping("/{id}/retire")
+    public RetireAssetResponse retire(
+        @PathVariable UUID id,
+        HttpServletRequest servletRequest
+    ) {
+        UUID tenantId = requestContextExtractor.requireTenantId(servletRequest);
+        AssetResponsibilityApplicationService.RetireResult result = assetResponsibilityApplicationService.retire(
+            tenantId,
+            id,
+            requestContextExtractor.requireAuditMetadata(servletRequest)
+        );
+        return new RetireAssetResponse(result.id());
+    }
+
     public record AssetCreateRequest(
         @NotBlank String assetTag,
         @NotBlank String serialNumber,
@@ -205,5 +219,8 @@ public class AssetController {
     }
 
     public record ReturnAssetResponse(UUID id) {
+    }
+
+    public record RetireAssetResponse(UUID id) {
     }
 }

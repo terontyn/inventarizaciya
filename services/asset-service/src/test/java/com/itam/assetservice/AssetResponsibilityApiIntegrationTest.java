@@ -390,6 +390,87 @@ class AssetResponsibilityApiIntegrationTest extends IntegrationTestSupport {
     }
 
     @Test
+    void retireSuccessClearsAssignedUserKeepsLocationAndDoesNotDeleteAsset() throws Exception {
+        UUID tenantId = UUID.randomUUID();
+        UUID currentUserId = UUID.randomUUID();
+        UUID locationId = UUID.randomUUID();
+        UUID assetId = insertAsset(
+            tenantId,
+            "LAP-001",
+            "SN-001",
+            "Laptop",
+            "IN_USE",
+            currentUserId,
+            locationId
+        );
+
+        mockMvc.perform(post("/api/v1/assets/{id}/retire", assetId)
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
+                .header(AUTHENTICATED_ACTOR_HEADER, "asset-admin")
+                .header(CORRELATION_ID_HEADER, "corr-retire"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.id").value(assetId.toString()));
+
+        AssetRow assetRow = assetRow(tenantId, assetId);
+        assertThat(assetRow.assignedUserId()).isNull();
+        assertThat(assetRow.locationId()).isEqualTo(locationId);
+
+        ResponsibilityFactRow factRow = latestResponsibilityFactRow();
+        assertThat(factRow.factType()).isEqualTo("RETIRE");
+        assertThat(factRow.previousAssignedUserId()).isEqualTo(currentUserId);
+        assertThat(factRow.newAssignedUserId()).isNull();
+        assertThat(factRow.previousLocationId()).isEqualTo(locationId);
+        assertThat(factRow.newLocationId()).isEqualTo(locationId);
+
+        AuditRow auditRow = latestAuditRow();
+        assertThat(auditRow.actionType()).isEqualTo("RETIRE");
+        assertThat(auditRow.correlationId()).isEqualTo("corr-retire");
+
+        mockMvc.perform(get("/api/v1/assets/{id}", assetId)
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.id").value(assetId.toString()))
+            .andExpect(jsonPath("$.location_id").value(locationId.toString()));
+    }
+
+    @Test
+    void retireSuccessWithoutAssignedUserStillAppendsFactAndKeepsLocation() throws Exception {
+        UUID tenantId = UUID.randomUUID();
+        UUID locationId = UUID.randomUUID();
+        UUID assetId = insertAsset(
+            tenantId,
+            "LAP-001",
+            "SN-001",
+            "Laptop",
+            "IN_STOCK",
+            null,
+            locationId
+        );
+
+        mockMvc.perform(post("/api/v1/assets/{id}/retire", assetId)
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
+                .header(AUTHENTICATED_ACTOR_HEADER, "asset-admin")
+                .header(CORRELATION_ID_HEADER, "corr-retire-no-user"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.id").value(assetId.toString()));
+
+        AssetRow assetRow = assetRow(tenantId, assetId);
+        assertThat(assetRow.assignedUserId()).isNull();
+        assertThat(assetRow.locationId()).isEqualTo(locationId);
+
+        ResponsibilityFactRow factRow = latestResponsibilityFactRow();
+        assertThat(factRow.factType()).isEqualTo("RETIRE");
+        assertThat(factRow.previousAssignedUserId()).isNull();
+        assertThat(factRow.newAssignedUserId()).isNull();
+        assertThat(factRow.previousLocationId()).isEqualTo(locationId);
+        assertThat(factRow.newLocationId()).isEqualTo(locationId);
+
+        AuditRow auditRow = latestAuditRow();
+        assertThat(auditRow.actionType()).isEqualTo("RETIRE");
+        assertThat(auditRow.correlationId()).isEqualTo("corr-retire-no-user");
+    }
+
+    @Test
     void commandEndpointsStayInsideTenantScope() throws Exception {
         UUID tenantA = UUID.randomUUID();
         UUID tenantB = UUID.randomUUID();
@@ -418,6 +499,11 @@ class AssetResponsibilityApiIntegrationTest extends IntegrationTestSupport {
             .andExpect(status().isNotFound());
 
         mockMvc.perform(post("/api/v1/assets/{id}/return", assetId)
+                .header(AUTHENTICATED_TENANT_HEADER, tenantB)
+                .header(AUTHENTICATED_ACTOR_HEADER, "asset-admin"))
+            .andExpect(status().isNotFound());
+
+        mockMvc.perform(post("/api/v1/assets/{id}/retire", assetId)
                 .header(AUTHENTICATED_TENANT_HEADER, tenantB)
                 .header(AUTHENTICATED_ACTOR_HEADER, "asset-admin"))
             .andExpect(status().isNotFound());

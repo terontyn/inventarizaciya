@@ -184,6 +184,40 @@ public class AssetResponsibilityApplicationService {
         return new ReturnResult(updatedAsset.id());
     }
 
+    @Transactional
+    public RetireResult retire(
+        UUID tenantId,
+        UUID assetId,
+        AuditMetadata auditMetadata
+    ) {
+        Asset asset = requireAsset(tenantId, assetId);
+
+        Asset updatedAsset = assetRepository.updateCurrentState(
+            tenantId,
+            assetId,
+            null,
+            asset.locationId()
+        ).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Asset not found"));
+
+        appendFact(
+            tenantId,
+            asset,
+            updatedAsset,
+            AssetResponsibilityFactType.RETIRE
+        );
+
+        auditWriter.record(
+            tenantId,
+            auditMetadata,
+            AuditEntity.ASSET,
+            updatedAsset.id(),
+            AuditAction.RETIRE,
+            new RetireAuditPayload(updatedAsset.id())
+        );
+
+        return new RetireResult(updatedAsset.id());
+    }
+
     private Asset requireAsset(UUID tenantId, UUID assetId) {
         return assetRepository.findById(tenantId, assetId)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Asset not found"));
@@ -225,6 +259,9 @@ public class AssetResponsibilityApplicationService {
     public record ReturnResult(UUID id) {
     }
 
+    public record RetireResult(UUID id) {
+    }
+
     private record AssignAuditPayload(UUID id, UUID assignedUserId) {
     }
 
@@ -232,5 +269,8 @@ public class AssetResponsibilityApplicationService {
     }
 
     private record ReturnAuditPayload(UUID id) {
+    }
+
+    private record RetireAuditPayload(UUID id) {
     }
 }
