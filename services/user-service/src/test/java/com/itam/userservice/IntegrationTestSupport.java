@@ -1,5 +1,6 @@
 package com.itam.userservice;
 
+import com.itam.userservice.application.PilotRoleNames;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -106,6 +107,25 @@ public abstract class IntegrationTestSupport {
             userId,
             roleId
         );
+    }
+
+    protected UUID insertTenantAdmin(UUID tenantId, String userName) {
+        return insertUserWithRole(tenantId, userName, null, PilotRoleNames.TENANT_ADMIN);
+    }
+
+    protected UUID insertAssetOperator(UUID tenantId, String userName) {
+        return insertUserWithRole(tenantId, userName, null, PilotRoleNames.ASSET_OPERATOR);
+    }
+
+    protected UUID insertSupportReviewer(UUID tenantId, String userName) {
+        return insertUserWithRole(tenantId, userName, null, PilotRoleNames.SUPPORT_REVIEWER);
+    }
+
+    protected UUID insertUserWithRole(UUID tenantId, String userName, UUID departmentId, String roleName) {
+        UUID userId = insertUser(tenantId, userName, departmentId);
+        UUID roleId = insertRole(tenantId, roleName);
+        insertUserRole(tenantId, userId, roleId);
+        return userId;
     }
 
     protected int countRows(String tableName) {

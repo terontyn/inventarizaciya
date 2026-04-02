@@ -2,6 +2,7 @@ package com.itam.userservice;
 
 import static com.itam.userservice.api.AuthenticatedRequestContextExtractor.AUTHENTICATED_ACTOR_HEADER;
 import static com.itam.userservice.api.AuthenticatedRequestContextExtractor.AUTHENTICATED_TENANT_HEADER;
+import static com.itam.userservice.api.AuthenticatedRequestContextExtractor.AUTHENTICATED_USER_HEADER;
 import static com.itam.userservice.api.AuthenticatedRequestContextExtractor.CORRELATION_ID_HEADER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
@@ -22,11 +23,14 @@ class UserRoleApiIntegrationTest extends IntegrationTestSupport {
     void userEndpointsStayInsideTenantScopeAndGenerateAudit() throws Exception {
         UUID tenantA = insertTenant("Tenant A");
         UUID tenantB = insertTenant("Tenant B");
+        UUID tenantAAdmin = insertTenantAdmin(tenantA, "Tenant A Admin");
+        UUID tenantBAdmin = insertTenantAdmin(tenantB, "Tenant B Admin");
         UUID departmentOne = insertDepartment(tenantA, "Finance");
         UUID departmentTwo = insertDepartment(tenantA, "IT");
 
         String createBody = mockMvc.perform(post("/api/v1/users")
                 .header(AUTHENTICATED_TENANT_HEADER, tenantA)
+                .header(AUTHENTICATED_USER_HEADER, tenantAAdmin)
                 .header(AUTHENTICATED_ACTOR_HEADER, "user-admin")
                 .header(CORRELATION_ID_HEADER, "corr-user-create")
                 .contentType(APPLICATION_JSON)
@@ -46,6 +50,7 @@ class UserRoleApiIntegrationTest extends IntegrationTestSupport {
 
         mockMvc.perform(patch("/api/v1/users/{id}", userId)
                 .header(AUTHENTICATED_TENANT_HEADER, tenantA)
+                .header(AUTHENTICATED_USER_HEADER, tenantAAdmin)
                 .header(AUTHENTICATED_ACTOR_HEADER, "user-admin")
                 .header(CORRELATION_ID_HEADER, "corr-user-update")
                 .contentType(APPLICATION_JSON)
@@ -59,14 +64,16 @@ class UserRoleApiIntegrationTest extends IntegrationTestSupport {
             .andExpect(jsonPath("$.department_id").value(departmentTwo.toString()));
 
         mockMvc.perform(get("/api/v1/users")
-                .header(AUTHENTICATED_TENANT_HEADER, tenantA))
+                .header(AUTHENTICATED_TENANT_HEADER, tenantA)
+                .header(AUTHENTICATED_USER_HEADER, tenantAAdmin))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.length()").value(1))
             .andExpect(jsonPath("$[0].id").value(userId.toString()))
             .andExpect(jsonPath("$[0].department_id").value(departmentTwo.toString()));
 
         mockMvc.perform(get("/api/v1/users/{id}", userId)
-                .header(AUTHENTICATED_TENANT_HEADER, tenantA))
+                .header(AUTHENTICATED_TENANT_HEADER, tenantA)
+                .header(AUTHENTICATED_USER_HEADER, tenantAAdmin))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.id").value(userId.toString()))
             .andExpect(jsonPath("$.name").value("Alice Smith"))
@@ -76,12 +83,14 @@ class UserRoleApiIntegrationTest extends IntegrationTestSupport {
             .andExpect(status().isBadRequest());
 
         mockMvc.perform(get("/api/v1/users")
-                .header(AUTHENTICATED_TENANT_HEADER, tenantB))
+                .header(AUTHENTICATED_TENANT_HEADER, tenantB)
+                .header(AUTHENTICATED_USER_HEADER, tenantBAdmin))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.length()").value(0));
 
         mockMvc.perform(get("/api/v1/users/{id}", userId)
-                .header(AUTHENTICATED_TENANT_HEADER, tenantB))
+                .header(AUTHENTICATED_TENANT_HEADER, tenantB)
+                .header(AUTHENTICATED_USER_HEADER, tenantBAdmin))
             .andExpect(status().isNotFound());
 
         assertThat(countRows("local_audit_records")).isEqualTo(2);
@@ -96,10 +105,12 @@ class UserRoleApiIntegrationTest extends IntegrationTestSupport {
     void userRejectsCrossTenantDepartmentReference() throws Exception {
         UUID tenantA = insertTenant("Tenant A");
         UUID tenantB = insertTenant("Tenant B");
+        UUID tenantAAdmin = insertTenantAdmin(tenantA, "Tenant A Admin");
         UUID foreignDepartmentId = insertDepartment(tenantB, "Foreign Department");
 
         mockMvc.perform(post("/api/v1/users")
                 .header(AUTHENTICATED_TENANT_HEADER, tenantA)
+                .header(AUTHENTICATED_USER_HEADER, tenantAAdmin)
                 .header(AUTHENTICATED_ACTOR_HEADER, "user-admin")
                 .contentType(APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(Map.of(
@@ -113,9 +124,12 @@ class UserRoleApiIntegrationTest extends IntegrationTestSupport {
     void roleEndpointsStayInsideTenantScopeAndGenerateAudit() throws Exception {
         UUID tenantA = insertTenant("Tenant A");
         UUID tenantB = insertTenant("Tenant B");
+        UUID tenantAAdmin = insertTenantAdmin(tenantA, "Tenant A Admin");
+        UUID tenantBAdmin = insertTenantAdmin(tenantB, "Tenant B Admin");
 
         String createBody = mockMvc.perform(post("/api/v1/roles")
                 .header(AUTHENTICATED_TENANT_HEADER, tenantA)
+                .header(AUTHENTICATED_USER_HEADER, tenantAAdmin)
                 .header(AUTHENTICATED_ACTOR_HEADER, "role-admin")
                 .header(CORRELATION_ID_HEADER, "corr-role-create")
                 .contentType(APPLICATION_JSON)
@@ -130,6 +144,7 @@ class UserRoleApiIntegrationTest extends IntegrationTestSupport {
 
         mockMvc.perform(patch("/api/v1/roles/{id}", roleId)
                 .header(AUTHENTICATED_TENANT_HEADER, tenantA)
+                .header(AUTHENTICATED_USER_HEADER, tenantAAdmin)
                 .header(AUTHENTICATED_ACTOR_HEADER, "role-admin")
                 .header(CORRELATION_ID_HEADER, "corr-role-update")
                 .contentType(APPLICATION_JSON)
@@ -139,25 +154,29 @@ class UserRoleApiIntegrationTest extends IntegrationTestSupport {
             .andExpect(jsonPath("$.name").value("Manager Lead"));
 
         mockMvc.perform(get("/api/v1/roles")
-                .header(AUTHENTICATED_TENANT_HEADER, tenantA))
+                .header(AUTHENTICATED_TENANT_HEADER, tenantA)
+                .header(AUTHENTICATED_USER_HEADER, tenantAAdmin))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.length()").value(1))
             .andExpect(jsonPath("$[0].id").value(roleId.toString()))
             .andExpect(jsonPath("$[0].name").value("Manager Lead"));
 
         mockMvc.perform(get("/api/v1/roles/{id}", roleId)
-                .header(AUTHENTICATED_TENANT_HEADER, tenantA))
+                .header(AUTHENTICATED_TENANT_HEADER, tenantA)
+                .header(AUTHENTICATED_USER_HEADER, tenantAAdmin))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.id").value(roleId.toString()))
             .andExpect(jsonPath("$.name").value("Manager Lead"));
 
         mockMvc.perform(get("/api/v1/roles")
-                .header(AUTHENTICATED_TENANT_HEADER, tenantB))
+                .header(AUTHENTICATED_TENANT_HEADER, tenantB)
+                .header(AUTHENTICATED_USER_HEADER, tenantBAdmin))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.length()").value(0));
 
         mockMvc.perform(get("/api/v1/roles/{id}", roleId)
-                .header(AUTHENTICATED_TENANT_HEADER, tenantB))
+                .header(AUTHENTICATED_TENANT_HEADER, tenantB)
+                .header(AUTHENTICATED_USER_HEADER, tenantBAdmin))
             .andExpect(status().isNotFound());
 
         assertThat(countRows("local_audit_records")).isEqualTo(2);

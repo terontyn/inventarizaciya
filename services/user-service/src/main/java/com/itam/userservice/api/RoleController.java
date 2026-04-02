@@ -1,5 +1,6 @@
 package com.itam.userservice.api;
 
+import com.itam.userservice.application.PilotAuthorizationService;
 import com.itam.userservice.application.RoleApplicationService;
 import com.itam.userservice.domain.Role;
 import jakarta.servlet.http.HttpServletRequest;
@@ -24,13 +25,16 @@ import org.springframework.web.bind.annotation.RestController;
 public class RoleController {
 
     private final RoleApplicationService roleApplicationService;
+    private final PilotAuthorizationService pilotAuthorizationService;
     private final AuthenticatedRequestContextExtractor requestContextExtractor;
 
     public RoleController(
         RoleApplicationService roleApplicationService,
+        PilotAuthorizationService pilotAuthorizationService,
         AuthenticatedRequestContextExtractor requestContextExtractor
     ) {
         this.roleApplicationService = roleApplicationService;
+        this.pilotAuthorizationService = pilotAuthorizationService;
         this.requestContextExtractor = requestContextExtractor;
     }
 
@@ -40,6 +44,8 @@ public class RoleController {
         HttpServletRequest servletRequest
     ) {
         UUID tenantId = requestContextExtractor.requireTenantId(servletRequest);
+        UUID authenticatedUserId = requestContextExtractor.requireAuthenticatedUserId(servletRequest);
+        pilotAuthorizationService.requireTenantAdmin(tenantId, authenticatedUserId);
         Role role = roleApplicationService.create(
             tenantId,
             request.name(),
@@ -53,6 +59,8 @@ public class RoleController {
     @GetMapping
     public List<RoleResponse> list(HttpServletRequest servletRequest) {
         UUID tenantId = requestContextExtractor.requireTenantId(servletRequest);
+        UUID authenticatedUserId = requestContextExtractor.requireAuthenticatedUserId(servletRequest);
+        pilotAuthorizationService.requireTenantAdmin(tenantId, authenticatedUserId);
         return roleApplicationService.findAll(tenantId).stream()
             .map(RoleResponse::from)
             .toList();
@@ -61,6 +69,8 @@ public class RoleController {
     @GetMapping("/{id}")
     public RoleResponse get(@PathVariable UUID id, HttpServletRequest servletRequest) {
         UUID tenantId = requestContextExtractor.requireTenantId(servletRequest);
+        UUID authenticatedUserId = requestContextExtractor.requireAuthenticatedUserId(servletRequest);
+        pilotAuthorizationService.requireTenantAdmin(tenantId, authenticatedUserId);
         return RoleResponse.from(roleApplicationService.findById(tenantId, id));
     }
 
@@ -71,6 +81,8 @@ public class RoleController {
         HttpServletRequest servletRequest
     ) {
         UUID tenantId = requestContextExtractor.requireTenantId(servletRequest);
+        UUID authenticatedUserId = requestContextExtractor.requireAuthenticatedUserId(servletRequest);
+        pilotAuthorizationService.requireTenantAdmin(tenantId, authenticatedUserId);
         return RoleResponse.from(roleApplicationService.update(
             tenantId,
             id,

@@ -1,6 +1,7 @@
 package com.itam.userservice.api;
 
 import com.itam.userservice.application.LocationApplicationService;
+import com.itam.userservice.application.PilotAuthorizationService;
 import com.itam.userservice.domain.Location;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -25,13 +26,16 @@ import org.springframework.web.bind.annotation.RestController;
 public class LocationController {
 
     private final LocationApplicationService locationApplicationService;
+    private final PilotAuthorizationService pilotAuthorizationService;
     private final AuthenticatedRequestContextExtractor requestContextExtractor;
 
     public LocationController(
         LocationApplicationService locationApplicationService,
+        PilotAuthorizationService pilotAuthorizationService,
         AuthenticatedRequestContextExtractor requestContextExtractor
     ) {
         this.locationApplicationService = locationApplicationService;
+        this.pilotAuthorizationService = pilotAuthorizationService;
         this.requestContextExtractor = requestContextExtractor;
     }
 
@@ -41,6 +45,8 @@ public class LocationController {
         HttpServletRequest servletRequest
     ) {
         UUID tenantId = requestContextExtractor.requireTenantId(servletRequest);
+        UUID authenticatedUserId = requestContextExtractor.requireAuthenticatedUserId(servletRequest);
+        pilotAuthorizationService.requireTenantAdmin(tenantId, authenticatedUserId);
         Location location = locationApplicationService.create(
             tenantId,
             request.name(),
@@ -55,6 +61,8 @@ public class LocationController {
     @GetMapping
     public List<LocationResponse> list(HttpServletRequest servletRequest) {
         UUID tenantId = requestContextExtractor.requireTenantId(servletRequest);
+        UUID authenticatedUserId = requestContextExtractor.requireAuthenticatedUserId(servletRequest);
+        pilotAuthorizationService.requireReferenceRead(tenantId, authenticatedUserId);
         return locationApplicationService.findAll(tenantId).stream()
             .map(LocationResponse::from)
             .toList();
@@ -63,6 +71,8 @@ public class LocationController {
     @GetMapping("/{id}")
     public LocationResponse get(@PathVariable UUID id, HttpServletRequest servletRequest) {
         UUID tenantId = requestContextExtractor.requireTenantId(servletRequest);
+        UUID authenticatedUserId = requestContextExtractor.requireAuthenticatedUserId(servletRequest);
+        pilotAuthorizationService.requireReferenceRead(tenantId, authenticatedUserId);
         return LocationResponse.from(locationApplicationService.findById(tenantId, id));
     }
 
@@ -73,6 +83,8 @@ public class LocationController {
         HttpServletRequest servletRequest
     ) {
         UUID tenantId = requestContextExtractor.requireTenantId(servletRequest);
+        UUID authenticatedUserId = requestContextExtractor.requireAuthenticatedUserId(servletRequest);
+        pilotAuthorizationService.requireTenantAdmin(tenantId, authenticatedUserId);
         return LocationResponse.from(locationApplicationService.update(
             tenantId,
             id,

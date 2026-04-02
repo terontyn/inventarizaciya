@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.itam.userservice.api.BranchController;
 import com.itam.userservice.api.DepartmentController;
+import com.itam.userservice.api.InternalUserRoleController;
 import com.itam.userservice.api.LocationController;
 import com.itam.userservice.api.RoleController;
 import com.itam.userservice.api.TenantController;
@@ -12,6 +13,7 @@ import com.itam.userservice.application.AuditWriter;
 import com.itam.userservice.application.BranchApplicationService;
 import com.itam.userservice.application.DepartmentApplicationService;
 import com.itam.userservice.application.LocationApplicationService;
+import com.itam.userservice.application.PilotAuthorizationService;
 import com.itam.userservice.application.RoleApplicationService;
 import com.itam.userservice.application.TenantApplicationService;
 import com.itam.userservice.application.UserApplicationService;
@@ -34,6 +36,7 @@ class ServiceBoundaryStructureTest {
             LocationController.class,
             UserController.class,
             RoleController.class,
+            InternalUserRoleController.class,
             TenantApplicationService.class,
             DepartmentApplicationService.class,
             BranchApplicationService.class,
@@ -41,6 +44,7 @@ class ServiceBoundaryStructureTest {
             UserApplicationService.class,
             RoleApplicationService.class,
             UserRoleApplicationService.class,
+            PilotAuthorizationService.class,
             AuditWriter.class
         );
 

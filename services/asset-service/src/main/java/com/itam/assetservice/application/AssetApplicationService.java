@@ -32,6 +32,7 @@ public class AssetApplicationService {
     @Transactional
     public Asset create(
         UUID tenantId,
+        UUID authenticatedUserId,
         String assetTag,
         String serialNumber,
         String assetType,
@@ -45,8 +46,18 @@ public class AssetApplicationService {
         String normalizedAssetType = InputNormalizer.requiredTrimmed(assetType, "asset_type");
         String normalizedStatus = InputNormalizer.requiredTrimmed(status, "status");
 
-        assetReferenceValidator.requireUserInSameTenant(tenantId, assignedUserId, "assigned_user_id");
-        assetReferenceValidator.requireLocationInSameTenant(tenantId, locationId, "location_id");
+        assetReferenceValidator.requireUserInSameTenant(
+            tenantId,
+            authenticatedUserId,
+            assignedUserId,
+            "assigned_user_id"
+        );
+        assetReferenceValidator.requireLocationInSameTenant(
+            tenantId,
+            authenticatedUserId,
+            locationId,
+            "location_id"
+        );
 
         try {
             Asset asset = assetRepository.create(

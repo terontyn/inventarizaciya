@@ -1,13 +1,18 @@
 package com.itam.userservice.api;
 
+import com.itam.userservice.application.PilotAuthorizationService;
 import com.itam.userservice.application.UserApplicationService;
+import com.itam.userservice.application.UserRoleApplicationService;
 import com.itam.userservice.domain.User;
+import com.itam.userservice.domain.UserRole;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import java.net.URI;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -24,13 +29,19 @@ import org.springframework.web.bind.annotation.RestController;
 public class UserController {
 
     private final UserApplicationService userApplicationService;
+    private final UserRoleApplicationService userRoleApplicationService;
+    private final PilotAuthorizationService pilotAuthorizationService;
     private final AuthenticatedRequestContextExtractor requestContextExtractor;
 
     public UserController(
         UserApplicationService userApplicationService,
+        UserRoleApplicationService userRoleApplicationService,
+        PilotAuthorizationService pilotAuthorizationService,
         AuthenticatedRequestContextExtractor requestContextExtractor
     ) {
         this.userApplicationService = userApplicationService;
+        this.userRoleApplicationService = userRoleApplicationService;
+        this.pilotAuthorizationService = pilotAuthorizationService;
         this.requestContextExtractor = requestContextExtractor;
     }
 
@@ -40,6 +51,8 @@ public class UserController {
         HttpServletRequest servletRequest
     ) {
         UUID tenantId = requestContextExtractor.requireTenantId(servletRequest);
+        UUID authenticatedUserId = requestContextExtractor.requireAuthenticatedUserId(servletRequest);
+        pilotAuthorizationService.requireTenantAdmin(tenantId, authenticatedUserId);
         User user = userApplicationService.create(
             tenantId,
             request.name(),
@@ -54,6 +67,8 @@ public class UserController {
     @GetMapping
     public List<UserResponse> list(HttpServletRequest servletRequest) {
         UUID tenantId = requestContextExtractor.requireTenantId(servletRequest);
+        UUID authenticatedUserId = requestContextExtractor.requireAuthenticatedUserId(servletRequest);
+        pilotAuthorizationService.requireReferenceRead(tenantId, authenticatedUserId);
         return userApplicationService.findAll(tenantId).stream()
             .map(UserResponse::from)
             .toList();
@@ -62,6 +77,8 @@ public class UserController {
     @GetMapping("/{id}")
     public UserResponse get(@PathVariable UUID id, HttpServletRequest servletRequest) {
         UUID tenantId = requestContextExtractor.requireTenantId(servletRequest);
+        UUID authenticatedUserId = requestContextExtractor.requireAuthenticatedUserId(servletRequest);
+        pilotAuthorizationService.requireReferenceRead(tenantId, authenticatedUserId);
         return UserResponse.from(userApplicationService.findById(tenantId, id));
     }
 
@@ -72,6 +89,8 @@ public class UserController {
         HttpServletRequest servletRequest
     ) {
         UUID tenantId = requestContextExtractor.requireTenantId(servletRequest);
+        UUID authenticatedUserId = requestContextExtractor.requireAuthenticatedUserId(servletRequest);
+        pilotAuthorizationService.requireTenantAdmin(tenantId, authenticatedUserId);
         return UserResponse.from(userApplicationService.update(
             tenantId,
             id,
@@ -81,7 +100,29 @@ public class UserController {
         ));
     }
 
+    @PostMapping("/{userId}/roles")
+    public ResponseEntity<UserRoleBindingResponse> bindRole(
+        @PathVariable UUID userId,
+        @Valid @RequestBody UserRoleBindingRequest request,
+        HttpServletRequest servletRequest
+    ) {
+        UUID tenantId = requestContextExtractor.requireTenantId(servletRequest);
+        UUID authenticatedUserId = requestContextExtractor.requireAuthenticatedUserId(servletRequest);
+        pilotAuthorizationService.requireTenantAdmin(tenantId, authenticatedUserId);
+        UserRole userRole = userRoleApplicationService.bind(
+            tenantId,
+            userId,
+            request.roleId(),
+            requestContextExtractor.requireAuditMetadata(servletRequest)
+        );
+        return ResponseEntity.status(HttpStatus.CREATED)
+            .body(new UserRoleBindingResponse(userRole.userId(), userRole.roleId()));
+    }
+
     public record UserUpsertRequest(@NotBlank String name, UUID departmentId) {
+    }
+
+    public record UserRoleBindingRequest(@NotNull UUID roleId) {
     }
 
     public record UserResponse(UUID id, String name, UUID departmentId) {
@@ -89,5 +130,8 @@ public class UserController {
         private static UserResponse from(User user) {
             return new UserResponse(user.id(), user.name(), user.departmentId());
         }
+    }
+
+    public record UserRoleBindingResponse(UUID userId, UUID roleId) {
     }
 }

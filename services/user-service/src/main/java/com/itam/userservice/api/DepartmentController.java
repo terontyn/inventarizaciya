@@ -1,6 +1,7 @@
 package com.itam.userservice.api;
 
 import com.itam.userservice.application.DepartmentApplicationService;
+import com.itam.userservice.application.PilotAuthorizationService;
 import com.itam.userservice.domain.Department;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -24,13 +25,16 @@ import org.springframework.web.bind.annotation.RestController;
 public class DepartmentController {
 
     private final DepartmentApplicationService departmentApplicationService;
+    private final PilotAuthorizationService pilotAuthorizationService;
     private final AuthenticatedRequestContextExtractor requestContextExtractor;
 
     public DepartmentController(
         DepartmentApplicationService departmentApplicationService,
+        PilotAuthorizationService pilotAuthorizationService,
         AuthenticatedRequestContextExtractor requestContextExtractor
     ) {
         this.departmentApplicationService = departmentApplicationService;
+        this.pilotAuthorizationService = pilotAuthorizationService;
         this.requestContextExtractor = requestContextExtractor;
     }
 
@@ -40,6 +44,8 @@ public class DepartmentController {
         HttpServletRequest servletRequest
     ) {
         UUID tenantId = requestContextExtractor.requireTenantId(servletRequest);
+        UUID authenticatedUserId = requestContextExtractor.requireAuthenticatedUserId(servletRequest);
+        pilotAuthorizationService.requireTenantAdmin(tenantId, authenticatedUserId);
         Department department = departmentApplicationService.create(
             tenantId,
             request.name(),
@@ -53,6 +59,8 @@ public class DepartmentController {
     @GetMapping
     public List<DepartmentResponse> list(HttpServletRequest servletRequest) {
         UUID tenantId = requestContextExtractor.requireTenantId(servletRequest);
+        UUID authenticatedUserId = requestContextExtractor.requireAuthenticatedUserId(servletRequest);
+        pilotAuthorizationService.requireReferenceRead(tenantId, authenticatedUserId);
         return departmentApplicationService.findAll(tenantId).stream()
             .map(DepartmentResponse::from)
             .toList();
@@ -61,6 +69,8 @@ public class DepartmentController {
     @GetMapping("/{id}")
     public DepartmentResponse get(@PathVariable UUID id, HttpServletRequest servletRequest) {
         UUID tenantId = requestContextExtractor.requireTenantId(servletRequest);
+        UUID authenticatedUserId = requestContextExtractor.requireAuthenticatedUserId(servletRequest);
+        pilotAuthorizationService.requireReferenceRead(tenantId, authenticatedUserId);
         return DepartmentResponse.from(departmentApplicationService.findById(tenantId, id));
     }
 
@@ -71,6 +81,8 @@ public class DepartmentController {
         HttpServletRequest servletRequest
     ) {
         UUID tenantId = requestContextExtractor.requireTenantId(servletRequest);
+        UUID authenticatedUserId = requestContextExtractor.requireAuthenticatedUserId(servletRequest);
+        pilotAuthorizationService.requireTenantAdmin(tenantId, authenticatedUserId);
         return DepartmentResponse.from(departmentApplicationService.update(
             tenantId,
             id,

@@ -13,6 +13,7 @@ public class AuthenticatedRequestContextExtractor {
 
     public static final String AUTHENTICATED_TENANT_HEADER = "X-Authenticated-Tenant-Id";
     public static final String AUTHENTICATED_ACTOR_HEADER = "X-Authenticated-Actor";
+    public static final String AUTHENTICATED_USER_HEADER = "X-Authenticated-User-Id";
     public static final String CORRELATION_ID_HEADER = "X-Correlation-Id";
 
     public UUID requireTenantId(HttpServletRequest request) {
@@ -25,6 +26,18 @@ public class AuthenticatedRequestContextExtractor {
 
     public Optional<UUID> findTenantId(HttpServletRequest request) {
         return parseTenantId(request, false);
+    }
+
+    public UUID requireAuthenticatedUserId(HttpServletRequest request) {
+        String rawUserId = requiredHeader(request, AUTHENTICATED_USER_HEADER);
+        try {
+            return UUID.fromString(rawUserId);
+        } catch (IllegalArgumentException exception) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                AUTHENTICATED_USER_HEADER + " must be a valid UUID"
+            );
+        }
     }
 
     public AuditMetadata requireAuditMetadata(HttpServletRequest request) {

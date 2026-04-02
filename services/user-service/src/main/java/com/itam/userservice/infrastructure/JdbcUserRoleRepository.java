@@ -2,6 +2,7 @@ package com.itam.userservice.infrastructure;
 
 import com.itam.userservice.domain.UserRole;
 import com.itam.userservice.domain.UserRoleRepository;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -37,5 +38,18 @@ public class JdbcUserRoleRepository implements UserRoleRepository {
             Integer.class
         );
         return count != null && count > 0;
+    }
+
+    @Override
+    public List<String> findRoleNamesByUserId(UUID tenantId, UUID userId) {
+        UUID scopedTenantId = SqlTenantScope.requireTenantId(tenantId);
+        return jdbcTemplate.query(
+            "SELECT r.name FROM user_roles ur "
+                + "JOIN roles r ON r.tenant_id = ur.tenant_id AND r.id = ur.role_id "
+                + "WHERE ur.tenant_id = :tenantId AND ur.user_id = :userId "
+                + "ORDER BY r.name, r.id",
+            Map.of("tenantId", scopedTenantId, "userId", userId),
+            (resultSet, rowNum) -> resultSet.getString("name")
+        );
     }
 }

@@ -1,6 +1,7 @@
 package com.itam.assetservice;
 
 import static com.itam.assetservice.api.AuthenticatedRequestContextExtractor.AUTHENTICATED_TENANT_HEADER;
+import static com.itam.assetservice.api.AuthenticatedRequestContextExtractor.AUTHENTICATED_USER_HEADER;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.header;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
@@ -8,6 +9,7 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +21,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.web.client.ExpectedCount;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.client.RestTemplate;
@@ -50,7 +53,9 @@ public abstract class IntegrationTestSupport {
         jdbcTemplate.update("DELETE FROM asset_responsibility_facts");
         jdbcTemplate.update("DELETE FROM local_audit_records");
         jdbcTemplate.update("DELETE FROM assets");
-        mockUserService = MockRestServiceServer.createServer(userServiceRestTemplate);
+        mockUserService = MockRestServiceServer.bindTo(userServiceRestTemplate)
+            .ignoreExpectOrder(true)
+            .build();
     }
 
     protected UUID insertAsset(
@@ -150,18 +155,56 @@ public abstract class IntegrationTestSupport {
         );
     }
 
-    protected void expectUserLookup(UUID tenantId, UUID userId, HttpStatus responseStatus) {
-        expectReferenceLookup("/api/v1/users/" + userId, tenantId, responseStatus);
+    protected void expectUserLookup(
+        UUID tenantId,
+        UUID authenticatedUserId,
+        UUID userId,
+        HttpStatus responseStatus
+    ) {
+        expectReferenceLookup("/api/v1/users/" + userId, tenantId, authenticatedUserId, responseStatus);
     }
 
-    protected void expectLocationLookup(UUID tenantId, UUID locationId, HttpStatus responseStatus) {
-        expectReferenceLookup("/api/v1/locations/" + locationId, tenantId, responseStatus);
+    protected void expectLocationLookup(
+        UUID tenantId,
+        UUID authenticatedUserId,
+        UUID locationId,
+        HttpStatus responseStatus
+    ) {
+        expectReferenceLookup("/api/v1/locations/" + locationId, tenantId, authenticatedUserId, responseStatus);
     }
 
-    private void expectReferenceLookup(String path, UUID tenantId, HttpStatus responseStatus) {
-        mockUserService.expect(requestTo(userServiceBaseUrl + path))
+    protected void expectRoleLookup(UUID tenantId, UUID authenticatedUserId, List<String> roleNames)
+        throws Exception {
+        mockUserService.expect(ExpectedCount.once(), requestTo(
+                userServiceBaseUrl + "/internal/api/v1/users/" + authenticatedUserId + "/roles"
+            ))
             .andExpect(method(HttpMethod.GET))
             .andExpect(header(AUTHENTICATED_TENANT_HEADER, tenantId.toString()))
+            .andRespond(withSuccess(
+                objectMapper.writeValueAsString(new RoleResolutionResponse(authenticatedUserId, roleNames)),
+                MediaType.APPLICATION_JSON
+            ));
+    }
+
+    protected void expectRoleLookupFailure(UUID tenantId, UUID authenticatedUserId, HttpStatus responseStatus) {
+        mockUserService.expect(ExpectedCount.once(), requestTo(
+                userServiceBaseUrl + "/internal/api/v1/users/" + authenticatedUserId + "/roles"
+            ))
+            .andExpect(method(HttpMethod.GET))
+            .andExpect(header(AUTHENTICATED_TENANT_HEADER, tenantId.toString()))
+            .andRespond(withStatus(responseStatus));
+    }
+
+    private void expectReferenceLookup(
+        String path,
+        UUID tenantId,
+        UUID authenticatedUserId,
+        HttpStatus responseStatus
+    ) {
+        mockUserService.expect(ExpectedCount.once(), requestTo(userServiceBaseUrl + path))
+            .andExpect(method(HttpMethod.GET))
+            .andExpect(header(AUTHENTICATED_TENANT_HEADER, tenantId.toString()))
+            .andExpect(header(AUTHENTICATED_USER_HEADER, authenticatedUserId.toString()))
             .andRespond(responseStatus.is2xxSuccessful()
                 ? withSuccess("{}", MediaType.APPLICATION_JSON)
                 : withStatus(responseStatus));
@@ -198,5 +241,8 @@ public abstract class IntegrationTestSupport {
         UUID assignedUserId,
         UUID locationId
     ) {
+    }
+
+    private record RoleResolutionResponse(UUID userId, List<String> roleNames) {
     }
 }

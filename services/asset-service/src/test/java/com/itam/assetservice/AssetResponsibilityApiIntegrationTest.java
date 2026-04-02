@@ -2,6 +2,7 @@ package com.itam.assetservice;
 
 import static com.itam.assetservice.api.AuthenticatedRequestContextExtractor.AUTHENTICATED_ACTOR_HEADER;
 import static com.itam.assetservice.api.AuthenticatedRequestContextExtractor.AUTHENTICATED_TENANT_HEADER;
+import static com.itam.assetservice.api.AuthenticatedRequestContextExtractor.AUTHENTICATED_USER_HEADER;
 import static com.itam.assetservice.api.AuthenticatedRequestContextExtractor.CORRELATION_ID_HEADER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
@@ -11,6 +12,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.itam.assetservice.application.PilotRoleNames;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -21,6 +24,7 @@ class AssetResponsibilityApiIntegrationTest extends IntegrationTestSupport {
     @Test
     void assignSuccessUpdatesMasterStatePersistsFactAndGeneratesAudit() throws Exception {
         UUID tenantId = UUID.randomUUID();
+        UUID tenantAdminId = UUID.randomUUID();
         UUID targetUserId = UUID.randomUUID();
         UUID locationId = UUID.randomUUID();
         UUID assetId = insertAsset(
@@ -33,11 +37,13 @@ class AssetResponsibilityApiIntegrationTest extends IntegrationTestSupport {
             locationId
         );
 
-        expectUserLookup(tenantId, targetUserId, HttpStatus.OK);
+        expectRoleLookup(tenantId, tenantAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+        expectUserLookup(tenantId, tenantAdminId, targetUserId, HttpStatus.OK);
 
         mockMvc.perform(post("/api/v1/assets/{id}/assign", assetId)
                 .header(AUTHENTICATED_TENANT_HEADER, tenantId)
-                .header(AUTHENTICATED_ACTOR_HEADER, "asset-admin")
+                .header(AUTHENTICATED_USER_HEADER, tenantAdminId)
+                .header(AUTHENTICATED_ACTOR_HEADER, "tenant-admin")
                 .header(CORRELATION_ID_HEADER, "corr-assign")
                 .contentType(APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(Map.of("target_user_id", targetUserId))))
@@ -69,6 +75,7 @@ class AssetResponsibilityApiIntegrationTest extends IntegrationTestSupport {
     @Test
     void assignRejectsCrossTenantOrMissingTargetUser() throws Exception {
         UUID tenantId = UUID.randomUUID();
+        UUID tenantAdminId = UUID.randomUUID();
         UUID targetUserId = UUID.randomUUID();
         UUID assetId = insertAsset(
             tenantId,
@@ -80,11 +87,13 @@ class AssetResponsibilityApiIntegrationTest extends IntegrationTestSupport {
             null
         );
 
-        expectUserLookup(tenantId, targetUserId, HttpStatus.NOT_FOUND);
+        expectRoleLookup(tenantId, tenantAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+        expectUserLookup(tenantId, tenantAdminId, targetUserId, HttpStatus.NOT_FOUND);
 
         mockMvc.perform(post("/api/v1/assets/{id}/assign", assetId)
                 .header(AUTHENTICATED_TENANT_HEADER, tenantId)
-                .header(AUTHENTICATED_ACTOR_HEADER, "asset-admin")
+                .header(AUTHENTICATED_USER_HEADER, tenantAdminId)
+                .header(AUTHENTICATED_ACTOR_HEADER, "tenant-admin")
                 .contentType(APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(Map.of("target_user_id", targetUserId))))
             .andExpect(status().isBadRequest());
@@ -96,8 +105,81 @@ class AssetResponsibilityApiIntegrationTest extends IntegrationTestSupport {
     }
 
     @Test
+    void assetOperatorCanRunAssignTransferAndReturn() throws Exception {
+        UUID tenantId = UUID.randomUUID();
+        UUID assetOperatorId = UUID.randomUUID();
+        UUID assignedUserId = UUID.randomUUID();
+        UUID currentUserId = UUID.randomUUID();
+        UUID transferUserId = UUID.randomUUID();
+        UUID initialLocationId = UUID.randomUUID();
+        UUID transferLocationId = UUID.randomUUID();
+        UUID assignAssetId = insertAsset(
+            tenantId,
+            "LAP-001",
+            "SN-001",
+            "Laptop",
+            "IN_STOCK",
+            null,
+            initialLocationId
+        );
+        UUID transferAssetId = insertAsset(
+            tenantId,
+            "LAP-002",
+            "SN-002",
+            "Laptop",
+            "IN_USE",
+            currentUserId,
+            initialLocationId
+        );
+
+        expectRoleLookup(tenantId, assetOperatorId, List.of(PilotRoleNames.ASSET_OPERATOR));
+        expectUserLookup(tenantId, assetOperatorId, assignedUserId, HttpStatus.OK);
+        mockMvc.perform(post("/api/v1/assets/{id}/assign", assignAssetId)
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
+                .header(AUTHENTICATED_USER_HEADER, assetOperatorId)
+                .header(AUTHENTICATED_ACTOR_HEADER, "asset-operator")
+                .contentType(APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(Map.of("target_user_id", assignedUserId))))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.assigned_user_id").value(assignedUserId.toString()));
+
+        expectRoleLookup(tenantId, assetOperatorId, List.of(PilotRoleNames.ASSET_OPERATOR));
+        expectUserLookup(tenantId, assetOperatorId, transferUserId, HttpStatus.OK);
+        expectLocationLookup(tenantId, assetOperatorId, transferLocationId, HttpStatus.OK);
+        mockMvc.perform(post("/api/v1/assets/{id}/transfer", transferAssetId)
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
+                .header(AUTHENTICATED_USER_HEADER, assetOperatorId)
+                .header(AUTHENTICATED_ACTOR_HEADER, "asset-operator")
+                .contentType(APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(Map.of(
+                    "target_user_id", transferUserId,
+                    "target_location_id", transferLocationId
+                ))))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.assigned_user_id").value(transferUserId.toString()))
+            .andExpect(jsonPath("$.location_id").value(transferLocationId.toString()));
+
+        expectRoleLookup(tenantId, assetOperatorId, List.of(PilotRoleNames.ASSET_OPERATOR));
+        mockMvc.perform(post("/api/v1/assets/{id}/return", transferAssetId)
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
+                .header(AUTHENTICATED_USER_HEADER, assetOperatorId)
+                .header(AUTHENTICATED_ACTOR_HEADER, "asset-operator")
+                .header(CORRELATION_ID_HEADER, "corr-return-operator"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.id").value(transferAssetId.toString()));
+
+        mockUserService.verify();
+        assertThat(assetRow(tenantId, assignAssetId).assignedUserId()).isEqualTo(assignedUserId);
+        assertThat(assetRow(tenantId, transferAssetId).assignedUserId()).isNull();
+        assertThat(assetRow(tenantId, transferAssetId).locationId()).isEqualTo(transferLocationId);
+        assertThat(countRows("asset_responsibility_facts")).isEqualTo(3);
+        assertThat(latestAuditRow().actionType()).isEqualTo("RETURN");
+    }
+
+    @Test
     void transferUserOnlySuccess() throws Exception {
         UUID tenantId = UUID.randomUUID();
+        UUID tenantAdminId = UUID.randomUUID();
         UUID currentUserId = UUID.randomUUID();
         UUID targetUserId = UUID.randomUUID();
         UUID locationId = UUID.randomUUID();
@@ -111,11 +193,13 @@ class AssetResponsibilityApiIntegrationTest extends IntegrationTestSupport {
             locationId
         );
 
-        expectUserLookup(tenantId, targetUserId, HttpStatus.OK);
+        expectRoleLookup(tenantId, tenantAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+        expectUserLookup(tenantId, tenantAdminId, targetUserId, HttpStatus.OK);
 
         mockMvc.perform(post("/api/v1/assets/{id}/transfer", assetId)
                 .header(AUTHENTICATED_TENANT_HEADER, tenantId)
-                .header(AUTHENTICATED_ACTOR_HEADER, "asset-admin")
+                .header(AUTHENTICATED_USER_HEADER, tenantAdminId)
+                .header(AUTHENTICATED_ACTOR_HEADER, "tenant-admin")
                 .header(CORRELATION_ID_HEADER, "corr-transfer-user")
                 .contentType(APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(Map.of("target_user_id", targetUserId))))
@@ -141,6 +225,7 @@ class AssetResponsibilityApiIntegrationTest extends IntegrationTestSupport {
     @Test
     void transferLocationOnlySuccessWithoutCurrentAssignedUser() throws Exception {
         UUID tenantId = UUID.randomUUID();
+        UUID tenantAdminId = UUID.randomUUID();
         UUID currentLocationId = UUID.randomUUID();
         UUID targetLocationId = UUID.randomUUID();
         UUID assetId = insertAsset(
@@ -153,11 +238,13 @@ class AssetResponsibilityApiIntegrationTest extends IntegrationTestSupport {
             currentLocationId
         );
 
-        expectLocationLookup(tenantId, targetLocationId, HttpStatus.OK);
+        expectRoleLookup(tenantId, tenantAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+        expectLocationLookup(tenantId, tenantAdminId, targetLocationId, HttpStatus.OK);
 
         String responseBody = mockMvc.perform(post("/api/v1/assets/{id}/transfer", assetId)
                 .header(AUTHENTICATED_TENANT_HEADER, tenantId)
-                .header(AUTHENTICATED_ACTOR_HEADER, "asset-admin")
+                .header(AUTHENTICATED_USER_HEADER, tenantAdminId)
+                .header(AUTHENTICATED_ACTOR_HEADER, "tenant-admin")
                 .header(CORRELATION_ID_HEADER, "corr-transfer-location")
                 .contentType(APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(Map.of("target_location_id", targetLocationId))))
@@ -185,51 +272,9 @@ class AssetResponsibilityApiIntegrationTest extends IntegrationTestSupport {
     }
 
     @Test
-    void transferCombinedSuccess() throws Exception {
-        UUID tenantId = UUID.randomUUID();
-        UUID currentUserId = UUID.randomUUID();
-        UUID targetUserId = UUID.randomUUID();
-        UUID currentLocationId = UUID.randomUUID();
-        UUID targetLocationId = UUID.randomUUID();
-        UUID assetId = insertAsset(
-            tenantId,
-            "LAP-001",
-            "SN-001",
-            "Laptop",
-            "IN_USE",
-            currentUserId,
-            currentLocationId
-        );
-
-        expectUserLookup(tenantId, targetUserId, HttpStatus.OK);
-        expectLocationLookup(tenantId, targetLocationId, HttpStatus.OK);
-
-        mockMvc.perform(post("/api/v1/assets/{id}/transfer", assetId)
-                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
-                .header(AUTHENTICATED_ACTOR_HEADER, "asset-admin")
-                .contentType(APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(Map.of(
-                    "target_user_id", targetUserId,
-                    "target_location_id", targetLocationId
-                ))))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.id").value(assetId.toString()))
-            .andExpect(jsonPath("$.assigned_user_id").value(targetUserId.toString()))
-            .andExpect(jsonPath("$.location_id").value(targetLocationId.toString()));
-
-        mockUserService.verify();
-
-        ResponsibilityFactRow factRow = latestResponsibilityFactRow();
-        assertThat(factRow.factType()).isEqualTo("TRANSFER");
-        assertThat(factRow.previousAssignedUserId()).isEqualTo(currentUserId);
-        assertThat(factRow.newAssignedUserId()).isEqualTo(targetUserId);
-        assertThat(factRow.previousLocationId()).isEqualTo(currentLocationId);
-        assertThat(factRow.newLocationId()).isEqualTo(targetLocationId);
-    }
-
-    @Test
     void transferRejectsNoEffectiveChange() throws Exception {
         UUID tenantId = UUID.randomUUID();
+        UUID tenantAdminId = UUID.randomUUID();
         UUID currentUserId = UUID.randomUUID();
         UUID currentLocationId = UUID.randomUUID();
         UUID assetId = insertAsset(
@@ -242,12 +287,14 @@ class AssetResponsibilityApiIntegrationTest extends IntegrationTestSupport {
             currentLocationId
         );
 
-        expectUserLookup(tenantId, currentUserId, HttpStatus.OK);
-        expectLocationLookup(tenantId, currentLocationId, HttpStatus.OK);
+        expectRoleLookup(tenantId, tenantAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+        expectUserLookup(tenantId, tenantAdminId, currentUserId, HttpStatus.OK);
+        expectLocationLookup(tenantId, tenantAdminId, currentLocationId, HttpStatus.OK);
 
         mockMvc.perform(post("/api/v1/assets/{id}/transfer", assetId)
                 .header(AUTHENTICATED_TENANT_HEADER, tenantId)
-                .header(AUTHENTICATED_ACTOR_HEADER, "asset-admin")
+                .header(AUTHENTICATED_USER_HEADER, tenantAdminId)
+                .header(AUTHENTICATED_ACTOR_HEADER, "tenant-admin")
                 .contentType(APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(Map.of(
                     "target_user_id", currentUserId,
@@ -263,6 +310,7 @@ class AssetResponsibilityApiIntegrationTest extends IntegrationTestSupport {
     @Test
     void transferRejectsCreatingFirstUserResponsibility() throws Exception {
         UUID tenantId = UUID.randomUUID();
+        UUID tenantAdminId = UUID.randomUUID();
         UUID targetUserId = UUID.randomUUID();
         UUID assetId = insertAsset(
             tenantId,
@@ -274,11 +322,13 @@ class AssetResponsibilityApiIntegrationTest extends IntegrationTestSupport {
             null
         );
 
-        expectUserLookup(tenantId, targetUserId, HttpStatus.OK);
+        expectRoleLookup(tenantId, tenantAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+        expectUserLookup(tenantId, tenantAdminId, targetUserId, HttpStatus.OK);
 
         mockMvc.perform(post("/api/v1/assets/{id}/transfer", assetId)
                 .header(AUTHENTICATED_TENANT_HEADER, tenantId)
-                .header(AUTHENTICATED_ACTOR_HEADER, "asset-admin")
+                .header(AUTHENTICATED_USER_HEADER, tenantAdminId)
+                .header(AUTHENTICATED_ACTOR_HEADER, "tenant-admin")
                 .contentType(APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(Map.of("target_user_id", targetUserId))))
             .andExpect(status().isBadRequest());
@@ -292,6 +342,7 @@ class AssetResponsibilityApiIntegrationTest extends IntegrationTestSupport {
     @Test
     void transferRejectsMissingOrCrossTenantTargetLocation() throws Exception {
         UUID tenantId = UUID.randomUUID();
+        UUID tenantAdminId = UUID.randomUUID();
         UUID currentUserId = UUID.randomUUID();
         UUID currentLocationId = UUID.randomUUID();
         UUID targetLocationId = UUID.randomUUID();
@@ -305,11 +356,13 @@ class AssetResponsibilityApiIntegrationTest extends IntegrationTestSupport {
             currentLocationId
         );
 
-        expectLocationLookup(tenantId, targetLocationId, HttpStatus.NOT_FOUND);
+        expectRoleLookup(tenantId, tenantAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+        expectLocationLookup(tenantId, tenantAdminId, targetLocationId, HttpStatus.NOT_FOUND);
 
         mockMvc.perform(post("/api/v1/assets/{id}/transfer", assetId)
                 .header(AUTHENTICATED_TENANT_HEADER, tenantId)
-                .header(AUTHENTICATED_ACTOR_HEADER, "asset-admin")
+                .header(AUTHENTICATED_USER_HEADER, tenantAdminId)
+                .header(AUTHENTICATED_ACTOR_HEADER, "tenant-admin")
                 .contentType(APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(Map.of("target_location_id", targetLocationId))))
             .andExpect(status().isBadRequest());
@@ -323,6 +376,7 @@ class AssetResponsibilityApiIntegrationTest extends IntegrationTestSupport {
     @Test
     void returnSuccessClearsAssignedUserWithoutChangingLocation() throws Exception {
         UUID tenantId = UUID.randomUUID();
+        UUID tenantAdminId = UUID.randomUUID();
         UUID currentUserId = UUID.randomUUID();
         UUID locationId = UUID.randomUUID();
         UUID assetId = insertAsset(
@@ -335,9 +389,11 @@ class AssetResponsibilityApiIntegrationTest extends IntegrationTestSupport {
             locationId
         );
 
+        expectRoleLookup(tenantId, tenantAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
         mockMvc.perform(post("/api/v1/assets/{id}/return", assetId)
                 .header(AUTHENTICATED_TENANT_HEADER, tenantId)
-                .header(AUTHENTICATED_ACTOR_HEADER, "asset-admin")
+                .header(AUTHENTICATED_USER_HEADER, tenantAdminId)
+                .header(AUTHENTICATED_ACTOR_HEADER, "tenant-admin")
                 .header(CORRELATION_ID_HEADER, "corr-return"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.id").value(assetId.toString()));
@@ -356,12 +412,16 @@ class AssetResponsibilityApiIntegrationTest extends IntegrationTestSupport {
         assertThat(auditRow.actionType()).isEqualTo("RETURN");
         assertThat(auditRow.correlationId()).isEqualTo("corr-return");
 
+        expectRoleLookup(tenantId, tenantAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
         String assetBody = mockMvc.perform(get("/api/v1/assets/{id}", assetId)
-                .header(AUTHENTICATED_TENANT_HEADER, tenantId))
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
+                .header(AUTHENTICATED_USER_HEADER, tenantAdminId))
             .andExpect(status().isOk())
             .andReturn()
             .getResponse()
             .getContentAsString();
+        mockUserService.verify();
+
         JsonNode assetJson = objectMapper.readTree(assetBody);
         assertThat(assetJson.get("assigned_user_id").isNull()).isTrue();
         assertThat(assetJson.get("location_id").asText()).isEqualTo(locationId.toString());
@@ -370,6 +430,7 @@ class AssetResponsibilityApiIntegrationTest extends IntegrationTestSupport {
     @Test
     void returnRejectsWhenThereIsNoCurrentAssignedUser() throws Exception {
         UUID tenantId = UUID.randomUUID();
+        UUID tenantAdminId = UUID.randomUUID();
         UUID assetId = insertAsset(
             tenantId,
             "LAP-001",
@@ -380,100 +441,23 @@ class AssetResponsibilityApiIntegrationTest extends IntegrationTestSupport {
             UUID.randomUUID()
         );
 
+        expectRoleLookup(tenantId, tenantAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
         mockMvc.perform(post("/api/v1/assets/{id}/return", assetId)
                 .header(AUTHENTICATED_TENANT_HEADER, tenantId)
-                .header(AUTHENTICATED_ACTOR_HEADER, "asset-admin"))
+                .header(AUTHENTICATED_USER_HEADER, tenantAdminId)
+                .header(AUTHENTICATED_ACTOR_HEADER, "tenant-admin"))
             .andExpect(status().isBadRequest());
 
+        mockUserService.verify();
         assertThat(countRows("asset_responsibility_facts")).isEqualTo(0);
         assertThat(countRows("local_audit_records")).isEqualTo(0);
-    }
-
-    @Test
-    void retireSuccessClearsAssignedUserKeepsLocationAndDoesNotDeleteAsset() throws Exception {
-        UUID tenantId = UUID.randomUUID();
-        UUID currentUserId = UUID.randomUUID();
-        UUID locationId = UUID.randomUUID();
-        UUID assetId = insertAsset(
-            tenantId,
-            "LAP-001",
-            "SN-001",
-            "Laptop",
-            "IN_USE",
-            currentUserId,
-            locationId
-        );
-
-        mockMvc.perform(post("/api/v1/assets/{id}/retire", assetId)
-                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
-                .header(AUTHENTICATED_ACTOR_HEADER, "asset-admin")
-                .header(CORRELATION_ID_HEADER, "corr-retire"))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.id").value(assetId.toString()));
-
-        AssetRow assetRow = assetRow(tenantId, assetId);
-        assertThat(assetRow.assignedUserId()).isNull();
-        assertThat(assetRow.locationId()).isEqualTo(locationId);
-
-        ResponsibilityFactRow factRow = latestResponsibilityFactRow();
-        assertThat(factRow.factType()).isEqualTo("RETIRE");
-        assertThat(factRow.previousAssignedUserId()).isEqualTo(currentUserId);
-        assertThat(factRow.newAssignedUserId()).isNull();
-        assertThat(factRow.previousLocationId()).isEqualTo(locationId);
-        assertThat(factRow.newLocationId()).isEqualTo(locationId);
-
-        AuditRow auditRow = latestAuditRow();
-        assertThat(auditRow.actionType()).isEqualTo("RETIRE");
-        assertThat(auditRow.correlationId()).isEqualTo("corr-retire");
-
-        mockMvc.perform(get("/api/v1/assets/{id}", assetId)
-                .header(AUTHENTICATED_TENANT_HEADER, tenantId))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.id").value(assetId.toString()))
-            .andExpect(jsonPath("$.location_id").value(locationId.toString()));
-    }
-
-    @Test
-    void retireSuccessWithoutAssignedUserStillAppendsFactAndKeepsLocation() throws Exception {
-        UUID tenantId = UUID.randomUUID();
-        UUID locationId = UUID.randomUUID();
-        UUID assetId = insertAsset(
-            tenantId,
-            "LAP-001",
-            "SN-001",
-            "Laptop",
-            "IN_STOCK",
-            null,
-            locationId
-        );
-
-        mockMvc.perform(post("/api/v1/assets/{id}/retire", assetId)
-                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
-                .header(AUTHENTICATED_ACTOR_HEADER, "asset-admin")
-                .header(CORRELATION_ID_HEADER, "corr-retire-no-user"))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.id").value(assetId.toString()));
-
-        AssetRow assetRow = assetRow(tenantId, assetId);
-        assertThat(assetRow.assignedUserId()).isNull();
-        assertThat(assetRow.locationId()).isEqualTo(locationId);
-
-        ResponsibilityFactRow factRow = latestResponsibilityFactRow();
-        assertThat(factRow.factType()).isEqualTo("RETIRE");
-        assertThat(factRow.previousAssignedUserId()).isNull();
-        assertThat(factRow.newAssignedUserId()).isNull();
-        assertThat(factRow.previousLocationId()).isEqualTo(locationId);
-        assertThat(factRow.newLocationId()).isEqualTo(locationId);
-
-        AuditRow auditRow = latestAuditRow();
-        assertThat(auditRow.actionType()).isEqualTo("RETIRE");
-        assertThat(auditRow.correlationId()).isEqualTo("corr-retire-no-user");
     }
 
     @Test
     void commandEndpointsStayInsideTenantScope() throws Exception {
         UUID tenantA = UUID.randomUUID();
         UUID tenantB = UUID.randomUUID();
+        UUID tenantBAdminId = UUID.randomUUID();
         UUID assetId = insertAsset(
             tenantA,
             "LAP-001",
@@ -484,28 +468,29 @@ class AssetResponsibilityApiIntegrationTest extends IntegrationTestSupport {
             UUID.randomUUID()
         );
 
+        expectRoleLookup(tenantB, tenantBAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
         mockMvc.perform(post("/api/v1/assets/{id}/assign", assetId)
                 .header(AUTHENTICATED_TENANT_HEADER, tenantB)
-                .header(AUTHENTICATED_ACTOR_HEADER, "asset-admin")
+                .header(AUTHENTICATED_USER_HEADER, tenantBAdminId)
+                .header(AUTHENTICATED_ACTOR_HEADER, "tenant-admin")
                 .contentType(APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(Map.of("target_user_id", UUID.randomUUID()))))
             .andExpect(status().isNotFound());
 
+        expectRoleLookup(tenantB, tenantBAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
         mockMvc.perform(post("/api/v1/assets/{id}/transfer", assetId)
                 .header(AUTHENTICATED_TENANT_HEADER, tenantB)
-                .header(AUTHENTICATED_ACTOR_HEADER, "asset-admin")
+                .header(AUTHENTICATED_USER_HEADER, tenantBAdminId)
+                .header(AUTHENTICATED_ACTOR_HEADER, "tenant-admin")
                 .contentType(APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(Map.of("target_location_id", UUID.randomUUID()))))
             .andExpect(status().isNotFound());
 
+        expectRoleLookup(tenantB, tenantBAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
         mockMvc.perform(post("/api/v1/assets/{id}/return", assetId)
                 .header(AUTHENTICATED_TENANT_HEADER, tenantB)
-                .header(AUTHENTICATED_ACTOR_HEADER, "asset-admin"))
-            .andExpect(status().isNotFound());
-
-        mockMvc.perform(post("/api/v1/assets/{id}/retire", assetId)
-                .header(AUTHENTICATED_TENANT_HEADER, tenantB)
-                .header(AUTHENTICATED_ACTOR_HEADER, "asset-admin"))
+                .header(AUTHENTICATED_USER_HEADER, tenantBAdminId)
+                .header(AUTHENTICATED_ACTOR_HEADER, "tenant-admin"))
             .andExpect(status().isNotFound());
 
         mockUserService.verify();

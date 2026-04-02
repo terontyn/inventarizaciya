@@ -41,12 +41,18 @@ public class AssetResponsibilityApplicationService {
     @Transactional
     public AssignResult assign(
         UUID tenantId,
+        UUID authenticatedUserId,
         UUID assetId,
         UUID targetUserId,
         AuditMetadata auditMetadata
     ) {
         Asset asset = requireAsset(tenantId, assetId);
-        assetReferenceValidator.requireUserInSameTenant(tenantId, targetUserId, "target_user_id");
+        assetReferenceValidator.requireUserInSameTenant(
+            tenantId,
+            authenticatedUserId,
+            targetUserId,
+            "target_user_id"
+        );
 
         Asset updatedAsset = assetRepository.updateCurrentState(
             tenantId,
@@ -77,6 +83,7 @@ public class AssetResponsibilityApplicationService {
     @Transactional
     public TransferResult transfer(
         UUID tenantId,
+        UUID authenticatedUserId,
         UUID assetId,
         UUID targetUserId,
         UUID targetLocationId,
@@ -90,8 +97,18 @@ public class AssetResponsibilityApplicationService {
             );
         }
 
-        assetReferenceValidator.requireUserInSameTenant(tenantId, targetUserId, "target_user_id");
-        assetReferenceValidator.requireLocationInSameTenant(tenantId, targetLocationId, "target_location_id");
+        assetReferenceValidator.requireUserInSameTenant(
+            tenantId,
+            authenticatedUserId,
+            targetUserId,
+            "target_user_id"
+        );
+        assetReferenceValidator.requireLocationInSameTenant(
+            tenantId,
+            authenticatedUserId,
+            targetLocationId,
+            "target_location_id"
+        );
 
         if (asset.assignedUserId() == null && targetUserId != null) {
             throw new ResponseStatusException(

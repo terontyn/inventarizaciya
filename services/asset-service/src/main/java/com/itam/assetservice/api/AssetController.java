@@ -2,6 +2,7 @@ package com.itam.assetservice.api;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.itam.assetservice.application.AssetApplicationService;
+import com.itam.assetservice.application.AssetAuthorizationService;
 import com.itam.assetservice.application.AssetResponsibilityApplicationService;
 import com.itam.assetservice.domain.Asset;
 import jakarta.servlet.http.HttpServletRequest;
@@ -27,15 +28,18 @@ import org.springframework.web.bind.annotation.RestController;
 public class AssetController {
 
     private final AssetApplicationService assetApplicationService;
+    private final AssetAuthorizationService assetAuthorizationService;
     private final AssetResponsibilityApplicationService assetResponsibilityApplicationService;
     private final AuthenticatedRequestContextExtractor requestContextExtractor;
 
     public AssetController(
         AssetApplicationService assetApplicationService,
+        AssetAuthorizationService assetAuthorizationService,
         AssetResponsibilityApplicationService assetResponsibilityApplicationService,
         AuthenticatedRequestContextExtractor requestContextExtractor
     ) {
         this.assetApplicationService = assetApplicationService;
+        this.assetAuthorizationService = assetAuthorizationService;
         this.assetResponsibilityApplicationService = assetResponsibilityApplicationService;
         this.requestContextExtractor = requestContextExtractor;
     }
@@ -46,8 +50,11 @@ public class AssetController {
         HttpServletRequest servletRequest
     ) {
         UUID tenantId = requestContextExtractor.requireTenantId(servletRequest);
+        UUID authenticatedUserId = requestContextExtractor.requireAuthenticatedUserId(servletRequest);
+        assetAuthorizationService.requireAssetMutateAccess(tenantId, authenticatedUserId);
         Asset asset = assetApplicationService.create(
             tenantId,
+            authenticatedUserId,
             request.assetTag(),
             request.serialNumber(),
             request.assetType(),
@@ -64,6 +71,8 @@ public class AssetController {
     @GetMapping
     public List<AssetResponse> list(HttpServletRequest servletRequest) {
         UUID tenantId = requestContextExtractor.requireTenantId(servletRequest);
+        UUID authenticatedUserId = requestContextExtractor.requireAuthenticatedUserId(servletRequest);
+        assetAuthorizationService.requireAssetReadAccess(tenantId, authenticatedUserId);
         return assetApplicationService.findAll(tenantId).stream()
             .map(AssetResponse::from)
             .toList();
@@ -72,6 +81,8 @@ public class AssetController {
     @GetMapping("/{id}")
     public AssetResponse get(@PathVariable UUID id, HttpServletRequest servletRequest) {
         UUID tenantId = requestContextExtractor.requireTenantId(servletRequest);
+        UUID authenticatedUserId = requestContextExtractor.requireAuthenticatedUserId(servletRequest);
+        assetAuthorizationService.requireAssetReadAccess(tenantId, authenticatedUserId);
         return AssetResponse.from(assetApplicationService.findById(tenantId, id));
     }
 
@@ -82,6 +93,8 @@ public class AssetController {
         HttpServletRequest servletRequest
     ) {
         UUID tenantId = requestContextExtractor.requireTenantId(servletRequest);
+        UUID authenticatedUserId = requestContextExtractor.requireAuthenticatedUserId(servletRequest);
+        assetAuthorizationService.requireAssetMutateAccess(tenantId, authenticatedUserId);
         return AssetResponse.from(assetApplicationService.update(
             tenantId,
             id,
@@ -102,8 +115,11 @@ public class AssetController {
         HttpServletRequest servletRequest
     ) {
         UUID tenantId = requestContextExtractor.requireTenantId(servletRequest);
+        UUID authenticatedUserId = requestContextExtractor.requireAuthenticatedUserId(servletRequest);
+        assetAuthorizationService.requireAssetMutateAccess(tenantId, authenticatedUserId);
         AssetResponsibilityApplicationService.AssignResult result = assetResponsibilityApplicationService.assign(
             tenantId,
+            authenticatedUserId,
             id,
             request.targetUserId(),
             requestContextExtractor.requireAuditMetadata(servletRequest)
@@ -118,8 +134,11 @@ public class AssetController {
         HttpServletRequest servletRequest
     ) {
         UUID tenantId = requestContextExtractor.requireTenantId(servletRequest);
+        UUID authenticatedUserId = requestContextExtractor.requireAuthenticatedUserId(servletRequest);
+        assetAuthorizationService.requireAssetMutateAccess(tenantId, authenticatedUserId);
         AssetResponsibilityApplicationService.TransferResult result = assetResponsibilityApplicationService.transfer(
             tenantId,
+            authenticatedUserId,
             id,
             request.targetUserId(),
             request.targetLocationId(),
@@ -134,6 +153,8 @@ public class AssetController {
         HttpServletRequest servletRequest
     ) {
         UUID tenantId = requestContextExtractor.requireTenantId(servletRequest);
+        UUID authenticatedUserId = requestContextExtractor.requireAuthenticatedUserId(servletRequest);
+        assetAuthorizationService.requireAssetMutateAccess(tenantId, authenticatedUserId);
         AssetResponsibilityApplicationService.ReturnResult result = assetResponsibilityApplicationService.returnAsset(
             tenantId,
             id,
@@ -148,6 +169,8 @@ public class AssetController {
         HttpServletRequest servletRequest
     ) {
         UUID tenantId = requestContextExtractor.requireTenantId(servletRequest);
+        UUID authenticatedUserId = requestContextExtractor.requireAuthenticatedUserId(servletRequest);
+        assetAuthorizationService.requireRetireForbiddenByPilotCutline(tenantId, authenticatedUserId);
         AssetResponsibilityApplicationService.RetireResult result = assetResponsibilityApplicationService.retire(
             tenantId,
             id,

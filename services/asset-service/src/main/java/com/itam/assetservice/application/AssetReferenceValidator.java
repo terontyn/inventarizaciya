@@ -14,12 +14,17 @@ public class AssetReferenceValidator {
         this.userServiceReferenceLookup = userServiceReferenceLookup;
     }
 
-    public void requireUserInSameTenant(UUID tenantId, UUID userId, String fieldName) {
+    public void requireUserInSameTenant(
+        UUID tenantId,
+        UUID authenticatedUserId,
+        UUID userId,
+        String fieldName
+    ) {
         if (userId == null) {
             return;
         }
         try {
-            if (!userServiceReferenceLookup.userExists(tenantId, userId)) {
+            if (!userServiceReferenceLookup.userExists(tenantId, authenticatedUserId, userId)) {
                 throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
                     fieldName + " must reference a user in the same tenant"
@@ -34,12 +39,17 @@ public class AssetReferenceValidator {
         }
     }
 
-    public void requireLocationInSameTenant(UUID tenantId, UUID locationId, String fieldName) {
+    public void requireLocationInSameTenant(
+        UUID tenantId,
+        UUID authenticatedUserId,
+        UUID locationId,
+        String fieldName
+    ) {
         if (locationId == null) {
             return;
         }
         try {
-            if (!userServiceReferenceLookup.locationExists(tenantId, locationId)) {
+            if (!userServiceReferenceLookup.locationExists(tenantId, authenticatedUserId, locationId)) {
                 throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
                     fieldName + " must reference a location in the same tenant"
