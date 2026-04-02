@@ -4,13 +4,17 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.itam.assetservice.application.AssetApplicationService;
 import com.itam.assetservice.application.AssetAuthorizationService;
+import com.itam.assetservice.application.AssetReviewReadService;
 import com.itam.assetservice.application.AssetResponsibilityApplicationService;
 import com.itam.assetservice.domain.Asset;
+import com.itam.assetservice.domain.AssetResponsibilityFact;
+import com.itam.assetservice.domain.AuditRecord;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.net.URI;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.http.ResponseEntity;
@@ -30,17 +34,20 @@ public class AssetController {
 
     private final AssetApplicationService assetApplicationService;
     private final AssetAuthorizationService assetAuthorizationService;
+    private final AssetReviewReadService assetReviewReadService;
     private final AssetResponsibilityApplicationService assetResponsibilityApplicationService;
     private final AuthenticatedRequestContextExtractor requestContextExtractor;
 
     public AssetController(
         AssetApplicationService assetApplicationService,
         AssetAuthorizationService assetAuthorizationService,
+        AssetReviewReadService assetReviewReadService,
         AssetResponsibilityApplicationService assetResponsibilityApplicationService,
         AuthenticatedRequestContextExtractor requestContextExtractor
     ) {
         this.assetApplicationService = assetApplicationService;
         this.assetAuthorizationService = assetAuthorizationService;
+        this.assetReviewReadService = assetReviewReadService;
         this.assetResponsibilityApplicationService = assetResponsibilityApplicationService;
         this.requestContextExtractor = requestContextExtractor;
     }
@@ -84,6 +91,32 @@ public class AssetController {
         UUID authenticatedUserId = requestContextExtractor.requireAuthenticatedUserId(servletRequest);
         assetAuthorizationService.requireAssetReadAccess(tenantId, authenticatedUserId);
         return AssetResponse.from(assetApplicationService.findById(tenantId, id));
+    }
+
+    @GetMapping("/{id}/history")
+    public AssetHistoryResponse history(@PathVariable UUID id, HttpServletRequest servletRequest) {
+        UUID tenantId = requestContextExtractor.requireTenantId(servletRequest);
+        UUID authenticatedUserId = requestContextExtractor.requireAuthenticatedUserId(servletRequest);
+        assetAuthorizationService.requireAssetReadAccess(tenantId, authenticatedUserId);
+        return new AssetHistoryResponse(
+            id,
+            assetReviewReadService.findHistory(tenantId, id).stream()
+                .map(AssetHistoryItemResponse::from)
+                .toList()
+        );
+    }
+
+    @GetMapping("/{id}/audit")
+    public AssetAuditResponse audit(@PathVariable UUID id, HttpServletRequest servletRequest) {
+        UUID tenantId = requestContextExtractor.requireTenantId(servletRequest);
+        UUID authenticatedUserId = requestContextExtractor.requireAuthenticatedUserId(servletRequest);
+        assetAuthorizationService.requireAssetReadAccess(tenantId, authenticatedUserId);
+        return new AssetAuditResponse(
+            id,
+            assetReviewReadService.findAudit(tenantId, id).stream()
+                .map(AssetAuditItemResponse::from)
+                .toList()
+        );
     }
 
     @PatchMapping("/{id}")
@@ -244,5 +277,55 @@ public class AssetController {
     }
 
     public record RetireAssetResponse(UUID id) {
+    }
+
+    public record AssetHistoryResponse(UUID assetId, List<AssetHistoryItemResponse> items) {
+    }
+
+    public record AssetHistoryItemResponse(
+        String factType,
+        Instant occurredAt,
+        UUID previousAssignedUserId,
+        UUID newAssignedUserId,
+        UUID previousLocationId,
+        UUID newLocationId
+    ) {
+
+        private static AssetHistoryItemResponse from(AssetResponsibilityFact fact) {
+            return new AssetHistoryItemResponse(
+                fact.factType().name(),
+                fact.occurredAt(),
+                fact.previousAssignedUserId(),
+                fact.newAssignedUserId(),
+                fact.previousLocationId(),
+                fact.newLocationId()
+            );
+        }
+    }
+
+    public record AssetAuditResponse(UUID assetId, List<AssetAuditItemResponse> items) {
+    }
+
+    public record AssetAuditItemResponse(
+        String action,
+        String entity,
+        UUID entityId,
+        String actor,
+        String correlationId,
+        Instant occurredAt,
+        String payload
+    ) {
+
+        private static AssetAuditItemResponse from(AuditRecord auditRecord) {
+            return new AssetAuditItemResponse(
+                auditRecord.actionType().name(),
+                auditRecord.entityType().name(),
+                auditRecord.entityId(),
+                auditRecord.actor(),
+                auditRecord.correlationId(),
+                auditRecord.occurredAt(),
+                auditRecord.changePayload()
+            );
+        }
     }
 }

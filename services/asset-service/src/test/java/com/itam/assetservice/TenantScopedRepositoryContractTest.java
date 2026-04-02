@@ -5,6 +5,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.itam.assetservice.domain.AssetResponsibilityFactRepository;
 import com.itam.assetservice.domain.AssetRepository;
+import com.itam.assetservice.domain.AuditEntity;
+import com.itam.assetservice.domain.AuditRecordRepository;
 import com.itam.assetservice.infrastructure.SqlTenantScope;
 import java.lang.reflect.Method;
 import java.util.UUID;
@@ -16,6 +18,7 @@ class TenantScopedRepositoryContractTest {
     void tenantScopedRepositoryMethodsRequireTenantIdAsFirstParameter() {
         assertTenantScopeFirstParameter(AssetRepository.class);
         assertTenantScopeFirstParameter(AssetResponsibilityFactRepository.class);
+        assertAuditReadMethodScope();
     }
 
     @Test
@@ -33,6 +36,22 @@ class TenantScopedRepositoryContractTest {
             assertThat(method.getParameterTypes()[0])
                 .as("Method %s should use tenantId as the first parameter", method.getName())
                 .isEqualTo(UUID.class);
+        }
+    }
+
+    private void assertAuditReadMethodScope() {
+        try {
+            Method method = AuditRecordRepository.class.getDeclaredMethod(
+                "findByEntity",
+                UUID.class,
+                AuditEntity.class,
+                UUID.class
+            );
+            assertThat(method.getParameterTypes()[0])
+                .as("Method %s should use tenantId as the first parameter", method.getName())
+                .isEqualTo(UUID.class);
+        } catch (NoSuchMethodException exception) {
+            throw new AssertionError("Expected audit read method to exist", exception);
         }
     }
 }

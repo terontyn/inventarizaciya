@@ -9,6 +9,10 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.itam.assetservice.domain.AssetResponsibilityFactType;
+import com.itam.assetservice.domain.AuditAction;
+import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -87,6 +91,58 @@ public abstract class IntegrationTestSupport {
     protected int countRows(String tableName) {
         Integer count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM " + tableName, Integer.class);
         return count == null ? 0 : count;
+    }
+
+    protected void insertResponsibilityFact(
+        UUID tenantId,
+        UUID assetId,
+        AssetResponsibilityFactType factType,
+        UUID previousAssignedUserId,
+        UUID newAssignedUserId,
+        UUID previousLocationId,
+        UUID newLocationId,
+        Instant occurredAt
+    ) {
+        jdbcTemplate.update(
+            "INSERT INTO asset_responsibility_facts ("
+                + "id, tenant_id, asset_id, fact_type, previous_assigned_user_id, new_assigned_user_id, "
+                + "previous_location_id, new_location_id, occurred_at"
+                + ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            UUID.randomUUID(),
+            tenantId,
+            assetId,
+            factType.name(),
+            previousAssignedUserId,
+            newAssignedUserId,
+            previousLocationId,
+            newLocationId,
+            Timestamp.from(occurredAt)
+        );
+    }
+
+    protected void insertAssetAuditRecord(
+        UUID tenantId,
+        UUID assetId,
+        AuditAction action,
+        String actor,
+        String correlationId,
+        String changePayload,
+        Instant occurredAt
+    ) {
+        jdbcTemplate.update(
+            "INSERT INTO local_audit_records ("
+                + "id, tenant_id, actor, entity_type, entity_id, action_type, occurred_at, correlation_id, change_payload"
+                + ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            UUID.randomUUID(),
+            tenantId,
+            actor,
+            "ASSET",
+            assetId,
+            action.name(),
+            Timestamp.from(occurredAt),
+            correlationId,
+            changePayload
+        );
     }
 
     protected AuditRow latestAuditRow() {
