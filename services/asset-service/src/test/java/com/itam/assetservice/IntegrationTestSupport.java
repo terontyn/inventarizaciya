@@ -30,7 +30,7 @@ import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.client.RestTemplate;
 
-@SpringBootTest
+@SpringBootTest(classes = com.itam.assetservice.boot.UserServiceApplication.class)
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 public abstract class IntegrationTestSupport {
