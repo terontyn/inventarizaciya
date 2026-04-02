@@ -2,7 +2,7 @@
 
 Status: approved
 Owner: architecture
-Last Updated: 2026-04-01
+Last Updated: 2026-04-02
 
 ## Scope
 Asset Domain реализуется внутри asset-service.
@@ -33,6 +33,27 @@ Asset Domain реализуется внутри asset-service.
 - История ответственности является append-only.
 - asset-service хранит только tenant-scoped reference IDs на user/org entities.
 - Cross-context validation выполняется через user-service API, а не через прямой доступ к БД.
+
+## Status Vocabulary (Pilot / MVP)
+
+Для MVP / Pilot Readiness используется минимальный канонический словарь `Asset.status`:
+- `ACTIVE`
+- `RETIRED`
+
+### Status Semantics
+- `ACTIVE` означает, что Asset находится в текущем operational registry и не выведен из эксплуатации.
+- `ACTIVE` не кодирует current responsibility state.
+- Asset со `status = ACTIVE` может как иметь текущего assigned user, так и не иметь его.
+- `RETIRED` означает, что Asset выведен из эксплуатации.
+- `RETIRED` не является delete semantics.
+
+### Flow Impact on Status
+- create asset -> initial status = `ACTIVE`
+- update asset master record -> не используется как status-transition flow
+- assign -> status не меняется
+- transfer -> status не меняется
+- return -> status не меняется; post-return status = `ACTIVE`
+- retire -> status становится `RETIRED`
 
 ## CRUD v1 Boundary
 Foundation Slice v1 включает:

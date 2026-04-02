@@ -2,7 +2,7 @@
 
 Status: draft
 Owner: architecture
-Last Updated: 2026-04-01
+Last Updated: 2026-04-02
 
 ## Purpose
 Минимальный API-контракт Foundation Slice для asset-service.
@@ -127,7 +127,6 @@ asset-service в Foundation Slice v1 владеет:
 - `return` не требует `target location`.
 
 #### Not fixed yet
-- exact post-return `status`;
 - exact response representation отсутствия активной текущей ответственности;
 - richer request fields;
 - richer response schema.
@@ -157,10 +156,29 @@ asset-service в Foundation Slice v1 владеет:
 - предварительный `return` перед `retire` не является обязательным precondition.
 
 #### Not fixed yet
-- exact retirement-related `status`;
 - eligibility rules for retirement;
 - richer request fields;
 - richer response schema.
+
+## Exact Status Vocabulary (Pilot / MVP)
+
+Для MVP / Pilot Readiness используется следующий exact status vocabulary:
+- `ACTIVE`
+- `RETIRED`
+
+### Status Rules by Flow
+- `POST /api/v1/assets` -> creates Asset with `status = ACTIVE`
+- `PATCH /api/v1/assets/{id}` -> не используется как status-transition flow
+- `POST /api/v1/assets/{id}/assign` -> status unchanged
+- `POST /api/v1/assets/{id}/transfer` -> status unchanged
+- `POST /api/v1/assets/{id}/return` -> post-return status = `ACTIVE`
+- `POST /api/v1/assets/{id}/retire` -> post-retirement status = `RETIRED`
+
+### Response / Read Model Semantics
+- current status на asset card / read models должен отображаться именно как `Asset.status`;
+- current assignee и current location должны отображаться отдельно от `status`;
+- после `return` response / read model должны показывать отсутствие активной текущей пользовательской ответственности при сохранении `status = ACTIVE`;
+- после `retire` response / read model должны показывать `status = RETIRED`.
 
 ## Write Operations Requiring Audit
 Следующие write-операции считаются критичными и должны попадать в audit:
@@ -183,7 +201,6 @@ asset-service в Foundation Slice v1 владеет:
 - error model;
 - pagination/filter parameter names;
 - delete semantics;
-- exact status vocabulary;
 - final history storage schema;
 - отдельная canonical entity/table `AssetReturn`;
 - event contract;
@@ -197,7 +214,6 @@ asset-service в Foundation Slice v1 владеет:
 - separate top-level command resources beyond asset-scoped command layer
 
 ## Open Questions
-- exact status vocabulary;
 - eligibility rules for `assignment / return / retirement`;
 - final physical history storage schema;
 - нужно ли later расширять command responses beyond current minimum.

@@ -2,7 +2,7 @@
 
 Status: draft
 Owner: architecture
-Last Updated: 2026-04-01
+Last Updated: 2026-04-02
 
 ## Purpose
 Минимальная ER-модель Foundation Slice для asset-service.
@@ -98,9 +98,28 @@ ER v1 по-прежнему не канонизирует physical tables для
 - final physical storage schema для responsibility history остается open decision;
 - command contracts `assign / transfer / return / retire` не требуют добавления новых канонических master-record полей в таблицу `assets`.
 
+## Status Field Clarification
+
+Поле `assets.status` в MVP / Pilot Readiness использует минимальный канонический словарь:
+- `ACTIVE`
+- `RETIRED`
+
+### Semantics
+- `status` отражает operational state Asset, а не responsibility state.
+- Отсутствие текущего assigned user не требует отдельного status value.
+- Состояние `ACTIVE` + no current assigned user является валидным.
+- Post-return состояние хранит `status = ACTIVE`.
+- Retirement переводит запись в `status = RETIRED`.
+
+### Restrictions
+- command contracts `assign / transfer / return` не требуют новых status values;
+- переход в `RETIRED` не должен рассматриваться как generic PATCH correction path;
+- `RETIRED` не означает delete и не требует новых master-record полей в `assets`.
+
 ## Open Questions
 - delete semantics: hard delete / soft delete / no delete / retire only;
 - нужен ли отдельный asset history store уже в следующем slice;
+- потребуется ли после MVP richer status vocabulary для post-MVP contours.
 - какая final physical storage model будет использоваться для append-only responsibility history, включая distinguishable fact type для `Return`;
 - нужны ли later отдельные canonical history tables после отдельного решения.
 

@@ -2,7 +2,7 @@
 
 Status: approved
 Owner: product
-Last Updated: 2026-03-27
+Last Updated: 2026-04-02
 
 ## MVP Timeline
 Срок MVP: 6–8 недель
@@ -36,11 +36,37 @@ Responsibility Flows + Audit
 - все критические действия попадают в историю и audit.
 
 ## Weeks 7–8
-Pilot Readiness
+MVP Pilot Readiness
 
 Результат:
-- права;
-- сценарии;
-- справочники;
-- UX;
-доведены до состояния, когда один pilot tenant может реально начать учет в системе.
+- права, сценарии, справочники и UX доведены до состояния, когда один pilot tenant может реально начать учет в системе;
+- утверждены pilot personas:
+  - Tenant Admin
+  - Asset Operator
+  - Support Reviewer
+- утвержден minimum pilot permission matrix;
+- users / roles / departments / branches / locations доведены до operational use для первого tenant;
+- asset registry и asset card usable для ежедневного базового учета;
+- assign / transfer / return usable как dedicated responsibility flows;
+- history / audit видимы для operational review;
+- минимальный admin / support layer определен.
+
+Exit gates before pilot sign-off:
+- утвержден pilot permission matrix;
+- exact status vocabulary для pilot UX и asset card зафиксирован: `ACTIVE`, `RETIRED`;
+- зафиксирован minimum reference-data ownership / setup model для первого tenant:
+  - minimum tenant-managed areas: roles / users / departments / branches / locations;
+  - owner on pilot stage: Tenant Admin;
+  - Asset Operator и Support Reviewer не управляют reference data;
+  - setup order: roles -> pilot users with role assignment -> branches -> locations -> departments;
+  - before first asset create / assign / transfer / return существуют только те reference values, которые реально требуются соответствующим flow.
+
+Не входит в mandatory pilot gate:
+- inventory / warehouse;
+- software licenses / SAM;
+- maintenance & repair;
+- reporting module;
+- heavy BI;
+- expanded integrations;
+- custom workflows;
+- retirement как обязательный pilot gate.
