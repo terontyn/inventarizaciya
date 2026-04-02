@@ -29,4 +29,13 @@ jobs:
         run: chmod +x ./gradlew
 
       - name: Run asset-service tests
-        run: ./gradlew --no-daemon :services:asset-service:test
+        run: ./gradlew --no-daemon :services:asset-service:test --stacktrace --info
+
+      - name: Upload asset-service test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: asset-service-test-report
+          path: |
+            services/asset-service/build/reports/tests/test/**
+            services/asset-service/build/test-results/test/**  
