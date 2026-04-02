@@ -29,4 +29,12 @@ jobs:
         run: chmod +x ./gradlew
 
       - name: Run user-service tests
-        run: ./gradlew --no-daemon :services:user-service:test
+        run: ./gradlew --no-daemon :services:user-service:test --stacktrace --info
+      - name: Upload user-service test reports
+        if: always()
+        uses: actions/upload-artifact@v
+        with:
+          name: user-service-test-report
+          path: |
+            services/user-service/build/reports/tests/test/**
+            services/user-service/build/test-results/test/**
