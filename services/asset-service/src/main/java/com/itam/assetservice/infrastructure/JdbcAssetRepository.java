@@ -2,6 +2,7 @@ package com.itam.assetservice.infrastructure;
 
 import com.itam.assetservice.domain.Asset;
 import com.itam.assetservice.domain.AssetRepository;
+import com.itam.assetservice.domain.AssetStatus;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -37,7 +38,6 @@ public class JdbcAssetRepository implements AssetRepository {
         String assetTag,
         String serialNumber,
         String assetType,
-        String status,
         UUID assignedUserId,
         UUID locationId
     ) {
@@ -49,14 +49,13 @@ public class JdbcAssetRepository implements AssetRepository {
             .addValue("assetTag", assetTag)
             .addValue("serialNumber", serialNumber)
             .addValue("assetType", assetType)
-            .addValue("status", status)
             .addValue("assignedUserId", assignedUserId)
             .addValue("locationId", locationId);
         jdbcTemplate.update(
             "INSERT INTO assets ("
                 + "id, tenant_id, asset_tag, serial_number, asset_type, status, assigned_user_id, location_id"
                 + ") VALUES ("
-                + ":id, :tenantId, :assetTag, :serialNumber, :assetType, :status, :assignedUserId, :locationId"
+                + ":id, :tenantId, :assetTag, :serialNumber, :assetType, '" + AssetStatus.ACTIVE + "', :assignedUserId, :locationId"
                 + ")",
             parameters
         );
@@ -66,7 +65,7 @@ public class JdbcAssetRepository implements AssetRepository {
             assetTag,
             serialNumber,
             assetType,
-            status,
+            AssetStatus.ACTIVE,
             assignedUserId,
             locationId
         );
@@ -101,20 +100,18 @@ public class JdbcAssetRepository implements AssetRepository {
         UUID id,
         String assetTag,
         String serialNumber,
-        String assetType,
-        String status
+        String assetType
     ) {
         UUID scopedTenantId = SqlTenantScope.requireTenantId(tenantId);
         int updated = jdbcTemplate.update(
-            "UPDATE assets SET asset_tag = :assetTag, serial_number = :serialNumber, asset_type = :assetType, status = :status "
+            "UPDATE assets SET asset_tag = :assetTag, serial_number = :serialNumber, asset_type = :assetType "
                 + "WHERE tenant_id = :tenantId AND id = :id",
             Map.of(
                 "tenantId", scopedTenantId,
                 "id", id,
                 "assetTag", assetTag,
                 "serialNumber", serialNumber,
-                "assetType", assetType,
-                "status", status
+                "assetType", assetType
             )
         );
         return updated == 0 ? Optional.empty() : findById(scopedTenantId, id);
@@ -124,6 +121,7 @@ public class JdbcAssetRepository implements AssetRepository {
     public Optional<Asset> updateCurrentState(
         UUID tenantId,
         UUID id,
+        String status,
         UUID assignedUserId,
         UUID locationId
     ) {
@@ -131,10 +129,11 @@ public class JdbcAssetRepository implements AssetRepository {
         MapSqlParameterSource parameters = new MapSqlParameterSource()
             .addValue("tenantId", scopedTenantId)
             .addValue("id", id)
+            .addValue("status", status)
             .addValue("assignedUserId", assignedUserId)
             .addValue("locationId", locationId);
         int updated = jdbcTemplate.update(
-            "UPDATE assets SET assigned_user_id = :assignedUserId, location_id = :locationId "
+            "UPDATE assets SET status = :status, assigned_user_id = :assignedUserId, location_id = :locationId "
                 + "WHERE tenant_id = :tenantId AND id = :id",
             parameters
         );

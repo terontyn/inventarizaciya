@@ -5,6 +5,7 @@ import com.itam.assetservice.domain.AssetRepository;
 import com.itam.assetservice.domain.AssetResponsibilityFact;
 import com.itam.assetservice.domain.AssetResponsibilityFactRepository;
 import com.itam.assetservice.domain.AssetResponsibilityFactType;
+import com.itam.assetservice.domain.AssetStatus;
 import com.itam.assetservice.domain.AuditAction;
 import com.itam.assetservice.domain.AuditEntity;
 import java.time.Clock;
@@ -57,6 +58,7 @@ public class AssetResponsibilityApplicationService {
         Asset updatedAsset = assetRepository.updateCurrentState(
             tenantId,
             assetId,
+            asset.status(),
             targetUserId,
             asset.locationId()
         ).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Asset not found"));
@@ -130,6 +132,7 @@ public class AssetResponsibilityApplicationService {
         Asset updatedAsset = assetRepository.updateCurrentState(
             tenantId,
             assetId,
+            asset.status(),
             newAssignedUserId,
             newLocationId
         ).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Asset not found"));
@@ -178,6 +181,7 @@ public class AssetResponsibilityApplicationService {
         Asset updatedAsset = assetRepository.updateCurrentState(
             tenantId,
             assetId,
+            AssetStatus.ACTIVE,
             null,
             asset.locationId()
         ).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Asset not found"));
@@ -212,6 +216,7 @@ public class AssetResponsibilityApplicationService {
         Asset updatedAsset = assetRepository.updateCurrentState(
             tenantId,
             assetId,
+            AssetStatus.RETIRED,
             null,
             asset.locationId()
         ).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Asset not found"));

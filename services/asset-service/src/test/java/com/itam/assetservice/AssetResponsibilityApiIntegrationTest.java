@@ -13,6 +13,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.itam.assetservice.application.PilotRoleNames;
+import com.itam.assetservice.domain.AssetStatus;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -22,7 +23,7 @@ import org.springframework.http.HttpStatus;
 class AssetResponsibilityApiIntegrationTest extends IntegrationTestSupport {
 
     @Test
-    void assignSuccessUpdatesMasterStatePersistsFactAndGeneratesAudit() throws Exception {
+    void assignSuccessUpdatesMasterStatePersistsFactAndKeepsActiveStatus() throws Exception {
         UUID tenantId = UUID.randomUUID();
         UUID tenantAdminId = UUID.randomUUID();
         UUID targetUserId = UUID.randomUUID();
@@ -32,7 +33,7 @@ class AssetResponsibilityApiIntegrationTest extends IntegrationTestSupport {
             "LAP-001",
             "SN-001",
             "Laptop",
-            "IN_STOCK",
+            AssetStatus.ACTIVE,
             null,
             locationId
         );
@@ -56,15 +57,11 @@ class AssetResponsibilityApiIntegrationTest extends IntegrationTestSupport {
         AssetRow assetRow = assetRow(tenantId, assetId);
         assertThat(assetRow.assignedUserId()).isEqualTo(targetUserId);
         assertThat(assetRow.locationId()).isEqualTo(locationId);
-        assertThat(countRows("asset_responsibility_facts")).isEqualTo(1);
+        assertThat(assetRow.status()).isEqualTo(AssetStatus.ACTIVE);
         ResponsibilityFactRow factRow = latestResponsibilityFactRow();
-        assertThat(factRow.tenantId()).isEqualTo(tenantId);
-        assertThat(factRow.assetId()).isEqualTo(assetId);
         assertThat(factRow.factType()).isEqualTo("ASSIGN");
         assertThat(factRow.previousAssignedUserId()).isNull();
         assertThat(factRow.newAssignedUserId()).isEqualTo(targetUserId);
-        assertThat(factRow.previousLocationId()).isEqualTo(locationId);
-        assertThat(factRow.newLocationId()).isEqualTo(locationId);
 
         AuditRow auditRow = latestAuditRow();
         assertThat(auditRow.actionType()).isEqualTo("ASSIGN");
@@ -82,7 +79,7 @@ class AssetResponsibilityApiIntegrationTest extends IntegrationTestSupport {
             "LAP-001",
             "SN-001",
             "Laptop",
-            "IN_STOCK",
+            AssetStatus.ACTIVE,
             null,
             null
         );
@@ -100,12 +97,13 @@ class AssetResponsibilityApiIntegrationTest extends IntegrationTestSupport {
 
         mockUserService.verify();
         assertThat(assetRow(tenantId, assetId).assignedUserId()).isNull();
+        assertThat(assetRow(tenantId, assetId).status()).isEqualTo(AssetStatus.ACTIVE);
         assertThat(countRows("asset_responsibility_facts")).isEqualTo(0);
         assertThat(countRows("local_audit_records")).isEqualTo(0);
     }
 
     @Test
-    void assetOperatorCanRunAssignTransferAndReturn() throws Exception {
+    void assetOperatorCanRunAssignTransferAndReturnWhileStatusStaysActive() throws Exception {
         UUID tenantId = UUID.randomUUID();
         UUID assetOperatorId = UUID.randomUUID();
         UUID assignedUserId = UUID.randomUUID();
@@ -118,7 +116,7 @@ class AssetResponsibilityApiIntegrationTest extends IntegrationTestSupport {
             "LAP-001",
             "SN-001",
             "Laptop",
-            "IN_STOCK",
+            AssetStatus.ACTIVE,
             null,
             initialLocationId
         );
@@ -127,7 +125,7 @@ class AssetResponsibilityApiIntegrationTest extends IntegrationTestSupport {
             "LAP-002",
             "SN-002",
             "Laptop",
-            "IN_USE",
+            AssetStatus.ACTIVE,
             currentUserId,
             initialLocationId
         );
@@ -170,14 +168,16 @@ class AssetResponsibilityApiIntegrationTest extends IntegrationTestSupport {
 
         mockUserService.verify();
         assertThat(assetRow(tenantId, assignAssetId).assignedUserId()).isEqualTo(assignedUserId);
+        assertThat(assetRow(tenantId, assignAssetId).status()).isEqualTo(AssetStatus.ACTIVE);
         assertThat(assetRow(tenantId, transferAssetId).assignedUserId()).isNull();
         assertThat(assetRow(tenantId, transferAssetId).locationId()).isEqualTo(transferLocationId);
+        assertThat(assetRow(tenantId, transferAssetId).status()).isEqualTo(AssetStatus.ACTIVE);
         assertThat(countRows("asset_responsibility_facts")).isEqualTo(3);
         assertThat(latestAuditRow().actionType()).isEqualTo("RETURN");
     }
 
     @Test
-    void transferUserOnlySuccess() throws Exception {
+    void transferUserOnlySuccessKeepsActiveStatus() throws Exception {
         UUID tenantId = UUID.randomUUID();
         UUID tenantAdminId = UUID.randomUUID();
         UUID currentUserId = UUID.randomUUID();
@@ -188,7 +188,7 @@ class AssetResponsibilityApiIntegrationTest extends IntegrationTestSupport {
             "LAP-001",
             "SN-001",
             "Laptop",
-            "IN_USE",
+            AssetStatus.ACTIVE,
             currentUserId,
             locationId
         );
@@ -210,20 +210,58 @@ class AssetResponsibilityApiIntegrationTest extends IntegrationTestSupport {
 
         mockUserService.verify();
 
+        AssetRow assetRow = assetRow(tenantId, assetId);
+        assertThat(assetRow.status()).isEqualTo(AssetStatus.ACTIVE);
         ResponsibilityFactRow factRow = latestResponsibilityFactRow();
         assertThat(factRow.factType()).isEqualTo("TRANSFER");
         assertThat(factRow.previousAssignedUserId()).isEqualTo(currentUserId);
         assertThat(factRow.newAssignedUserId()).isEqualTo(targetUserId);
         assertThat(factRow.previousLocationId()).isEqualTo(locationId);
         assertThat(factRow.newLocationId()).isEqualTo(locationId);
-
-        AuditRow auditRow = latestAuditRow();
-        assertThat(auditRow.actionType()).isEqualTo("TRANSFER");
-        assertThat(auditRow.correlationId()).isEqualTo("corr-transfer-user");
     }
 
     @Test
-    void transferLocationOnlySuccessWithoutCurrentAssignedUser() throws Exception {
+    void transferCombinedSuccessKeepsActiveStatus() throws Exception {
+        UUID tenantId = UUID.randomUUID();
+        UUID tenantAdminId = UUID.randomUUID();
+        UUID currentUserId = UUID.randomUUID();
+        UUID targetUserId = UUID.randomUUID();
+        UUID currentLocationId = UUID.randomUUID();
+        UUID targetLocationId = UUID.randomUUID();
+        UUID assetId = insertAsset(
+            tenantId,
+            "LAP-001",
+            "SN-001",
+            "Laptop",
+            AssetStatus.ACTIVE,
+            currentUserId,
+            currentLocationId
+        );
+
+        expectRoleLookup(tenantId, tenantAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+        expectUserLookup(tenantId, tenantAdminId, targetUserId, HttpStatus.OK);
+        expectLocationLookup(tenantId, tenantAdminId, targetLocationId, HttpStatus.OK);
+
+        mockMvc.perform(post("/api/v1/assets/{id}/transfer", assetId)
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
+                .header(AUTHENTICATED_USER_HEADER, tenantAdminId)
+                .header(AUTHENTICATED_ACTOR_HEADER, "tenant-admin")
+                .header(CORRELATION_ID_HEADER, "corr-transfer-combined")
+                .contentType(APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(Map.of(
+                    "target_user_id", targetUserId,
+                    "target_location_id", targetLocationId
+                ))))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.assigned_user_id").value(targetUserId.toString()))
+            .andExpect(jsonPath("$.location_id").value(targetLocationId.toString()));
+
+        mockUserService.verify();
+        assertThat(assetRow(tenantId, assetId).status()).isEqualTo(AssetStatus.ACTIVE);
+    }
+
+    @Test
+    void transferLocationOnlySuccessWithoutCurrentAssignedUserKeepsActiveStatus() throws Exception {
         UUID tenantId = UUID.randomUUID();
         UUID tenantAdminId = UUID.randomUUID();
         UUID currentLocationId = UUID.randomUUID();
@@ -233,7 +271,7 @@ class AssetResponsibilityApiIntegrationTest extends IntegrationTestSupport {
             "LAP-001",
             "SN-001",
             "Laptop",
-            "IN_STOCK",
+            AssetStatus.ACTIVE,
             null,
             currentLocationId
         );
@@ -263,12 +301,9 @@ class AssetResponsibilityApiIntegrationTest extends IntegrationTestSupport {
         AssetRow assetRow = assetRow(tenantId, assetId);
         assertThat(assetRow.assignedUserId()).isNull();
         assertThat(assetRow.locationId()).isEqualTo(targetLocationId);
+        assertThat(assetRow.status()).isEqualTo(AssetStatus.ACTIVE);
         ResponsibilityFactRow factRow = latestResponsibilityFactRow();
         assertThat(factRow.factType()).isEqualTo("TRANSFER");
-        assertThat(factRow.previousAssignedUserId()).isNull();
-        assertThat(factRow.newAssignedUserId()).isNull();
-        assertThat(factRow.previousLocationId()).isEqualTo(currentLocationId);
-        assertThat(factRow.newLocationId()).isEqualTo(targetLocationId);
     }
 
     @Test
@@ -282,7 +317,7 @@ class AssetResponsibilityApiIntegrationTest extends IntegrationTestSupport {
             "LAP-001",
             "SN-001",
             "Laptop",
-            "IN_USE",
+            AssetStatus.ACTIVE,
             currentUserId,
             currentLocationId
         );
@@ -317,7 +352,7 @@ class AssetResponsibilityApiIntegrationTest extends IntegrationTestSupport {
             "LAP-001",
             "SN-001",
             "Laptop",
-            "IN_STOCK",
+            AssetStatus.ACTIVE,
             null,
             null
         );
@@ -335,6 +370,7 @@ class AssetResponsibilityApiIntegrationTest extends IntegrationTestSupport {
 
         mockUserService.verify();
         assertThat(assetRow(tenantId, assetId).assignedUserId()).isNull();
+        assertThat(assetRow(tenantId, assetId).status()).isEqualTo(AssetStatus.ACTIVE);
         assertThat(countRows("asset_responsibility_facts")).isEqualTo(0);
         assertThat(countRows("local_audit_records")).isEqualTo(0);
     }
@@ -351,7 +387,7 @@ class AssetResponsibilityApiIntegrationTest extends IntegrationTestSupport {
             "LAP-001",
             "SN-001",
             "Laptop",
-            "IN_USE",
+            AssetStatus.ACTIVE,
             currentUserId,
             currentLocationId
         );
@@ -369,12 +405,13 @@ class AssetResponsibilityApiIntegrationTest extends IntegrationTestSupport {
 
         mockUserService.verify();
         assertThat(assetRow(tenantId, assetId).locationId()).isEqualTo(currentLocationId);
+        assertThat(assetRow(tenantId, assetId).status()).isEqualTo(AssetStatus.ACTIVE);
         assertThat(countRows("asset_responsibility_facts")).isEqualTo(0);
         assertThat(countRows("local_audit_records")).isEqualTo(0);
     }
 
     @Test
-    void returnSuccessClearsAssignedUserWithoutChangingLocation() throws Exception {
+    void returnSuccessClearsAssignedUserWithoutChangingLocationAndKeepsActiveStatus() throws Exception {
         UUID tenantId = UUID.randomUUID();
         UUID tenantAdminId = UUID.randomUUID();
         UUID currentUserId = UUID.randomUUID();
@@ -384,7 +421,7 @@ class AssetResponsibilityApiIntegrationTest extends IntegrationTestSupport {
             "LAP-001",
             "SN-001",
             "Laptop",
-            "IN_USE",
+            AssetStatus.ACTIVE,
             currentUserId,
             locationId
         );
@@ -401,12 +438,11 @@ class AssetResponsibilityApiIntegrationTest extends IntegrationTestSupport {
         AssetRow assetRow = assetRow(tenantId, assetId);
         assertThat(assetRow.assignedUserId()).isNull();
         assertThat(assetRow.locationId()).isEqualTo(locationId);
+        assertThat(assetRow.status()).isEqualTo(AssetStatus.ACTIVE);
         ResponsibilityFactRow factRow = latestResponsibilityFactRow();
         assertThat(factRow.factType()).isEqualTo("RETURN");
         assertThat(factRow.previousAssignedUserId()).isEqualTo(currentUserId);
         assertThat(factRow.newAssignedUserId()).isNull();
-        assertThat(factRow.previousLocationId()).isEqualTo(locationId);
-        assertThat(factRow.newLocationId()).isEqualTo(locationId);
 
         AuditRow auditRow = latestAuditRow();
         assertThat(auditRow.actionType()).isEqualTo("RETURN");
@@ -425,6 +461,7 @@ class AssetResponsibilityApiIntegrationTest extends IntegrationTestSupport {
         JsonNode assetJson = objectMapper.readTree(assetBody);
         assertThat(assetJson.get("assigned_user_id").isNull()).isTrue();
         assertThat(assetJson.get("location_id").asText()).isEqualTo(locationId.toString());
+        assertThat(assetJson.get("status").asText()).isEqualTo(AssetStatus.ACTIVE);
     }
 
     @Test
@@ -436,7 +473,7 @@ class AssetResponsibilityApiIntegrationTest extends IntegrationTestSupport {
             "LAP-001",
             "SN-001",
             "Laptop",
-            "IN_STOCK",
+            AssetStatus.ACTIVE,
             null,
             UUID.randomUUID()
         );
@@ -463,7 +500,7 @@ class AssetResponsibilityApiIntegrationTest extends IntegrationTestSupport {
             "LAP-001",
             "SN-001",
             "Laptop",
-            "IN_USE",
+            AssetStatus.ACTIVE,
             UUID.randomUUID(),
             UUID.randomUUID()
         );

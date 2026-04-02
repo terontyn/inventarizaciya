@@ -11,7 +11,6 @@ public interface AssetRepository {
         String assetTag,
         String serialNumber,
         String assetType,
-        String status,
         UUID assignedUserId,
         UUID locationId
     );
@@ -25,13 +24,13 @@ public interface AssetRepository {
         UUID id,
         String assetTag,
         String serialNumber,
-        String assetType,
-        String status
+        String assetType
     );
 
     Optional<Asset> updateCurrentState(
         UUID tenantId,
         UUID id,
+        String status,
         UUID assignedUserId,
         UUID locationId
     );

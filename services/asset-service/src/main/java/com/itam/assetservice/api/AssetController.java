@@ -1,5 +1,6 @@
 package com.itam.assetservice.api;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.itam.assetservice.application.AssetApplicationService;
 import com.itam.assetservice.application.AssetAuthorizationService;
@@ -58,7 +59,6 @@ public class AssetController {
             request.assetTag(),
             request.serialNumber(),
             request.assetType(),
-            request.status(),
             request.assignedUserId(),
             request.locationId(),
             requestContextExtractor.requireAuditMetadata(servletRequest)
@@ -101,7 +101,6 @@ public class AssetController {
             request.assetTag(),
             request.serialNumber(),
             request.assetType(),
-            request.status(),
             request.touchesAssignedUserId(),
             request.touchesLocationId(),
             requestContextExtractor.requireAuditMetadata(servletRequest)
@@ -179,21 +178,21 @@ public class AssetController {
         return new RetireAssetResponse(result.id());
     }
 
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public record AssetCreateRequest(
         @NotBlank String assetTag,
         @NotBlank String serialNumber,
         @NotBlank String assetType,
-        @NotBlank String status,
         UUID assignedUserId,
         UUID locationId
     ) {
     }
 
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public record AssetPatchRequest(
         @NotBlank String assetTag,
         @NotBlank String serialNumber,
         @NotBlank String assetType,
-        @NotBlank String status,
         JsonNode assignedUserId,
         JsonNode locationId
     ) {

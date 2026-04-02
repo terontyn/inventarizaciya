@@ -36,7 +36,6 @@ public class AssetApplicationService {
         String assetTag,
         String serialNumber,
         String assetType,
-        String status,
         UUID assignedUserId,
         UUID locationId,
         AuditMetadata auditMetadata
@@ -44,7 +43,6 @@ public class AssetApplicationService {
         String normalizedAssetTag = InputNormalizer.requiredTrimmed(assetTag, "asset_tag");
         String normalizedSerialNumber = InputNormalizer.requiredTrimmed(serialNumber, "serial_number");
         String normalizedAssetType = InputNormalizer.requiredTrimmed(assetType, "asset_type");
-        String normalizedStatus = InputNormalizer.requiredTrimmed(status, "status");
 
         assetReferenceValidator.requireUserInSameTenant(
             tenantId,
@@ -65,7 +63,6 @@ public class AssetApplicationService {
                 normalizedAssetTag,
                 normalizedSerialNumber,
                 normalizedAssetType,
-                normalizedStatus,
                 assignedUserId,
                 locationId
             );
@@ -111,7 +108,6 @@ public class AssetApplicationService {
         String assetTag,
         String serialNumber,
         String assetType,
-        String status,
         boolean touchesAssignedUserId,
         boolean touchesLocationId,
         AuditMetadata auditMetadata
@@ -126,7 +122,6 @@ public class AssetApplicationService {
         String normalizedAssetTag = InputNormalizer.requiredTrimmed(assetTag, "asset_tag");
         String normalizedSerialNumber = InputNormalizer.requiredTrimmed(serialNumber, "serial_number");
         String normalizedAssetType = InputNormalizer.requiredTrimmed(assetType, "asset_type");
-        String normalizedStatus = InputNormalizer.requiredTrimmed(status, "status");
 
         try {
             Asset asset = assetRepository.update(
@@ -134,8 +129,7 @@ public class AssetApplicationService {
                 id,
                 normalizedAssetTag,
                 normalizedSerialNumber,
-                normalizedAssetType,
-                normalizedStatus
+                normalizedAssetType
             ).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Asset not found"));
 
             auditWriter.record(

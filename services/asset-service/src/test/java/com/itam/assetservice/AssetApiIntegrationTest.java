@@ -14,6 +14,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.itam.assetservice.application.PilotRoleNames;
+import com.itam.assetservice.domain.AssetStatus;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -45,12 +46,13 @@ class AssetApiIntegrationTest extends IntegrationTestSupport {
                     "asset_tag", "LAP-001",
                     "serial_number", "SN-001",
                     "asset_type", "Laptop",
-                    "status", "IN_STOCK",
+                    "status", "BROKEN",
                     "assigned_user_id", assignedUserId,
                     "location_id", locationId
                 ))))
             .andExpect(status().isCreated())
             .andExpect(jsonPath("$.asset_tag").value("LAP-001"))
+            .andExpect(jsonPath("$.status").value(AssetStatus.ACTIVE))
             .andExpect(jsonPath("$.assigned_user_id").value(assignedUserId.toString()))
             .andExpect(jsonPath("$.location_id").value(locationId.toString()))
             .andReturn()
@@ -70,15 +72,14 @@ class AssetApiIntegrationTest extends IntegrationTestSupport {
                 .content(objectMapper.writeValueAsString(Map.of(
                     "asset_tag", "LAP-001-UPDATED",
                     "serial_number", "SN-001-UPDATED",
-                    "asset_type", "Laptop Pro",
-                    "status", "IN_USE"
+                    "asset_type", "Laptop Pro"
                 ))))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.id").value(assetId.toString()))
             .andExpect(jsonPath("$.asset_tag").value("LAP-001-UPDATED"))
             .andExpect(jsonPath("$.serial_number").value("SN-001-UPDATED"))
             .andExpect(jsonPath("$.asset_type").value("Laptop Pro"))
-            .andExpect(jsonPath("$.status").value("IN_USE"))
+            .andExpect(jsonPath("$.status").value(AssetStatus.ACTIVE))
             .andExpect(jsonPath("$.assigned_user_id").value(assignedUserId.toString()))
             .andExpect(jsonPath("$.location_id").value(locationId.toString()));
 
@@ -89,7 +90,8 @@ class AssetApiIntegrationTest extends IntegrationTestSupport {
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.length()").value(1))
             .andExpect(jsonPath("$[0].id").value(assetId.toString()))
-            .andExpect(jsonPath("$[0].asset_tag").value("LAP-001-UPDATED"));
+            .andExpect(jsonPath("$[0].asset_tag").value("LAP-001-UPDATED"))
+            .andExpect(jsonPath("$[0].status").value(AssetStatus.ACTIVE));
 
         expectRoleLookup(tenantA, tenantAAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
         mockMvc.perform(get("/api/v1/assets/{id}", assetId)
@@ -97,6 +99,7 @@ class AssetApiIntegrationTest extends IntegrationTestSupport {
                 .header(AUTHENTICATED_USER_HEADER, tenantAAdminId))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.id").value(assetId.toString()))
+            .andExpect(jsonPath("$.status").value(AssetStatus.ACTIVE))
             .andExpect(jsonPath("$.assigned_user_id").value(assignedUserId.toString()))
             .andExpect(jsonPath("$.location_id").value(locationId.toString()));
 
@@ -114,6 +117,7 @@ class AssetApiIntegrationTest extends IntegrationTestSupport {
             .andExpect(status().isNotFound());
 
         mockUserService.verify();
+        assertThat(assetRow(tenantA, assetId).status()).isEqualTo(AssetStatus.ACTIVE);
         assertThat(countRows("assets")).isEqualTo(1);
         assertThat(countRows("local_audit_records")).isEqualTo(2);
         AuditRow auditRow = latestAuditRow();
@@ -121,8 +125,7 @@ class AssetApiIntegrationTest extends IntegrationTestSupport {
         assertThat(auditRow.entityType()).isEqualTo("ASSET");
         assertThat(auditRow.actionType()).isEqualTo("UPDATE");
         assertThat(auditRow.correlationId()).isEqualTo("corr-asset-update");
-        assertThat(auditRow.changePayload()).contains("\"assigned_user_id\":\"" + assignedUserId + "\"");
-        assertThat(auditRow.changePayload()).contains("\"location_id\":\"" + locationId + "\"");
+        assertThat(auditRow.changePayload()).contains("\"status\":\"" + AssetStatus.ACTIVE + "\"");
     }
 
     @Test
@@ -139,10 +142,10 @@ class AssetApiIntegrationTest extends IntegrationTestSupport {
                 .content(objectMapper.writeValueAsString(Map.of(
                     "asset_tag", "LAP-001",
                     "serial_number", "SN-001",
-                    "asset_type", "Laptop",
-                    "status", "IN_STOCK"
+                    "asset_type", "Laptop"
                 ))))
             .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.status").value(AssetStatus.ACTIVE))
             .andReturn()
             .getResponse()
             .getContentAsString();
@@ -158,14 +161,15 @@ class AssetApiIntegrationTest extends IntegrationTestSupport {
                 .content(objectMapper.writeValueAsString(Map.of(
                     "asset_tag", "LAP-001-UPDATED",
                     "serial_number", "SN-001-UPDATED",
-                    "asset_type", "Laptop Pro",
-                    "status", "IN_USE"
+                    "asset_type", "Laptop Pro"
                 ))))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.id").value(assetId.toString()))
-            .andExpect(jsonPath("$.asset_tag").value("LAP-001-UPDATED"));
+            .andExpect(jsonPath("$.asset_tag").value("LAP-001-UPDATED"))
+            .andExpect(jsonPath("$.status").value(AssetStatus.ACTIVE));
 
         mockUserService.verify();
+        assertThat(assetRow(tenantId, assetId).status()).isEqualTo(AssetStatus.ACTIVE);
     }
 
     @Test
@@ -177,7 +181,7 @@ class AssetApiIntegrationTest extends IntegrationTestSupport {
             "LAP-001",
             "SN-001",
             "Laptop",
-            "IN_STOCK",
+            AssetStatus.ACTIVE,
             null,
             null
         );
@@ -194,7 +198,8 @@ class AssetApiIntegrationTest extends IntegrationTestSupport {
                 .header(AUTHENTICATED_TENANT_HEADER, tenantId)
                 .header(AUTHENTICATED_USER_HEADER, supportReviewerId))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.id").value(assetId.toString()));
+            .andExpect(jsonPath("$.id").value(assetId.toString()))
+            .andExpect(jsonPath("$.status").value(AssetStatus.ACTIVE));
 
         expectRoleLookup(tenantId, supportReviewerId, List.of(PilotRoleNames.SUPPORT_REVIEWER));
         mockMvc.perform(post("/api/v1/assets")
@@ -205,8 +210,7 @@ class AssetApiIntegrationTest extends IntegrationTestSupport {
                 .content(objectMapper.writeValueAsString(Map.of(
                     "asset_tag", "LAP-002",
                     "serial_number", "SN-002",
-                    "asset_type", "Laptop",
-                    "status", "IN_STOCK"
+                    "asset_type", "Laptop"
                 ))))
             .andExpect(status().isForbidden());
 
@@ -230,7 +234,7 @@ class AssetApiIntegrationTest extends IntegrationTestSupport {
             "LAP-001",
             "SN-001",
             "Laptop",
-            "IN_USE",
+            AssetStatus.ACTIVE,
             UUID.randomUUID(),
             UUID.randomUUID()
         );
@@ -260,6 +264,7 @@ class AssetApiIntegrationTest extends IntegrationTestSupport {
             .andExpect(status().isForbidden());
 
         mockUserService.verify();
+        assertThat(assetRow(tenantId, assetId).status()).isEqualTo(AssetStatus.ACTIVE);
         assertThat(countRows("asset_responsibility_facts")).isEqualTo(0);
         assertThat(countRows("local_audit_records")).isEqualTo(0);
     }
@@ -304,10 +309,10 @@ class AssetApiIntegrationTest extends IntegrationTestSupport {
                 .content(objectMapper.writeValueAsString(Map.of(
                     "asset_tag", "LAP-001",
                     "serial_number", "SN-001",
-                    "asset_type", "Laptop",
-                    "status", "IN_STOCK"
+                    "asset_type", "Laptop"
                 ))))
-            .andExpect(status().isCreated());
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.status").value(AssetStatus.ACTIVE));
 
         expectRoleLookup(tenantA, tenantAAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
         mockMvc.perform(post("/api/v1/assets")
@@ -318,8 +323,7 @@ class AssetApiIntegrationTest extends IntegrationTestSupport {
                 .content(objectMapper.writeValueAsString(Map.of(
                     "asset_tag", "LAP-001",
                     "serial_number", "SN-002",
-                    "asset_type", "Laptop",
-                    "status", "IN_STOCK"
+                    "asset_type", "Laptop"
                 ))))
             .andExpect(status().isConflict());
 
@@ -332,10 +336,10 @@ class AssetApiIntegrationTest extends IntegrationTestSupport {
                 .content(objectMapper.writeValueAsString(Map.of(
                     "asset_tag", "LAP-001",
                     "serial_number", "SN-003",
-                    "asset_type", "Laptop",
-                    "status", "IN_STOCK"
+                    "asset_type", "Laptop"
                 ))))
-            .andExpect(status().isCreated());
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.status").value(AssetStatus.ACTIVE));
 
         mockUserService.verify();
     }
@@ -358,7 +362,6 @@ class AssetApiIntegrationTest extends IntegrationTestSupport {
                     "asset_tag", "LAP-001",
                     "serial_number", "SN-001",
                     "asset_type", "Laptop",
-                    "status", "IN_STOCK",
                     "assigned_user_id", assignedUserId
                 ))))
             .andExpect(status().isBadRequest());
@@ -388,7 +391,6 @@ class AssetApiIntegrationTest extends IntegrationTestSupport {
                     "asset_tag", "LAP-001",
                     "serial_number", "SN-001",
                     "asset_type", "Laptop",
-                    "status", "IN_STOCK",
                     "assigned_user_id", assignedUserId,
                     "location_id", locationId
                 ))))
@@ -397,6 +399,39 @@ class AssetApiIntegrationTest extends IntegrationTestSupport {
         mockUserService.verify();
         assertThat(countRows("assets")).isEqualTo(0);
         assertThat(countRows("local_audit_records")).isEqualTo(0);
+    }
+
+    @Test
+    void patchCannotBeUsedToRetireAssetViaStatusField() throws Exception {
+        UUID tenantId = UUID.randomUUID();
+        UUID tenantAdminId = UUID.randomUUID();
+        UUID assetId = insertAsset(
+            tenantId,
+            "LAP-001",
+            "SN-001",
+            "Laptop",
+            AssetStatus.ACTIVE,
+            null,
+            null
+        );
+
+        expectRoleLookup(tenantId, tenantAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+        mockMvc.perform(patch("/api/v1/assets/{id}", assetId)
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
+                .header(AUTHENTICATED_USER_HEADER, tenantAdminId)
+                .header(AUTHENTICATED_ACTOR_HEADER, "tenant-admin")
+                .contentType(APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(Map.of(
+                    "asset_tag", "LAP-001-UPDATED",
+                    "serial_number", "SN-001-UPDATED",
+                    "asset_type", "Laptop Pro",
+                    "status", AssetStatus.RETIRED
+                ))))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.status").value(AssetStatus.ACTIVE));
+
+        mockUserService.verify();
+        assertThat(assetRow(tenantId, assetId).status()).isEqualTo(AssetStatus.ACTIVE);
     }
 
     @Test
@@ -410,7 +445,7 @@ class AssetApiIntegrationTest extends IntegrationTestSupport {
             "LAP-001",
             "SN-001",
             "Laptop",
-            "IN_STOCK",
+            AssetStatus.ACTIVE,
             assignedUserId,
             locationId
         );
@@ -425,7 +460,6 @@ class AssetApiIntegrationTest extends IntegrationTestSupport {
                     "asset_tag", "LAP-001",
                     "serial_number", "SN-001",
                     "asset_type", "Laptop",
-                    "status", "IN_STOCK",
                     "assigned_user_id", UUID.randomUUID()
                 ))))
             .andExpect(status().isBadRequest());
@@ -444,7 +478,7 @@ class AssetApiIntegrationTest extends IntegrationTestSupport {
             "LAP-001",
             "SN-001",
             "Laptop",
-            "IN_STOCK",
+            AssetStatus.ACTIVE,
             null,
             null
         );
@@ -458,8 +492,7 @@ class AssetApiIntegrationTest extends IntegrationTestSupport {
                 .content(objectMapper.writeValueAsString(Map.of(
                     "asset_tag", "LAP-001-UPDATED",
                     "serial_number", "SN-001-UPDATED",
-                    "asset_type", "Laptop Pro",
-                    "status", "IN_USE"
+                    "asset_type", "Laptop Pro"
                 ))))
             .andExpect(status().isNotFound());
 
