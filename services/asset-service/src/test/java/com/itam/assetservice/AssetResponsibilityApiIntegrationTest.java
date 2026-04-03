@@ -132,6 +132,10 @@ class AssetResponsibilityApiIntegrationTest extends IntegrationTestSupport {
 
         expectRoleLookup(tenantId, assetOperatorId, List.of(PilotRoleNames.ASSET_OPERATOR));
         expectUserLookup(tenantId, assetOperatorId, assignedUserId, HttpStatus.OK);
+        expectRoleLookup(tenantId, assetOperatorId, List.of(PilotRoleNames.ASSET_OPERATOR));
+        expectUserLookup(tenantId, assetOperatorId, transferUserId, HttpStatus.OK);
+        expectLocationLookup(tenantId, assetOperatorId, transferLocationId, HttpStatus.OK);
+        expectRoleLookup(tenantId, assetOperatorId, List.of(PilotRoleNames.ASSET_OPERATOR));
         mockMvc.perform(post("/api/v1/assets/{id}/assign", assignAssetId)
                 .header(AUTHENTICATED_TENANT_HEADER, tenantId)
                 .header(AUTHENTICATED_USER_HEADER, assetOperatorId)
@@ -141,9 +145,6 @@ class AssetResponsibilityApiIntegrationTest extends IntegrationTestSupport {
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.assigned_user_id").value(assignedUserId.toString()));
 
-        expectRoleLookup(tenantId, assetOperatorId, List.of(PilotRoleNames.ASSET_OPERATOR));
-        expectUserLookup(tenantId, assetOperatorId, transferUserId, HttpStatus.OK);
-        expectLocationLookup(tenantId, assetOperatorId, transferLocationId, HttpStatus.OK);
         mockMvc.perform(post("/api/v1/assets/{id}/transfer", transferAssetId)
                 .header(AUTHENTICATED_TENANT_HEADER, tenantId)
                 .header(AUTHENTICATED_USER_HEADER, assetOperatorId)
@@ -157,7 +158,6 @@ class AssetResponsibilityApiIntegrationTest extends IntegrationTestSupport {
             .andExpect(jsonPath("$.assigned_user_id").value(transferUserId.toString()))
             .andExpect(jsonPath("$.location_id").value(transferLocationId.toString()));
 
-        expectRoleLookup(tenantId, assetOperatorId, List.of(PilotRoleNames.ASSET_OPERATOR));
         mockMvc.perform(post("/api/v1/assets/{id}/return", transferAssetId)
                 .header(AUTHENTICATED_TENANT_HEADER, tenantId)
                 .header(AUTHENTICATED_USER_HEADER, assetOperatorId)
@@ -427,6 +427,7 @@ class AssetResponsibilityApiIntegrationTest extends IntegrationTestSupport {
         );
 
         expectRoleLookup(tenantId, tenantAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+        expectRoleLookup(tenantId, tenantAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
         mockMvc.perform(post("/api/v1/assets/{id}/return", assetId)
                 .header(AUTHENTICATED_TENANT_HEADER, tenantId)
                 .header(AUTHENTICATED_USER_HEADER, tenantAdminId)
@@ -448,7 +449,6 @@ class AssetResponsibilityApiIntegrationTest extends IntegrationTestSupport {
         assertThat(auditRow.actionType()).isEqualTo("RETURN");
         assertThat(auditRow.correlationId()).isEqualTo("corr-return");
 
-        expectRoleLookup(tenantId, tenantAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
         String assetBody = mockMvc.perform(get("/api/v1/assets/{id}", assetId)
                 .header(AUTHENTICATED_TENANT_HEADER, tenantId)
                 .header(AUTHENTICATED_USER_HEADER, tenantAdminId))
@@ -506,6 +506,8 @@ class AssetResponsibilityApiIntegrationTest extends IntegrationTestSupport {
         );
 
         expectRoleLookup(tenantB, tenantBAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+        expectRoleLookup(tenantB, tenantBAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+        expectRoleLookup(tenantB, tenantBAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
         mockMvc.perform(post("/api/v1/assets/{id}/assign", assetId)
                 .header(AUTHENTICATED_TENANT_HEADER, tenantB)
                 .header(AUTHENTICATED_USER_HEADER, tenantBAdminId)
@@ -514,7 +516,6 @@ class AssetResponsibilityApiIntegrationTest extends IntegrationTestSupport {
                 .content(objectMapper.writeValueAsString(Map.of("target_user_id", UUID.randomUUID()))))
             .andExpect(status().isNotFound());
 
-        expectRoleLookup(tenantB, tenantBAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
         mockMvc.perform(post("/api/v1/assets/{id}/transfer", assetId)
                 .header(AUTHENTICATED_TENANT_HEADER, tenantB)
                 .header(AUTHENTICATED_USER_HEADER, tenantBAdminId)
@@ -523,7 +524,6 @@ class AssetResponsibilityApiIntegrationTest extends IntegrationTestSupport {
                 .content(objectMapper.writeValueAsString(Map.of("target_location_id", UUID.randomUUID()))))
             .andExpect(status().isNotFound());
 
-        expectRoleLookup(tenantB, tenantBAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
         mockMvc.perform(post("/api/v1/assets/{id}/return", assetId)
                 .header(AUTHENTICATED_TENANT_HEADER, tenantB)
                 .header(AUTHENTICATED_USER_HEADER, tenantBAdminId)

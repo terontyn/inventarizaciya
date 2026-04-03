@@ -35,36 +35,36 @@ class AssetHistoryAuditApiIntegrationTest extends IntegrationTestSupport {
         UUID supportReviewerId = UUID.randomUUID();
 
         expectRoleLookup(tenantId, tenantAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+        expectRoleLookup(tenantId, assetOperatorId, List.of(PilotRoleNames.ASSET_OPERATOR));
+        expectRoleLookup(tenantId, supportReviewerId, List.of(PilotRoleNames.SUPPORT_REVIEWER));
+        expectRoleLookup(tenantId, tenantAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+        expectRoleLookup(tenantId, assetOperatorId, List.of(PilotRoleNames.ASSET_OPERATOR));
+        expectRoleLookup(tenantId, supportReviewerId, List.of(PilotRoleNames.SUPPORT_REVIEWER));
         performHistoryRequest(tenantId, tenantAdminId, assetId)
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.asset_id").value(assetId.toString()))
             .andExpect(jsonPath("$.items.length()").value(0));
 
-        expectRoleLookup(tenantId, assetOperatorId, List.of(PilotRoleNames.ASSET_OPERATOR));
         performHistoryRequest(tenantId, assetOperatorId, assetId)
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.asset_id").value(assetId.toString()))
             .andExpect(jsonPath("$.items.length()").value(0));
 
-        expectRoleLookup(tenantId, supportReviewerId, List.of(PilotRoleNames.SUPPORT_REVIEWER));
         performHistoryRequest(tenantId, supportReviewerId, assetId)
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.asset_id").value(assetId.toString()))
             .andExpect(jsonPath("$.items.length()").value(0));
 
-        expectRoleLookup(tenantId, tenantAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
         performAuditRequest(tenantId, tenantAdminId, assetId)
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.asset_id").value(assetId.toString()))
             .andExpect(jsonPath("$.items.length()").value(0));
 
-        expectRoleLookup(tenantId, assetOperatorId, List.of(PilotRoleNames.ASSET_OPERATOR));
         performAuditRequest(tenantId, assetOperatorId, assetId)
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.asset_id").value(assetId.toString()))
             .andExpect(jsonPath("$.items.length()").value(0));
 
-        expectRoleLookup(tenantId, supportReviewerId, List.of(PilotRoleNames.SUPPORT_REVIEWER));
         performAuditRequest(tenantId, supportReviewerId, assetId)
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.asset_id").value(assetId.toString()))
@@ -261,10 +261,10 @@ class AssetHistoryAuditApiIntegrationTest extends IntegrationTestSupport {
         UUID supportReviewerId = UUID.randomUUID();
 
         expectRoleLookup(tenantB, supportReviewerId, List.of(PilotRoleNames.SUPPORT_REVIEWER));
+        expectRoleLookup(tenantB, supportReviewerId, List.of(PilotRoleNames.SUPPORT_REVIEWER));
         performHistoryRequest(tenantB, supportReviewerId, assetId)
             .andExpect(status().isNotFound());
 
-        expectRoleLookup(tenantB, supportReviewerId, List.of(PilotRoleNames.SUPPORT_REVIEWER));
         performAuditRequest(tenantB, supportReviewerId, assetId)
             .andExpect(status().isNotFound());
 
