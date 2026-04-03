@@ -32,7 +32,7 @@ jobs:
         run: ./gradlew --no-daemon :services:user-service:test --stacktrace --info
       - name: Upload user-service test reports
         if: always()
-        uses: actions/upload-artifact@v
+        uses: actions/upload-artifact@v4
         with:
           name: user-service-test-report
           path: |
