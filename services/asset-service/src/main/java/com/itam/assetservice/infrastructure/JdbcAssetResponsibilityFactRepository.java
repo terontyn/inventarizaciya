@@ -31,7 +31,7 @@ public class JdbcAssetResponsibilityFactRepository implements AssetResponsibilit
             .addValue("newAssignedUserId", fact.newAssignedUserId())
             .addValue("previousLocationId", fact.previousLocationId())
             .addValue("newLocationId", fact.newLocationId())
-            .addValue("occurredAt", fact.occurredAt());
+            .addValue("occurredAt", java.sql.Timestamp.from(fact.occurredAt()));
         jdbcTemplate.update(
             "INSERT INTO asset_responsibility_facts ("
                 + "id, tenant_id, asset_id, fact_type, previous_assigned_user_id, new_assigned_user_id, "
