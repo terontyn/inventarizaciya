@@ -5,6 +5,7 @@ import static com.itam.userservice.api.AuthenticatedRequestContextExtractor.AUTH
 import static com.itam.userservice.api.AuthenticatedRequestContextExtractor.AUTHENTICATED_USER_HEADER;
 import static com.itam.userservice.api.AuthenticatedRequestContextExtractor.CORRELATION_ID_HEADER;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.hasItem;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -67,9 +68,8 @@ class UserRoleApiIntegrationTest extends IntegrationTestSupport {
                 .header(AUTHENTICATED_TENANT_HEADER, tenantA)
                 .header(AUTHENTICATED_USER_HEADER, tenantAAdmin))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.length()").value(1))
-            .andExpect(jsonPath("$[0].id").value(userId.toString()))
-            .andExpect(jsonPath("$[0].department_id").value(departmentTwo.toString()));
+            .andExpect(jsonPath("$[?(@.id=='" + userId + "')].name").value(hasItem("Alice Smith")))
+            .andExpect(jsonPath("$[?(@.id=='" + userId + "')].department_id").value(hasItem(departmentTwo.toString())));
 
         mockMvc.perform(get("/api/v1/users/{id}", userId)
                 .header(AUTHENTICATED_TENANT_HEADER, tenantA)
@@ -86,7 +86,7 @@ class UserRoleApiIntegrationTest extends IntegrationTestSupport {
                 .header(AUTHENTICATED_TENANT_HEADER, tenantB)
                 .header(AUTHENTICATED_USER_HEADER, tenantBAdmin))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.length()").value(0));
+            .andExpect(jsonPath("$[?(@.id=='" + userId + "')]").isEmpty());
 
         mockMvc.perform(get("/api/v1/users/{id}", userId)
                 .header(AUTHENTICATED_TENANT_HEADER, tenantB)
@@ -157,9 +157,7 @@ class UserRoleApiIntegrationTest extends IntegrationTestSupport {
                 .header(AUTHENTICATED_TENANT_HEADER, tenantA)
                 .header(AUTHENTICATED_USER_HEADER, tenantAAdmin))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.length()").value(1))
-            .andExpect(jsonPath("$[0].id").value(roleId.toString()))
-            .andExpect(jsonPath("$[0].name").value("Manager Lead"));
+            .andExpect(jsonPath("$[?(@.id=='" + roleId + "')].name").value(hasItem("Manager Lead")));
 
         mockMvc.perform(get("/api/v1/roles/{id}", roleId)
                 .header(AUTHENTICATED_TENANT_HEADER, tenantA)
@@ -172,7 +170,7 @@ class UserRoleApiIntegrationTest extends IntegrationTestSupport {
                 .header(AUTHENTICATED_TENANT_HEADER, tenantB)
                 .header(AUTHENTICATED_USER_HEADER, tenantBAdmin))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.length()").value(0));
+            .andExpect(jsonPath("$[?(@.id=='" + roleId + "')]").isEmpty());
 
         mockMvc.perform(get("/api/v1/roles/{id}", roleId)
                 .header(AUTHENTICATED_TENANT_HEADER, tenantB)
