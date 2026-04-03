@@ -11,7 +11,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
-@SpringBootTest(classes = com.itam.assetservice.boot.UserServiceApplication.class)
+@SpringBootTest(classes = com.itam.userservice.boot.UserServiceApplication.class)
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 public abstract class IntegrationTestSupport {
