@@ -279,6 +279,35 @@ class AssetApiIntegrationTest extends IntegrationTestSupport {
     }
 
     @Test
+    void missingAuthenticatedTenantIdIsRejected() throws Exception {
+        UUID authenticatedUserId = UUID.randomUUID();
+
+        mockMvc.perform(get("/api/v1/assets")
+                .header(AUTHENTICATED_USER_HEADER, authenticatedUserId))
+            .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void invalidAuthenticatedTenantIdIsRejected() throws Exception {
+        UUID authenticatedUserId = UUID.randomUUID();
+
+        mockMvc.perform(get("/api/v1/assets")
+                .header(AUTHENTICATED_TENANT_HEADER, "not-a-uuid")
+                .header(AUTHENTICATED_USER_HEADER, authenticatedUserId))
+            .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void invalidAuthenticatedUserIdIsRejected() throws Exception {
+        UUID tenantId = UUID.randomUUID();
+
+        mockMvc.perform(get("/api/v1/assets")
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
+                .header(AUTHENTICATED_USER_HEADER, "not-a-uuid"))
+            .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void roleLookupFailureReturnsServiceUnavailable() throws Exception {
         UUID tenantId = UUID.randomUUID();
         UUID tenantAdminId = UUID.randomUUID();
@@ -461,6 +490,40 @@ class AssetApiIntegrationTest extends IntegrationTestSupport {
                     "serial_number", "SN-001",
                     "asset_type", "Laptop",
                     "assigned_user_id", UUID.randomUUID()
+                ))))
+            .andExpect(status().isBadRequest());
+
+        mockUserService.verify();
+        assertThat(countRows("local_audit_records")).isEqualTo(0);
+    }
+
+    @Test
+    void patchRejectsLocationIdAsHistorySensitiveField() throws Exception {
+        UUID tenantId = UUID.randomUUID();
+        UUID tenantAdminId = UUID.randomUUID();
+        UUID assignedUserId = UUID.randomUUID();
+        UUID locationId = UUID.randomUUID();
+        UUID assetId = insertAsset(
+            tenantId,
+            "LAP-001",
+            "SN-001",
+            "Laptop",
+            AssetStatus.ACTIVE,
+            assignedUserId,
+            locationId
+        );
+
+        expectRoleLookup(tenantId, tenantAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+        mockMvc.perform(patch("/api/v1/assets/{id}", assetId)
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
+                .header(AUTHENTICATED_USER_HEADER, tenantAdminId)
+                .header(AUTHENTICATED_ACTOR_HEADER, "tenant-admin")
+                .contentType(APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(Map.of(
+                    "asset_tag", "LAP-001",
+                    "serial_number", "SN-001",
+                    "asset_type", "Laptop",
+                    "location_id", UUID.randomUUID()
                 ))))
             .andExpect(status().isBadRequest());
 

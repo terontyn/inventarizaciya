@@ -8,14 +8,14 @@ root `Documentation/` directory and remain the source of truth.
 
 - `services/user-service/` already contains Slice 1 of the Foundation Slice.
 - Slice 1 currently covers tenant boundary, tenant-scoped org references, tenant enforcement, and durable local audit for critical writes.
-- `services/asset-service/` remains a skeleton for the next implementation slice.
+- `services/asset-service/` already contains the Asset Registry Core plus the currently implemented hardening and responsibility/history slices.
 - `Documentation/` is still the canonical source of truth for scope and architecture decisions.
 
 ## Repository Layout
 
 - `Documentation/` keeps approved and draft project documentation in the root.
 - `services/user-service/` owns the Identity / Organization bounded context implementation path.
-- `services/asset-service/` is reserved for the Asset Management slice.
+- `services/asset-service/` owns the Asset Management bounded context implementation path.
 - `ops/` contains local docker, Kubernetes placeholders, and monitoring scaffolding.
 - `scripts/` contains development, CI, and local database bootstrap helpers.
 - `.github/workflows/` contains repository checks and service build/test workflows.
@@ -23,5 +23,5 @@ root `Documentation/` directory and remain the source of truth.
 ## Notes
 
 - The repository is no longer bootstrap-only.
-- `asset-service` is intentionally still implementation-light.
+- `asset-service` is implemented and should be treated as an active service module rather than a placeholder.
 - Service boundaries stay explicit; there is no shared business/domain module.

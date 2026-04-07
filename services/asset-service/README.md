@@ -9,12 +9,13 @@
 - Tenant-scoped storage and repository enforcement
 - Local durable audit for create/update asset
 - GET-based tenant-scoped validation of `assigned_user_id` and `location_id` via `user-service`
-- No delete semantics or responsibility-flow public APIs
+- Asset-scoped responsibility command flows and operational history/audit read endpoints are implemented
+- No delete semantics
 
 ## Intent
 
 This module intentionally keeps responsibility-changing flows out of generic CRUD.
-Assignment / transfer / return / retire remain outside this slice.
+Generic CRUD remains limited to the Asset master record, while responsibility changes stay on dedicated command paths.
 
 ## Source of Truth
 
