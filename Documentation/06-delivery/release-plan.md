@@ -193,3 +193,27 @@ Asset Registry Core (`Slice 3`) считается закрытым на уро�
 - появится реальный tenant / реальный operational usage loop;
 - или будет отдельно открыто решение на minimal asset detail / card UI slice;
 - или будет запущен отдельный user-facing validation contour.
+
+## Backend Closeout Clarification
+
+Текущий backend-first managed pilot baseline считается закрытым на уровне implementation + hardening.
+
+### Current status
+- `user-service` baseline для текущего MVP contour реализован и проверен;
+- `asset-service` baseline для текущего MVP contour реализован и проверен;
+- backend negative paths, pilot RBAC checks, managed setup path и service-readiness tests дожаты до внутренне согласованного состояния;
+- unresolved code blockers для текущего backend contour не остаются.
+
+### Important limitation
+Это не означает, что достигнут:
+- real tenant validation;
+- real day-to-day operational validation;
+- fully proven user-facing pilot usage.
+
+Текущий результат следует трактовать как:
+
+**backend-first internally validated managed pilot baseline**
+
+### Practical rule
+После этой точки текущий backend contour не должен снова открываться как новый implementation step,
+если не найден конкретный repo gap или конкретный defect.
