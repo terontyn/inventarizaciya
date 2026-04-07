@@ -107,3 +107,21 @@ Label v1 использует только уже существующие Asset
 - `serial_number`
 
 Для MVP / Pilot `asset_tag` используется как current printable inventory identifier.
+
+## Printable Label v1 UI Anchor Clarification
+
+Printable Asset Label v1 остается допустимым minimal operational convenience
+внутри текущего MVP contour.
+
+Однако practical implementation label v1 предполагает наличие existing asset detail / card UI anchor.
+
+### Current clarification
+- если asset detail / card UI anchor в текущем delivery state отсутствует,
+  Printable Asset Label v1 остается docs-approved but implementation-deferred;
+- это не отменяет самого product decision по label v1;
+- это также не превращает label v1 в mandatory pilot gate.
+
+### UI slice note
+Если позже отдельно открывается minimal asset detail / card UI slice,
+это трактуется как completion already-approved asset card scope,
+а не как новый модуль или новый contour.

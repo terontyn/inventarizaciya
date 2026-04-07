@@ -82,3 +82,15 @@ Exit gates before pilot sign-off:
 - это не отдельный release track;
 - это не mandatory pilot gate;
 - это не открывает scope в barcode / QR / scanning / printer integration / bulk printing.
+
+## Printable Label v1 Delivery Clarification
+
+Printable Asset Label v1 не является mandatory pilot gate.
+
+Если в текущем repo / delivery state отсутствует existing asset detail / card UI path,
+implementation label v1 может быть отложен без пересмотра MVP contour
+и без изменения backend-first managed pilot verdict.
+
+Открытие minimal asset detail / card UI slice для будущей реализации label v1
+допустимо как bounded completion already-approved MVP card usability,
+но не является обязательным условием текущего pilot sign-off.
