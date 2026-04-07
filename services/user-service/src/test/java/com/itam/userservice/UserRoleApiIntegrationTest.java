@@ -183,4 +183,39 @@ class UserRoleApiIntegrationTest extends IntegrationTestSupport {
         assertThat(auditRow.actionType()).isEqualTo("UPDATE");
         assertThat(auditRow.correlationId()).isEqualTo("corr-role-update");
     }
+
+    @Test
+    void userEndpointsRejectInvalidAuthenticatedContextHeaders() throws Exception {
+        UUID tenantId = insertTenant("Tenant A");
+        UUID tenantAdmin = insertTenantAdmin(tenantId, "Tenant A Admin");
+
+        mockMvc.perform(get("/api/v1/users")
+                .header(AUTHENTICATED_TENANT_HEADER, "not-a-uuid")
+                .header(AUTHENTICATED_USER_HEADER, tenantAdmin))
+            .andExpect(status().isBadRequest());
+
+        mockMvc.perform(get("/api/v1/users")
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
+                .header(AUTHENTICATED_USER_HEADER, "not-a-uuid"))
+            .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void roleEndpointsRejectInvalidAuthenticatedContextHeaders() throws Exception {
+        UUID tenantId = insertTenant("Tenant A");
+        insertTenantAdmin(tenantId, "Tenant A Admin");
+
+        mockMvc.perform(get("/api/v1/roles"))
+            .andExpect(status().isBadRequest());
+
+        mockMvc.perform(get("/api/v1/roles")
+                .header(AUTHENTICATED_TENANT_HEADER, "not-a-uuid")
+                .header(AUTHENTICATED_USER_HEADER, UUID.randomUUID()))
+            .andExpect(status().isBadRequest());
+
+        mockMvc.perform(get("/api/v1/roles")
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
+                .header(AUTHENTICATED_USER_HEADER, "not-a-uuid"))
+            .andExpect(status().isBadRequest());
+    }
 }
