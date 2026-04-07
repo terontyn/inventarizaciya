@@ -123,6 +123,32 @@ implementation label v1 может быть отложен без пересмо
   - readiness improvement,
   - или переход к следующему slice.
 
+## Slice 3 Closeout Clarification
+
+Asset Registry Core (`Slice 3`) считается закрытым на уровне implementation + hardening.
+
+### Current status
+- базовый `asset-service` CRUD v1 уже реализован;
+- hardening по tenant/authenticated context negative paths выполнен;
+- explicit guard для history-sensitive `location_id` в generic PATCH подтвержден тестами;
+- repo-level README / service README синхронизированы с текущим implementation state;
+- новый product scope или новый API surface в рамках closeout не открывались.
+
+### Practical interpretation
+Следовательно:
+- `Slice 3` не должен снова открываться как новый implementation step;
+- дальнейшая работа по `asset-service` должна трактоваться либо как:
+  - следующий slice,
+  - либо отдельный hardening/gap-closure,
+  - но не как повторная реализация `Asset Registry Core`.
+
+### Remaining limitation
+Локальная full verification может оставаться ограниченной средой выполнения,
+если локальная машина не соответствует требуемому Java 17 baseline.
+
+Это не меняет repo/CI verdict,
+если CI path для `asset-service` уже настроен на Java 17 и остается рабочим.
+
 ### Practical consequence
 Следующий implementation step должен определяться только после явной repo verification,
 а не только по старому planning packet или прошлому candidate prompt.
