@@ -25,8 +25,8 @@ foreach ($path in $requiredPaths) {
 }
 
 if ($missing.Count -gt 0) {
-    Write-Error ("Bootstrap skeleton is incomplete. Missing paths:`n- " + ($missing -join "`n- "))
+    Write-Error ("Repository baseline structure is incomplete. Missing paths:`n- " + ($missing -join "`n- "))
     exit 1
 }
 
-Write-Host "Bootstrap skeleton check passed."
+Write-Host "Repository baseline structure check passed."

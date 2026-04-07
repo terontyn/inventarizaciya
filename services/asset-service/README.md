@@ -6,16 +6,21 @@
 
 - Asset Registry Core for Asset master record
 - Versioned CRUD v1 for `Asset`
+- Pilot read access is limited to `Tenant Admin`, `Asset Operator`, and `Support Reviewer`
+- Pilot mutate access is limited to `Tenant Admin` and `Asset Operator`
 - Tenant-scoped storage and repository enforcement
 - Local durable audit for create/update asset
 - GET-based tenant-scoped validation of `assigned_user_id` and `location_id` via `user-service`
 - Asset-scoped responsibility command flows and operational history/audit read endpoints are implemented
+- Generic PATCH cannot modify `assigned_user_id` or `location_id`
+- `retire` exists in the service surface but remains forbidden by the default managed-pilot cutline
 - No delete semantics
 
 ## Intent
 
 This module intentionally keeps responsibility-changing flows out of generic CRUD.
 Generic CRUD remains limited to the Asset master record, while responsibility changes stay on dedicated command paths.
+History and audit remain readable to the approved pilot read roles without opening any reporting/export scope.
 
 ## Source of Truth
 

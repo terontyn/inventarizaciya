@@ -6,9 +6,10 @@ root `Documentation/` directory and remain the source of truth.
 
 ## Current Status
 
-- `services/user-service/` already contains Slice 1 of the Foundation Slice.
-- Slice 1 currently covers tenant boundary, tenant-scoped org references, tenant enforcement, and durable local audit for critical writes.
-- `services/asset-service/` already contains the Asset Registry Core plus the currently implemented hardening and responsibility/history slices.
+- `services/user-service/` already contains the Slice 1 and Slice 2 baseline for tenant, org reference, user, role, and role-binding paths.
+- `services/user-service/` is the managed-pilot setup surface for roles, users, departments, branches, locations, and tenant-scoped role assignment.
+- `services/asset-service/` already contains Asset CRUD v1, dedicated `assign` / `transfer` / `return` flows, and `/history` + `/audit` read endpoints.
+- `services/asset-service/` keeps `retire` behind the default pilot cutline, so the endpoint remains forbidden for the approved pilot role set.
 - `Documentation/` is still the canonical source of truth for scope and architecture decisions.
 
 ## Repository Layout
@@ -23,5 +24,5 @@ root `Documentation/` directory and remain the source of truth.
 ## Notes
 
 - The repository is no longer bootstrap-only.
-- `asset-service` is implemented and should be treated as an active service module rather than a placeholder.
+- Both backend services are implemented and should be treated as active service modules rather than placeholders.
 - Service boundaries stay explicit; there is no shared business/domain module.

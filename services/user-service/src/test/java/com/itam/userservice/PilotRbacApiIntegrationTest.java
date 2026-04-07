@@ -102,6 +102,7 @@ class PilotRbacApiIntegrationTest extends IntegrationTestSupport {
         UUID branchId = insertBranch(tenantId, "HQ");
         UUID locationId = insertLocation(tenantId, branchId, "Room 101");
         UUID userId = insertUser(tenantId, "Alice", departmentId);
+        UUID roleId = insertRole(tenantId, PilotRoleNames.SUPPORT_REVIEWER);
 
         mockMvc.perform(get("/api/v1/users")
                 .header(AUTHENTICATED_TENANT_HEADER, tenantId)
@@ -126,6 +127,11 @@ class PilotRbacApiIntegrationTest extends IntegrationTestSupport {
                 .header(AUTHENTICATED_USER_HEADER, assetOperatorId))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$[0].id").value(locationId.toString()));
+
+        mockMvc.perform(get("/api/v1/roles")
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
+                .header(AUTHENTICATED_USER_HEADER, assetOperatorId))
+            .andExpect(status().isForbidden());
 
         mockMvc.perform(post("/api/v1/users")
                 .header(AUTHENTICATED_TENANT_HEADER, tenantId)
@@ -160,6 +166,22 @@ class PilotRbacApiIntegrationTest extends IntegrationTestSupport {
                     "name", "Room 102",
                     "branch_id", branchId
                 ))))
+            .andExpect(status().isForbidden());
+
+        mockMvc.perform(post("/api/v1/roles")
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
+                .header(AUTHENTICATED_USER_HEADER, assetOperatorId)
+                .header(AUTHENTICATED_ACTOR_HEADER, "asset-operator")
+                .contentType(APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(Map.of("name", "Spare Role"))))
+            .andExpect(status().isForbidden());
+
+        mockMvc.perform(post("/api/v1/users/{userId}/roles", userId)
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
+                .header(AUTHENTICATED_USER_HEADER, assetOperatorId)
+                .header(AUTHENTICATED_ACTOR_HEADER, "asset-operator")
+                .contentType(APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(Map.of("role_id", roleId))))
             .andExpect(status().isForbidden());
     }
 

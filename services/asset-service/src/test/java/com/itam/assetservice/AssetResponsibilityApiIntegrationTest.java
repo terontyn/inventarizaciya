@@ -103,6 +103,39 @@ class AssetResponsibilityApiIntegrationTest extends IntegrationTestSupport {
     }
 
     @Test
+    void assignReturnsServiceUnavailableWhenUserServiceReferenceLookupFails() throws Exception {
+        UUID tenantId = UUID.randomUUID();
+        UUID tenantAdminId = UUID.randomUUID();
+        UUID targetUserId = UUID.randomUUID();
+        UUID assetId = insertAsset(
+            tenantId,
+            "LAP-001",
+            "SN-001",
+            "Laptop",
+            AssetStatus.ACTIVE,
+            null,
+            null
+        );
+
+        expectRoleLookup(tenantId, tenantAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+        expectUserLookup(tenantId, tenantAdminId, targetUserId, HttpStatus.INTERNAL_SERVER_ERROR);
+
+        mockMvc.perform(post("/api/v1/assets/{id}/assign", assetId)
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
+                .header(AUTHENTICATED_USER_HEADER, tenantAdminId)
+                .header(AUTHENTICATED_ACTOR_HEADER, "tenant-admin")
+                .contentType(APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(Map.of("target_user_id", targetUserId))))
+            .andExpect(status().isServiceUnavailable());
+
+        mockUserService.verify();
+        assertThat(assetRow(tenantId, assetId).assignedUserId()).isNull();
+        assertThat(assetRow(tenantId, assetId).status()).isEqualTo(AssetStatus.ACTIVE);
+        assertThat(countRows("asset_responsibility_facts")).isEqualTo(0);
+        assertThat(countRows("local_audit_records")).isEqualTo(0);
+    }
+
+    @Test
     void assetOperatorCanRunAssignTransferAndReturnWhileStatusStaysActive() throws Exception {
         UUID tenantId = UUID.randomUUID();
         UUID assetOperatorId = UUID.randomUUID();

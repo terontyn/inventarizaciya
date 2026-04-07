@@ -227,6 +227,50 @@ class AssetApiIntegrationTest extends IntegrationTestSupport {
     }
 
     @Test
+    void callersWithoutApprovedPilotRolesCannotReadOrMutateAssets() throws Exception {
+        UUID tenantId = UUID.randomUUID();
+        UUID callerId = UUID.randomUUID();
+        UUID assetId = insertAsset(
+            tenantId,
+            "LAP-001",
+            "SN-001",
+            "Laptop",
+            AssetStatus.ACTIVE,
+            null,
+            null
+        );
+
+        expectRoleLookup(tenantId, callerId, List.of());
+        expectRoleLookup(tenantId, callerId, List.of());
+        expectRoleLookup(tenantId, callerId, List.of());
+
+        mockMvc.perform(get("/api/v1/assets")
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
+                .header(AUTHENTICATED_USER_HEADER, callerId))
+            .andExpect(status().isForbidden());
+
+        mockMvc.perform(get("/api/v1/assets/{id}", assetId)
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
+                .header(AUTHENTICATED_USER_HEADER, callerId))
+            .andExpect(status().isForbidden());
+
+        mockMvc.perform(post("/api/v1/assets")
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
+                .header(AUTHENTICATED_USER_HEADER, callerId)
+                .header(AUTHENTICATED_ACTOR_HEADER, "no-approved-role")
+                .contentType(APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(Map.of(
+                    "asset_tag", "LAP-002",
+                    "serial_number", "SN-002",
+                    "asset_type", "Laptop"
+                ))))
+            .andExpect(status().isForbidden());
+
+        mockUserService.verify();
+        assertThat(countRows("local_audit_records")).isEqualTo(0);
+    }
+
+    @Test
     void allDefaultPilotRolesAreForbiddenFromRetire() throws Exception {
         UUID tenantId = UUID.randomUUID();
         UUID assetId = insertAsset(

@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.UUID;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpStatus;
 
 class AssetHistoryAuditApiIntegrationTest extends IntegrationTestSupport {
 
@@ -69,6 +70,58 @@ class AssetHistoryAuditApiIntegrationTest extends IntegrationTestSupport {
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.asset_id").value(assetId.toString()))
             .andExpect(jsonPath("$.items.length()").value(0));
+
+        mockUserService.verify();
+    }
+
+    @Test
+    void historyAndAuditRejectCallersWithoutApprovedReadRole() throws Exception {
+        UUID tenantId = UUID.randomUUID();
+        UUID callerId = UUID.randomUUID();
+        UUID assetId = insertAsset(
+            tenantId,
+            "LAP-001",
+            "SN-001",
+            "Laptop",
+            AssetStatus.ACTIVE,
+            null,
+            null
+        );
+
+        expectRoleLookup(tenantId, callerId, List.of());
+        expectRoleLookup(tenantId, callerId, List.of());
+
+        performHistoryRequest(tenantId, callerId, assetId)
+            .andExpect(status().isForbidden());
+
+        performAuditRequest(tenantId, callerId, assetId)
+            .andExpect(status().isForbidden());
+
+        mockUserService.verify();
+    }
+
+    @Test
+    void historyAndAuditReturnServiceUnavailableWhenRoleLookupFails() throws Exception {
+        UUID tenantId = UUID.randomUUID();
+        UUID callerId = UUID.randomUUID();
+        UUID assetId = insertAsset(
+            tenantId,
+            "LAP-001",
+            "SN-001",
+            "Laptop",
+            AssetStatus.ACTIVE,
+            null,
+            null
+        );
+
+        expectRoleLookupFailure(tenantId, callerId, HttpStatus.INTERNAL_SERVER_ERROR);
+        expectRoleLookupFailure(tenantId, callerId, HttpStatus.INTERNAL_SERVER_ERROR);
+
+        performHistoryRequest(tenantId, callerId, assetId)
+            .andExpect(status().isServiceUnavailable());
+
+        performAuditRequest(tenantId, callerId, assetId)
+            .andExpect(status().isServiceUnavailable());
 
         mockUserService.verify();
     }
