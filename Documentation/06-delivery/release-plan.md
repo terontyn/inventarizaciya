@@ -94,3 +94,51 @@ implementation label v1 может быть отложен без пересмо
 Открытие minimal asset detail / card UI slice для будущей реализации label v1
 допустимо как bounded completion already-approved MVP card usability,
 но не является обязательным условием текущего pilot sign-off.
+
+
+## Current Status Clarification
+
+Текущий статус проекта фиксируется как:
+
+**backend-first managed pilot = Ready with conditions satisfied**
+
+### What this means
+- текущий MVP / Pilot contour уже доведен до backend-first managed pilot-ready состояния;
+- core docs / ADR / domain / data / API decisions для текущего contour зафиксированы;
+- ранее пройденные CI и backend-only smoke остаются достаточной внутренней технической валидацией текущего backend-first baseline.
+
+### Important limitation
+При этом **real tenant / real operational pilot validation еще не достигнуты**.
+
+Причина:
+- текущая проверка остается в границах internal backend-first validation;
+- отсутствие реального tenant, реального ежедневного usage loop и полноценного user-facing operational path не позволяет честно трактовать текущий статус как fully validated real pilot usage.
+
+### Printable Label v1 status
+- Printable Asset Label v1 остается approved in docs;
+- Printable Asset Label v1 не является mandatory pilot gate;
+- implementation Printable Asset Label v1 сейчас deferred,
+  потому что approved implementation path зависит от existing asset detail / card UI anchor,
+  а текущий repo verification подтверждает отсутствие такого UI anchor.
+
+### Practical interpretation
+Следовательно, текущий проектный baseline нужно трактовать как:
+
+**backend-first internally validated MVP baseline**
+
+а не как:
+- fully proven real pilot usage;
+- fully validated operational tenant rollout.
+
+### What remains unchanged
+Не меняется:
+- текущий MVP contour;
+- backend-first managed pilot verdict;
+- approved docs decisions по Printable Asset Label v1;
+- fact, что label v1 не блокирует текущий pilot sign-off.
+
+### Follow-up trigger
+К следующему уровню validation проект должен переходить только если:
+- появится реальный tenant / реальный operational usage loop;
+- или будет отдельно открыто решение на minimal asset detail / card UI slice;
+- или будет запущен отдельный user-facing validation contour.
