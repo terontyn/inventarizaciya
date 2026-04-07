@@ -2,7 +2,7 @@
 
 Status: draft
 Owner: architecture
-Last Updated: 2026-04-02
+Last Updated: 2026-04-07
 
 ## Purpose
 Минимальная ER-модель Foundation Slice для asset-service.
@@ -149,3 +149,26 @@ ER v1 по-прежнему не канонизирует physical tables для
 - `version`
 
 Они не должны считаться каноном Foundation Slice v1 без отдельного подтверждения.
+
+
+## Printable Label v1 Clarification
+
+Printable asset label v1 не требует изменений canonical ER v1.
+
+### Confirmed rule
+Для printable label v1 используются только уже существующие поля таблицы `assets`:
+- `asset_type`
+- `asset_tag`
+- `serial_number`
+
+### Explicitly not added for v1
+Следующие поля не добавляются в ER v1 ради printable label:
+- `inventory_number`
+- `barcode`
+- `qr_code`
+- любые отдельные label-specific columns
+
+### Semantics
+Для MVP / Pilot поле `asset_tag` допускается использовать
+как current printable inventory identifier.
+Это не создает новую отдельную canonical identifier family вне текущего Asset master record.

@@ -2,7 +2,7 @@
 
 Status: approved
 Owner: product
-Last Updated: 2026-04-02
+Last Updated: 2026-04-07
 
 ## MVP Name
 Asset Accountability MVP
@@ -88,3 +88,22 @@ MVP 6–8 недель — тот же путь, доведенный до pilot
 - кто чем пользуется;
 - где находится актив;
 - кто и когда менял критичные данные.
+
+
+## Printable Asset Label v1
+
+В рамках MVP / Pilot допускается minimal printable asset label v1
+как operational convenience поверх asset registry / asset card.
+
+### Scope rule
+- это не отдельный модуль;
+- это не новый inventory contour;
+- это не расширяет scope в barcode / QR / scanning / printer integration / bulk printing.
+
+### Data rule
+Label v1 использует только уже существующие Asset master fields:
+- `asset_type`
+- `asset_tag`
+- `serial_number`
+
+Для MVP / Pilot `asset_tag` используется как current printable inventory identifier.

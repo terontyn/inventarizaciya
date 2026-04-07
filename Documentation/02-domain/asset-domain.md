@@ -2,7 +2,7 @@
 
 Status: approved
 Owner: architecture
-Last Updated: 2026-04-02
+Last Updated: 2026-04-07
 
 ## Scope
 Asset Domain реализуется внутри asset-service.
@@ -115,3 +115,24 @@ Retirement не является delete workflow и не должен маски
 
 ### Non-generic-PATCH Rule
 Во всех responsibility-changing flows изменение assigned_user_id и location_id не считается частью generic PATCH Asset.
+
+
+## Printable Asset Label v1
+
+Для MVP / Pilot допускается minimal printable asset label v1
+как derived printable representation поверх текущего asset registry / asset card contour.
+
+### Canonical rules
+- label v1 использует только уже существующие Asset master fields:
+  - `asset_type`
+  - `asset_tag`
+  - `serial_number`
+- для MVP / Pilot `asset_tag` используется как current printable inventory identifier;
+- label v1 не вводит новые canonical Asset master fields;
+- label v1 не вводит отдельный `inventory_number`;
+- label v1 не вводит `barcode` или `qr_code`;
+- label v1 не меняет responsibility flow boundaries и не влияет на правила `assign / transfer / return / retire`.
+
+### Boundary note
+Printable label v1 является presentation-level convenience,
+а не отдельным domain flow, не отдельной сущностью и не отдельным integration contour.

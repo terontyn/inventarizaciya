@@ -217,3 +217,34 @@ asset-service в Foundation Slice v1 владеет:
 - eligibility rules for `assignment / return / retirement`;
 - final physical history storage schema;
 - нужно ли later расширять command responses beyond current minimum.
+
+
+## Printable Label v1 Read Clarification
+
+Printable asset label v1 не вводит отдельный public API endpoint.
+
+### Canonical read source
+Для one-by-one manual print path каноническим read source считается existing detail read surface:
+- `GET /api/v1/assets/{id}`
+
+### Minimum read contract for label v1
+Printable label v1 использует только следующие уже существующие Asset master fields:
+- `asset_type`
+- `asset_tag`
+- `serial_number`
+
+### Human-readable top line
+Для v1 верхняя human-readable строка label фиксируется как:
+- `asset_type`
+
+Derived display representation допускается только как presentation-level derivation
+из уже существующего asset presentation, без нового persistent field
+и без нового canonical API field.
+
+### Boundary rules
+- printable label v1 не требует dedicated `/label` или `/print` endpoint;
+- printable label v1 не требует label-specific read model;
+- `GET /api/v1/assets` не фиксируется как канонический label contract;
+- label v1 не требует `status`, `assigned_user_id`, `location_id`, history или audit
+  как обязательной части printable payload;
+- label v1 не открывает scope в bulk print, printer integration, barcode / QR или scanning workflows.

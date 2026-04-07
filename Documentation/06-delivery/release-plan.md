@@ -2,7 +2,7 @@
 
 Status: approved
 Owner: product
-Last Updated: 2026-04-02
+Last Updated: 2026-04-07
 
 ## MVP Timeline
 Срок MVP: 6–8 недель
@@ -70,3 +70,15 @@ Exit gates before pilot sign-off:
 - expanded integrations;
 - custom workflows;
 - retirement как обязательный pilot gate.
+
+
+## Printable Label v1 Clarification
+
+На этапе MVP Pilot Readiness допускается minimal printable asset label v1
+как дополнительное operational convenience поверх asset registry / asset card,
+если это нужно для pilot usability.
+
+### Boundary rule
+- это не отдельный release track;
+- это не mandatory pilot gate;
+- это не открывает scope в barcode / QR / scanning / printer integration / bulk printing.
