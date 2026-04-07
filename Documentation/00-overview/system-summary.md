@@ -60,3 +60,25 @@ MVP должен позволять одному tenant:
 ## Open ADR Backlog
 - asset delete semantics
 - service integration pattern
+
+## Current Implementation Baseline
+
+На текущем этапе проектный канон должен различать:
+- scope / architecture / ADR baseline;
+- current implementation baseline in repo.
+
+### Current clarification
+Для уже реализованных technical slices повторная постановка greenfield implementation task недопустима.
+
+### Current known repo baseline
+- Slice 1 (`Tenant + Org Reference Base` in `user-service`) уже реализован;
+- Slice 2 (`User + Role Base` in `user-service`) уже реализован на core уровне и не должен переоткрываться как новый implementation slice;
+- дальнейшие задачи по этой области должны трактоваться как:
+  - review / hardening / gap-closure,
+  - или следующий implementation step,
+  - но не как повторная реализация уже существующего slice.
+
+### Rule
+Перед подготовкой нового implementation packet для Codex
+нужно сначала явно проверить текущий repo state
+и зафиксировать, действительно ли target slice еще не реализован.

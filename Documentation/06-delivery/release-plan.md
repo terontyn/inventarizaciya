@@ -102,6 +102,31 @@ implementation label v1 может быть отложен без пересмо
 
 **backend-first managed pilot = Ready with conditions satisfied**
 
+## Implementation Progress Clarification
+
+Для текущего delivery state нужно отдельно различать:
+- approved scope;
+- current implementation progress in repo.
+
+### Current rule
+Если implementation slice уже присутствует в repo,
+он не должен снова открываться как новый ready-to-Codex delivery step.
+
+### Current clarification
+- Slice 1 (`Tenant + Org Reference Base` in `user-service`) считается уже реализованным baseline;
+- Slice 2 (`User + Role Base` in `user-service`) считается уже реализованным baseline;
+- дальнейшие задачи по `user-service` в этой зоне должны трактоваться не как greenfield implementation,
+  а как:
+  - verification,
+  - hardening,
+  - gap closure,
+  - readiness improvement,
+  - или переход к следующему slice.
+
+### Practical consequence
+Следующий implementation step должен определяться только после явной repo verification,
+а не только по старому planning packet или прошлому candidate prompt.
+
 ### What this means
 - текущий MVP / Pilot contour уже доведен до backend-first managed pilot-ready состояния;
 - core docs / ADR / domain / data / API decisions для текущего contour зафиксированы;
