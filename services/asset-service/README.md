@@ -12,6 +12,7 @@
 - Local durable audit for create/update asset
 - GET-based tenant-scoped validation of `assigned_user_id` and `location_id` via `user-service`
 - Asset-scoped responsibility command flows and operational history/audit read endpoints are implemented
+- Minimal pilot UI contour is served from the same service at `/`
 - Generic PATCH cannot modify `assigned_user_id` or `location_id`
 - `retire` exists in the service surface but remains forbidden by the default managed-pilot cutline
 - No delete semantics
@@ -21,6 +22,14 @@
 This module intentionally keeps responsibility-changing flows out of generic CRUD.
 Generic CRUD remains limited to the Asset master record, while responsibility changes stay on dedicated command paths.
 History and audit remain readable to the approved pilot read roles without opening any reporting/export scope.
+
+## Minimal Pilot UI
+
+- The service now serves a thin static UI shell at `/`.
+- The UI reuses existing `asset-service` contracts for registry, card, create/update, assign, transfer, return, history, and audit.
+- The UI reuses existing `user-service` contracts for roles, users, departments, branches, locations, and user-role binding.
+- Generic asset edit in the UI intentionally excludes `assigned_user_id` and `location_id`; responsibility changes remain on dedicated flows.
+- The UI does not surface `retire`, printing, reporting, inventory, barcode/QR, or any new backend contour.
 
 ## Source of Truth
 

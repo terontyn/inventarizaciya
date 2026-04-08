@@ -82,3 +82,36 @@ MVP должен позволять одному tenant:
 Перед подготовкой нового implementation packet для Codex
 нужно сначала явно проверить текущий repo state
 и зафиксировать, действительно ли target slice еще не реализован.
+
+## Minimal Pilot UI Contour
+
+После backend-first managed pilot baseline следующим contour проекта
+является Minimal Pilot UI Contour.
+
+Это не новый модуль и не новый bounded context.
+Это минимальный user-facing completion layer,
+нужный для practical operational use уже утвержденного Asset Accountability MVP
+одним tenant.
+
+## Minimal Pilot UI Contour — Architecture Clarification
+
+Minimal Pilot UI Contour трактуется как минимальный user-facing completion layer
+поверх уже утвержденного backend contour текущего MVP.
+
+### Interpretation rule
+- это не новый модуль;
+- это не новый bounded context;
+- это не новый integration contour;
+- это не новый API/read-model contour.
+
+### Consumption rule
+UI contour должен опираться на уже существующие service boundaries:
+- `asset-service` для asset registry / asset card / asset CRUD v1 / dedicated responsibility flows / history-audit visibility;
+- `user-service` для roles / users / departments / branches / locations.
+
+### Architectural rule
+В рамках текущего contour не открываются:
+- отдельный BFF;
+- отдельный UI service;
+- отдельная microfrontend family;
+- новые backend endpoints только ради UI convenience.

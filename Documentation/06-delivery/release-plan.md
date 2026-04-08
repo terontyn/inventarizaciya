@@ -102,57 +102,6 @@ implementation label v1 может быть отложен без пересмо
 
 **backend-first managed pilot = Ready with conditions satisfied**
 
-## Implementation Progress Clarification
-
-Для текущего delivery state нужно отдельно различать:
-- approved scope;
-- current implementation progress in repo.
-
-### Current rule
-Если implementation slice уже присутствует в repo,
-он не должен снова открываться как новый ready-to-Codex delivery step.
-
-### Current clarification
-- Slice 1 (`Tenant + Org Reference Base` in `user-service`) считается уже реализованным baseline;
-- Slice 2 (`User + Role Base` in `user-service`) считается уже реализованным baseline;
-- дальнейшие задачи по `user-service` в этой зоне должны трактоваться не как greenfield implementation,
-  а как:
-  - verification,
-  - hardening,
-  - gap closure,
-  - readiness improvement,
-  - или переход к следующему slice.
-
-## Slice 3 Closeout Clarification
-
-Asset Registry Core (`Slice 3`) считается закрытым на уровне implementation + hardening.
-
-### Current status
-- базовый `asset-service` CRUD v1 уже реализован;
-- hardening по tenant/authenticated context negative paths выполнен;
-- explicit guard для history-sensitive `location_id` в generic PATCH подтвержден тестами;
-- repo-level README / service README синхронизированы с текущим implementation state;
-- новый product scope или новый API surface в рамках closeout не открывались.
-
-### Practical interpretation
-Следовательно:
-- `Slice 3` не должен снова открываться как новый implementation step;
-- дальнейшая работа по `asset-service` должна трактоваться либо как:
-  - следующий slice,
-  - либо отдельный hardening/gap-closure,
-  - но не как повторная реализация `Asset Registry Core`.
-
-### Remaining limitation
-Локальная full verification может оставаться ограниченной средой выполнения,
-если локальная машина не соответствует требуемому Java 17 baseline.
-
-Это не меняет repo/CI verdict,
-если CI path для `asset-service` уже настроен на Java 17 и остается рабочим.
-
-### Practical consequence
-Следующий implementation step должен определяться только после явной repo verification,
-а не только по старому planning packet или прошлому candidate prompt.
-
 ### What this means
 - текущий MVP / Pilot contour уже доведен до backend-first managed pilot-ready состояния;
 - core docs / ADR / domain / data / API decisions для текущего contour зафиксированы;
@@ -194,6 +143,57 @@ Asset Registry Core (`Slice 3`) считается закрытым на уро�
 - или будет отдельно открыто решение на minimal asset detail / card UI slice;
 - или будет запущен отдельный user-facing validation contour.
 
+## Implementation Progress Clarification
+
+Для текущего delivery state нужно отдельно различать:
+- approved scope;
+- current implementation progress in repo.
+
+### Current rule
+Если implementation slice уже присутствует в repo,
+он не должен снова открываться как новый ready-to-Codex delivery step.
+
+### Current clarification
+- Slice 1 (`Tenant + Org Reference Base` in `user-service`) считается уже реализованным baseline;
+- Slice 2 (`User + Role Base` in `user-service`) считается уже реализованным baseline;
+- дальнейшие задачи по `user-service` в этой зоне должны трактоваться не как greenfield implementation,
+  а как:
+  - verification,
+  - hardening,
+  - gap closure,
+  - readiness improvement,
+  - или переход к следующему slice.
+
+### Practical consequence
+Следующий implementation step должен определяться только после явной repo verification,
+а не только по старому planning packet или прошлому candidate prompt.
+
+## Slice 3 Closeout Clarification
+
+Asset Registry Core (`Slice 3`) считается закрытым на уровне implementation + hardening.
+
+### Current status
+- базовый `asset-service` CRUD v1 уже реализован;
+- hardening по tenant/authenticated context negative paths выполнен;
+- explicit guard для history-sensitive `location_id` в generic PATCH подтвержден тестами;
+- repo-level README / service README синхронизированы с текущим implementation state;
+- новый product scope или новый API surface в рамках closeout не открывались.
+
+### Practical interpretation
+Следовательно:
+- `Slice 3` не должен снова открываться как новый implementation step;
+- дальнейшая работа по `asset-service` должна трактоваться либо как:
+  - следующий slice,
+  - либо отдельный hardening/gap-closure,
+  - но не как повторная реализация `Asset Registry Core`.
+
+### Remaining limitation
+Локальная full verification может оставаться ограниченной средой выполнения,
+если локальная машина не соответствует требуемому Java 17 baseline.
+
+Это не меняет repo/CI verdict,
+если CI path для `asset-service` уже настроен на Java 17 и остается рабочим.
+
 ## Backend Closeout Clarification
 
 Текущий backend-first managed pilot baseline считается закрытым на уровне implementation + hardening.
@@ -217,3 +217,19 @@ Asset Registry Core (`Slice 3`) считается закрытым на уро�
 ### Practical rule
 После этой точки текущий backend contour не должен снова открываться как новый implementation step,
 если не найден конкретный repo gap или конкретный defect.
+
+## Minimal Pilot UI Contour Clarification
+
+Backend-first managed pilot baseline может считаться internally validated,
+но real tenant operational use требует minimal user-facing contour.
+
+Для practical pilot usability должны существовать следующие minimal UI surfaces:
+- asset registry
+- asset card
+- create / update asset
+- assign / transfer / return entry points
+- history / audit read visibility
+- minimal tenant admin / reference-data management surfaces
+
+Этот contour не считается новым release track,
+а трактуется как completion path already-approved MVP usability.

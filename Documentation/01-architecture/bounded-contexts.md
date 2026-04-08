@@ -41,3 +41,18 @@ Clarifications:
 - asset-service хранит tenant-scoped reference IDs на user/org entities;
 - валидация assigned_user_id и location_id выполняется через API user-service;
 - cross-context checks всегда выполняются в tenant scope.
+
+## Minimal Pilot UI Contour Clarification
+
+Minimal Pilot UI Contour не создает новый bounded context.
+
+### Rule
+UI остается consumption layer поверх уже существующих bounded contexts:
+- Identity / Organization
+- Asset Management
+
+### Boundary implications
+- domain ownership не меняется;
+- cross-context interaction по-прежнему идет только через существующие service APIs;
+- UI не создает отдельный orchestration context;
+- UI convenience не оправдывает новый shared read model или новый backend aggregation contour.

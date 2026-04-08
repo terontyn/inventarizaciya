@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ITAM Pilot UI</title>
+    <link rel="stylesheet" href="/app.css">
+    <script src="/app.js" defer></script>
+</head>
+<body>
+    <div
+        class="app-shell"
+        data-ui-surface="minimal-pilot-ui"
+        data-edit-boundary="asset-master-record-only"
+        data-responsibility-flows="assign,transfer,return"
+    >
+        <header class="hero">
+            <div class="hero-copy">
+                <p class="eyebrow">IT Asset Management SaaS</p>
+                <h1>Минимальный пилотный контур</h1>
+                <p class="hero-text">
+                    Реестр активов, карточка, dedicated responsibility flows, история, аудит и минимальный
+                    admin/setup слой поверх уже существующих контрактов `asset-service` и `user-service`.
+                </p>
+            </div>
+
+            <form id="session-form" class="session-card">
+                <div class="panel-heading">
+                    <div>
+                        <p class="section-kicker">Managed Pilot Context</p>
+                        <h2>Контекст пилота</h2>
+                    </div>
+                    <span id="role-summary-badge" class="summary-badge">Роли ещё не загружены</span>
+                </div>
+
+                <p class="helper-copy">
+                    UI не меняет auth-платформу и использует текущий header-based контекст. Значения ниже нужны
+                    только для уже существующего managed pilot режима.
+                </p>
+
+                <div class="field-grid">
+                    <label class="field">
+                        <span>Tenant ID</span>
+                        <input id="tenant-id" name="tenant_id" type="text" autocomplete="off" placeholder="UUID тенанта" required>
+                    </label>
+
+                    <label class="field">
+                        <span>User ID</span>
+                        <input id="user-id" name="user_id" type="text" autocomplete="off" placeholder="UUID пользователя" required>
+                    </label>
+
+                    <label class="field">
+                        <span>Actor</span>
+                        <input id="actor" name="actor" type="text" autocomplete="off" placeholder="pilot-ui" required>
+                    </label>
+
+                    <label class="field">
+                        <span>User-service URL</span>
+                        <input
+                            id="user-service-base-url"
+                            name="user_service_base_url"
+                            type="url"
+                            autocomplete="off"
+                            placeholder="http://localhost:8080"
+                            required
+                        >
+                    </label>
+                </div>
+
+                <div class="button-row">
+                    <button class="button button-primary" type="submit">Подключить контур</button>
+                    <button class="button button-secondary" id="refresh-all" type="button">Обновить всё</button>
+                    <button class="button button-ghost" id="clear-session" type="button">Очистить</button>
+                </div>
+
+                <div class="inline-meta">
+                    <span><strong>Asset-service:</strong> <code id="asset-service-origin">same origin</code></span>
+                    <span><strong>Текущий экран:</strong> <code id="active-screen-label">assets</code></span>
+                </div>
+            </form>
+        </header>
+
+        <div id="flash-stack" class="flash-stack" aria-live="polite"></div>
+
+        <nav id="screen-nav" class="screen-nav" aria-label="Основные разделы"></nav>
+
+        <main class="workspace">
+            <section id="assets-screen" class="screen">
+                <div class="screen-header">
+                    <div>
+                        <p class="section-kicker">Asset Management</p>
+                        <h2>Реестр и карточка актива</h2>
+                        <p class="screen-copy">
+                            Generic create/update ограничены master record полями. Для ответственности используйте
+                            только выделенные действия assign / transfer / return.
+                        </p>
+                    </div>
+                    <span class="boundary-chip">
+                        Generic edit never mutates <code>assigned_user_id</code> or <code>location_id</code>
+                    </span>
+                </div>
+
+                <div id="asset-create-panel" class="panel panel-tight" hidden>
+                    <div class="panel-heading">
+                        <div>
+                            <p class="section-kicker">CRUD v1</p>
+                            <h3>Создать актив</h3>
+                        </div>
+                    </div>
+                    <form id="asset-create-form" class="form-grid">
+                        <label class="field">
+                            <span>Инвентарный тег</span>
+                            <input name="asset_tag" type="text" autocomplete="off" required>
+                        </label>
+
+                        <label class="field">
+                            <span>Серийный номер</span>
+                            <input name="serial_number" type="text" autocomplete="off" required>
+                        </label>
+
+                        <label class="field">
+                            <span>Тип актива</span>
+                            <input name="asset_type" type="text" autocomplete="off" required>
+                        </label>
+
+                        <div class="button-row button-row-inline">
+                            <button class="button button-primary" type="submit">Создать актив</button>
+                        </div>
+                    </form>
+                    <p class="muted-note">
+                        Стартовая ответственность в UI не задаётся через generic create. После создания используйте
+                        отдельные entry points assign / transfer / return.
+                    </p>
+                </div>
+
+                <div class="assets-grid">
+                    <section class="panel">
+                        <div class="panel-heading">
+                            <div>
+                                <p class="section-kicker">Registry</p>
+                                <h3>Реестр активов</h3>
+                            </div>
+                            <button class="button button-secondary" id="refresh-assets" type="button">Обновить реестр</button>
+                        </div>
+
+                        <div class="table-wrap">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Asset Tag</th>
+                                        <th>Тип</th>
+                                        <th>Статус</th>
+                                        <th>Ответственный</th>
+                                        <th>Локация</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="asset-registry-body">
+                                    <tr>
+                                        <td colspan="5" class="empty-cell">Подключите контур, чтобы загрузить активы.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+
+                    <section class="panel">
+                        <div id="asset-detail-panel" class="detail-host">
+                            <div class="empty-state">
+                                <p class="empty-kicker">Asset Card</p>
+                                <h3>Карточка ещё не выбрана</h3>
+                                <p>Выберите актив из реестра, чтобы открыть карточку, историю и аудит.</p>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </section>
+
+            <section id="admin-screen" class="screen" hidden>
+                <div class="screen-header">
+                    <div>
+                        <p class="section-kicker">Reference Data</p>
+                        <h2>Минимальный admin/setup слой</h2>
+                        <p class="screen-copy">
+                            Только существующие контракты `user-service`: roles, users, departments, branches,
+                            locations и role assignment.
+                        </p>
+                    </div>
+                    <span class="boundary-chip">Tenant Admin only</span>
+                </div>
+
+                <div class="setup-order">
+                    Порядок первой настройки: <strong>roles -> users -> branches -> locations -> departments</strong>
+                </div>
+
+                <nav id="admin-resource-nav" class="admin-nav" aria-label="Reference data sections"></nav>
+
+                <div class="admin-grid">
+                    <section class="panel">
+                        <div class="panel-heading">
+                            <div>
+                                <p class="section-kicker">Current Resource</p>
+                                <h3 id="admin-resource-title">Роли</h3>
+                            </div>
+                            <button class="button button-secondary" id="refresh-admin-resource" type="button">Обновить список</button>
+                        </div>
+
+                        <div class="table-wrap">
+                            <table class="data-table">
+                                <thead id="admin-table-head"></thead>
+                                <tbody id="admin-table-body">
+                                    <tr>
+                                        <td class="empty-cell">Раздел будет доступен после загрузки ролей пользователя.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+
+                    <section class="panel">
+                        <div id="admin-editor-panel" class="detail-host">
+                            <div class="empty-state">
+                                <p class="empty-kicker">Admin Editor</p>
+                                <h3>Выберите ресурс</h3>
+                                <p>Tenant Admin получает create/update и role binding только через существующие `user-service` API.</p>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </section>
+        </main>
+    </div>
+</body>
+</html>

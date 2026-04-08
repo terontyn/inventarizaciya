@@ -125,3 +125,35 @@ Printable Asset Label v1 остается допустимым minimal operation
 Если позже отдельно открывается minimal asset detail / card UI slice,
 это трактуется как completion already-approved asset card scope,
 а не как новый модуль или новый contour.
+
+
+## Minimal Pilot UI Contour
+
+Minimal Pilot UI Contour входит в completion path уже утвержденного MVP
+и не считается новым модулем.
+
+### Purpose
+Довести уже утвержденный Asset Accountability MVP
+до practically usable tenant-facing operational state.
+
+### Mandatory surfaces
+- asset registry UI
+- asset detail / card UI
+- create / update asset UI
+- assign / transfer / return UI entry points
+- history / audit read UI
+- minimal admin / reference-data UI for:
+  - roles
+  - users
+  - departments
+  - branches
+  - locations
+- UI-level role-based visibility aligned with approved MVP personas
+
+### Boundary rule
+Этот contour:
+- не открывает inventory / warehouse;
+- не открывает reporting module;
+- не открывает barcode / QR / scanning / printer integration / bulk print;
+- не вводит новый auth platform;
+- не меняет domain/API boundaries уже утвержденного MVP.

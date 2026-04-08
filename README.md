@@ -9,6 +9,7 @@ root `Documentation/` directory and remain the source of truth.
 - `services/user-service/` already contains the Slice 1 and Slice 2 baseline for tenant, org reference, user, role, and role-binding paths.
 - `services/user-service/` is the managed-pilot setup surface for roles, users, departments, branches, locations, and tenant-scoped role assignment.
 - `services/asset-service/` already contains Asset CRUD v1, dedicated `assign` / `transfer` / `return` flows, and `/history` + `/audit` read endpoints.
+- `services/asset-service/` now also serves the minimal pilot UI contour at `/`, reusing only the current `asset-service` and `user-service` contracts.
 - `services/asset-service/` keeps `retire` behind the default pilot cutline, so the endpoint remains forbidden for the approved pilot role set.
 - `Documentation/` is still the canonical source of truth for scope and architecture decisions.
 
