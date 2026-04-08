@@ -55,6 +55,7 @@ class MinimalPilotUiSmokeTest {
             .andExpect(content().string(containsString("/api/v1/departments")))
             .andExpect(content().string(containsString("/api/v1/branches")))
             .andExpect(content().string(containsString("/api/v1/locations")))
+            .andExpect(content().string(not(containsString("/internal/api/v1/users/"))))
             .andExpect(content().string(not(containsString("/retire"))));
     }
 }

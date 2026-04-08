@@ -11,7 +11,7 @@
 - Asset Operator and Support Reviewer keep read-only reference access; they do not manage reference data.
 - Durable local audit is recorded for critical writes.
 - Internal tenant-scoped role lookup is exposed for `asset-service` at `/internal/api/v1/users/{userId}/roles`.
-- Browser CORS is enabled for the minimal pilot UI origin so the static UI served by `asset-service` can call existing public and internal contracts without a BFF.
+- Browser CORS is enabled for the minimal pilot UI origin so the static UI served by `asset-service` can call existing public versioned contracts without a BFF.
 
 ## Managed Pilot Setup Path
 

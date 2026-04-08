@@ -28,6 +28,7 @@ History and audit remain readable to the approved pilot read roles without openi
 - The service now serves a thin static UI shell at `/`.
 - The UI reuses existing `asset-service` contracts for registry, card, create/update, assign, transfer, return, history, and audit.
 - The UI reuses existing `user-service` contracts for roles, users, departments, branches, locations, and user-role binding.
+- Browser UI does not call internal `user-service` endpoints.
 - Generic asset edit in the UI intentionally excludes `assigned_user_id` and `location_id`; responsibility changes remain on dedicated flows.
 - The UI does not surface `retire`, printing, reporting, inventory, barcode/QR, or any new backend contour.
 

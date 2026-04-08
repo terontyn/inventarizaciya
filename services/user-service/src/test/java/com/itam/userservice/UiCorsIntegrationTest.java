@@ -37,7 +37,7 @@ class UiCorsIntegrationTest {
     }
 
     @Test
-    void internalRoleLookupAllowsBrowserCallsFromAssetServiceOrigin() throws Exception {
+    void internalRoleLookupDoesNotExposeBrowserCorsForAssetServiceOrigin() throws Exception {
         mockMvc.perform(options("/internal/api/v1/users/00000000-0000-0000-0000-000000000001/roles")
                 .header("Origin", "http://localhost:8081")
                 .header("Access-Control-Request-Method", "GET")
@@ -45,9 +45,7 @@ class UiCorsIntegrationTest {
                     "Access-Control-Request-Headers",
                     "X-Authenticated-Tenant-Id,X-Authenticated-User-Id,X-Authenticated-Actor,X-Correlation-Id"
                 ))
-            .andExpect(status().isOk())
-            .andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:8081"))
-            .andExpect(header().string("Access-Control-Allow-Methods", containsString("GET")))
-            .andExpect(header().string("Access-Control-Allow-Headers", containsString("X-Authenticated-Tenant-Id")));
+            .andExpect(status().isForbidden())
+            .andExpect(header().doesNotExist("Access-Control-Allow-Origin"));
     }
 }

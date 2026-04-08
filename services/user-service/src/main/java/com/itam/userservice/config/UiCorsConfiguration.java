@@ -27,7 +27,6 @@ public class UiCorsConfiguration implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         configure(registry.addMapping("/api/**"));
-        configure(registry.addMapping("/internal/api/**"));
     }
 
     private void configure(CorsRegistration registration) {

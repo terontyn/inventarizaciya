@@ -1,8 +1,9 @@
 const STORAGE_KEY = "itam-minimal-pilot-ui-context";
-const ROLE_NAMES = {
+const UI_PROFILE_NAMES = {
     TENANT_ADMIN: "Tenant Admin",
     ASSET_OPERATOR: "Asset Operator",
-    SUPPORT_REVIEWER: "Support Reviewer"
+    SUPPORT_REVIEWER: "Support Reviewer",
+    NO_APPROVED_ROLE: "Нет approved pilot role"
 };
 
 const ADMIN_RESOURCES = {
@@ -79,6 +80,15 @@ const ADMIN_RESOURCES = {
 
 const ui = {};
 
+function createEmptyCapabilities() {
+    return {
+        tenantAdmin: false,
+        assetRead: false,
+        assetMutate: false,
+        referenceRead: false
+    };
+}
+
 const state = {
     context: {
         tenantId: "",
@@ -86,7 +96,8 @@ const state = {
         actor: "pilot-ui",
         userServiceBaseUrl: "http://localhost:8080"
     },
-    roles: [],
+    profileLabel: "",
+    capabilities: createEmptyCapabilities(),
     assets: [],
     selectedAssetId: null,
     selectedAsset: null,
@@ -101,8 +112,7 @@ const state = {
     },
     activeScreen: "assets",
     activeAdminResource: "roles",
-    selectedAdminItemId: null,
-    selectedUserRoleNames: []
+    selectedAdminItemId: null
 };
 
 document.addEventListener("DOMContentLoaded", initialize);
@@ -215,7 +225,8 @@ function clearSession() {
         actor: "pilot-ui",
         userServiceBaseUrl: "http://localhost:8080"
     };
-    state.roles = [];
+    state.profileLabel = "";
+    state.capabilities = createEmptyCapabilities();
     state.assets = [];
     state.selectedAssetId = null;
     state.selectedAsset = null;
@@ -229,7 +240,6 @@ function clearSession() {
         locations: []
     };
     state.selectedAdminItemId = null;
-    state.selectedUserRoleNames = [];
     window.localStorage.removeItem(STORAGE_KEY);
     syncContextToForm();
     render();
@@ -254,7 +264,7 @@ async function connectContour(options = {}) {
     persistContext();
 
     try {
-        await loadCurrentRoles();
+        await resolveUiProfile();
         await refreshAllData({ silent: true });
         if (!options.silent) {
             showFlash("Контур подключён. UI использует только уже существующие сервисные контракты.", "success");
@@ -279,8 +289,8 @@ async function refreshAllData(options = {}) {
     }
 
     try {
-        if (state.roles.length === 0) {
-            await loadCurrentRoles();
+        if (!hasResolvedProfile()) {
+            await resolveUiProfile();
         }
 
         if (canAssetRead()) {
@@ -293,12 +303,8 @@ async function refreshAllData(options = {}) {
 
         if (canTenantAdmin()) {
             await runTask(loadRolesCatalog, "Не удалось загрузить роли для admin/setup слоя.");
-            if (state.activeAdminResource === "users" && state.selectedAdminItemId) {
-                await runTask(() => loadSelectedUserRoles(state.selectedAdminItemId), "Не удалось загрузить роли выбранного пользователя.");
-            }
         } else {
             state.selectedAdminItemId = null;
-            state.selectedUserRoleNames = [];
         }
 
         render();
@@ -359,18 +365,53 @@ async function loadRolesCatalog() {
     state.references.roles = await requestJson("user", "/api/v1/roles");
 }
 
-async function loadCurrentRoles() {
-    const roleResolution = await requestJson("user", `/internal/api/v1/users/${state.context.userId}/roles`);
-    state.roles = roleResolution.role_names ?? [];
+function hasResolvedProfile() {
+    return Boolean(state.profileLabel);
+}
+
+async function resolveUiProfile() {
+    const [tenantAdmin, assetMutate, assetRead, referenceRead] = await Promise.all([
+        probeMutationAccess(
+            "user",
+            `/api/v1/roles/${createProbeId()}`,
+            buildRoleProbePayload(),
+            "Не удалось определить admin/setup доступ через публичный user-service контракт."
+        ),
+        probeMutationAccess(
+            "asset",
+            `/api/v1/assets/${createProbeId()}`,
+            buildAssetProbePayload(),
+            "Не удалось определить mutate-доступ к asset-service через публичный контракт."
+        ),
+        probeReadAccess(
+            "asset",
+            "/api/v1/assets",
+            "Не удалось определить read-доступ к asset registry через публичный контракт."
+        ),
+        probeReadAccess(
+            "user",
+            "/api/v1/users",
+            "Не удалось определить read-доступ к reference-data через публичный user-service контракт."
+        )
+    ]);
+
+    state.capabilities = {
+        tenantAdmin,
+        assetMutate: tenantAdmin || assetMutate,
+        assetRead: assetRead || tenantAdmin || assetMutate,
+        referenceRead
+    };
+    state.profileLabel = tenantAdmin
+        ? UI_PROFILE_NAMES.TENANT_ADMIN
+        : state.capabilities.assetMutate
+            ? UI_PROFILE_NAMES.ASSET_OPERATOR
+            : state.capabilities.assetRead
+                ? UI_PROFILE_NAMES.SUPPORT_REVIEWER
+                : UI_PROFILE_NAMES.NO_APPROVED_ROLE;
+
     if (!canAssetRead()) {
         state.activeScreen = canTenantAdmin() ? "admin" : "assets";
     }
-    render();
-}
-
-async function loadSelectedUserRoles(userId) {
-    const roleResolution = await requestJson("user", `/internal/api/v1/users/${userId}/roles`);
-    state.selectedUserRoleNames = roleResolution.role_names ?? [];
     render();
 }
 
@@ -382,7 +423,58 @@ async function runTask(task, errorPrefix) {
     }
 }
 
-async function requestJson(service, path, options = {}) {
+async function probeReadAccess(service, path, errorPrefix) {
+    const { response, payload } = await requestDetailed(service, path);
+    if (response.ok) {
+        return true;
+    }
+    if (response.status === 403) {
+        return false;
+    }
+    throw new Error(`${errorPrefix} ${extractErrorMessage(response, payload)}`);
+}
+
+async function probeMutationAccess(service, path, body, errorPrefix) {
+    const { response, payload } = await requestDetailed(service, path, {
+        method: "PATCH",
+        body
+    });
+    if (response.status === 404) {
+        return true;
+    }
+    if (response.status === 403) {
+        return false;
+    }
+    throw new Error(`${errorPrefix} ${extractErrorMessage(response, payload)}`);
+}
+
+function createProbeId() {
+    if (window.crypto && typeof window.crypto.randomUUID === "function") {
+        return window.crypto.randomUUID();
+    }
+
+    return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (character) => {
+        const random = Math.floor(Math.random() * 16);
+        const value = character === "x" ? random : (random & 0x3) | 0x8;
+        return value.toString(16);
+    });
+}
+
+function buildAssetProbePayload() {
+    return {
+        asset_tag: `pilot-ui-probe-${Date.now()}`,
+        serial_number: `probe-${Math.random().toString(16).slice(2, 10)}`,
+        asset_type: "LAPTOP"
+    };
+}
+
+function buildRoleProbePayload() {
+    return {
+        name: `pilot-ui-probe-${Date.now()}`
+    };
+}
+
+async function requestDetailed(service, path, options = {}) {
     const url = buildUrl(service, path);
     const headers = new Headers(options.headers || {});
     headers.set("Accept", "application/json");
@@ -403,6 +495,11 @@ async function requestJson(service, path, options = {}) {
 
     const response = await fetch(url, init);
     const payload = await readResponsePayload(response);
+    return { response, payload };
+}
+
+async function requestJson(service, path, options = {}) {
+    const { response, payload } = await requestDetailed(service, path, options);
     if (!response.ok) {
         throw new Error(extractErrorMessage(response, payload));
     }
@@ -587,7 +684,6 @@ function onAdminResourceClick(event) {
     }
     state.activeAdminResource = button.dataset.resourceKey;
     state.selectedAdminItemId = null;
-    state.selectedUserRoleNames = [];
     render();
 }
 
@@ -597,11 +693,7 @@ function onAdminTableClick(event) {
         return;
     }
     state.selectedAdminItemId = row.dataset.adminId;
-    if (state.activeAdminResource === "users") {
-        loadSelectedUserRoles(state.selectedAdminItemId).catch((error) => showFlash(error.message, "error"));
-    } else {
-        render();
-    }
+    render();
 }
 
 async function onAdminEditorSubmit(event) {
@@ -643,8 +735,8 @@ async function onAdminEditorSubmit(event) {
                 method: "POST",
                 body: { role_id: roleId }
             });
-            await loadSelectedUserRoles(userId);
-            showFlash("Role binding выполнен через существующий user-service контракт.", "success");
+            render();
+            showFlash("Role binding выполнен через существующий публичный user-service контракт.", "success");
         }
     } catch (error) {
         showFlash(error.message, "error");
@@ -655,14 +747,8 @@ function onAdminEditorClick(event) {
     const resetButton = event.target.closest("[data-admin-reset]");
     if (resetButton) {
         state.selectedAdminItemId = null;
-        state.selectedUserRoleNames = [];
         render();
         return;
-    }
-
-    const refreshRolesButton = event.target.closest("[data-refresh-selected-user-roles]");
-    if (refreshRolesButton && state.selectedAdminItemId) {
-        loadSelectedUserRoles(state.selectedAdminItemId).catch((error) => showFlash(error.message, "error"));
     }
 }
 
@@ -674,9 +760,6 @@ async function refreshAdminResource() {
     try {
         await loadReferenceData();
         await loadRolesCatalog();
-        if (state.activeAdminResource === "users" && state.selectedAdminItemId) {
-            await loadSelectedUserRoles(state.selectedAdminItemId);
-        }
         render();
         showFlash("Admin/setup данные обновлены.", "success");
     } catch (error) {
@@ -694,11 +777,26 @@ function render() {
 }
 
 function renderRoleSummary() {
-    if (state.roles.length === 0) {
-        ui.roleSummaryBadge.textContent = "Роли ещё не загружены";
+    if (!hasConnectionContext()) {
+        ui.roleSummaryBadge.textContent = "Контекст пилота не подключён";
         return;
     }
-    ui.roleSummaryBadge.textContent = state.roles.join(" | ");
+    if (!hasResolvedProfile()) {
+        ui.roleSummaryBadge.textContent = "UI-профиль ещё не определён";
+        return;
+    }
+
+    const markers = [state.profileLabel];
+    if (canAssetMutate()) {
+        markers.push("asset mutate");
+    } else if (canAssetRead()) {
+        markers.push("asset read");
+    }
+    if (canReferenceRead()) {
+        markers.push("reference read");
+    }
+
+    ui.roleSummaryBadge.textContent = markers.join(" | ");
 }
 
 function renderScreenNav() {
@@ -1118,16 +1216,14 @@ function renderUserRoleBinding(selectedUser) {
                     <p class="section-kicker">Role Assignment</p>
                     <h3>Bind role to user</h3>
                 </div>
-                ${selectedUser ? `<button class="button button-secondary" type="button" data-refresh-selected-user-roles>Обновить роли</button>` : ""}
             </div>
 
             ${selectedUser ? `
-                <div class="pill-row">
-                    ${(state.selectedUserRoleNames.length === 0
-                        ? [`<span class="summary-pill is-muted">У выбранного пользователя пока нет ролей</span>`]
-                        : state.selectedUserRoleNames.map((roleName) => `<span class="summary-pill">${escapeHtml(roleName)}</span>`))
-                        .join("")}
-                </div>
+                <p class="muted-note">
+                    Этот экран использует только публичные versioned contracts. Текущие роли выбранного пользователя здесь
+                    не читаются, но новая привязка роли доступна через существующий
+                    <code>POST /api/v1/users/{userId}/roles</code>.
+                </p>
 
                 <form id="user-role-binding-form" class="form-grid">
                     <input type="hidden" name="user_id" value="${escapeAttribute(selectedUser.id)}">
@@ -1185,19 +1281,19 @@ function getAdminItems(resourceKey) {
 }
 
 function canTenantAdmin() {
-    return state.roles.includes(ROLE_NAMES.TENANT_ADMIN);
+    return state.capabilities.tenantAdmin;
 }
 
 function canAssetMutate() {
-    return canTenantAdmin() || state.roles.includes(ROLE_NAMES.ASSET_OPERATOR);
+    return state.capabilities.assetMutate;
 }
 
 function canAssetRead() {
-    return canAssetMutate() || state.roles.includes(ROLE_NAMES.SUPPORT_REVIEWER);
+    return state.capabilities.assetRead;
 }
 
 function canReferenceRead() {
-    return canTenantAdmin() || state.roles.includes(ROLE_NAMES.ASSET_OPERATOR);
+    return state.capabilities.referenceRead;
 }
 
 function resolveUserName(userId) {
