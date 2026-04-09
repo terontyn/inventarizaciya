@@ -56,3 +56,17 @@ UI остается consumption layer поверх уже существующи
 - cross-context interaction по-прежнему идет только через существующие service APIs;
 - UI не создает отдельный orchestration context;
 - UI convenience не оправдывает новый shared read model или новый backend aggregation contour.
+
+## Minimal Pilot Access Contour Clarification
+
+Minimal Pilot Access Contour не создает новый bounded context.
+
+### Rule
+Access contour остается completion layer поверх уже существующих bounded contexts:
+- Identity / Organization
+- Asset Management
+
+### Boundary implications
+- domain ownership не меняется;
+- current role / permission model не переоткрывается как новый IAM model;
+- contour не оправдывает новый orchestration context или новый identity platform context.

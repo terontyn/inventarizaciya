@@ -38,3 +38,24 @@ Minimal Pilot UI Contour добавляет user-facing delivery layer,
 ### Practical rule
 UI implementation должна повторно использовать уже существующие versioned service contracts
 и не менять текущие domain/API boundaries.
+
+## Minimal Pilot Access Contour Note
+
+Текущий MVP contour остается оперируемым через существующие backend services:
+- `user-service`
+- `asset-service`
+
+### Current access interpretation
+Minimal Pilot Access Contour добавляет minimal tenant-facing access path,
+но не требует открытия новой backend service boundary.
+
+### Not justified in current contour
+- отдельный auth service
+- отдельный IAM backend
+- отдельный BFF
+- новая backend service family
+
+### Practical rule
+Access implementation должна повторно использовать уже существующие service boundaries
+и уже реализованный Minimal Pilot UI Contour,
+не меняя текущие domain/API boundaries.

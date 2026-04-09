@@ -66,6 +66,7 @@ MVP должен позволять одному tenant:
 На текущем этапе проектный канон должен различать:
 - scope / architecture / ADR baseline;
 - current implementation baseline in repo.
+- Minimal Pilot UI Contour уже реализован и не должен переоткрываться как новый greenfield implementation contour;
 
 ### Current clarification
 Для уже реализованных technical slices повторная постановка greenfield implementation task недопустима.
@@ -92,6 +93,48 @@ MVP должен позволять одному tenant:
 Это минимальный user-facing completion layer,
 нужный для practical operational use уже утвержденного Asset Accountability MVP
 одним tenant.
+
+## Minimal Pilot Access Contour
+
+После backend + minimal pilot UI internally validated baseline
+следующим contour проекта является Minimal Pilot Access Contour.
+
+Это не новый модуль, не новый bounded context
+и не новый auth platform contour.
+
+### Purpose
+Довести уже утвержденный MVP до practically usable tenant-facing access state
+для реального первого tenant.
+
+### Interpretation rule
+Minimal Pilot Access Contour трактуется как минимальный completion layer,
+который дает user-facing access path в уже утвержденный MVP contour,
+но не открывает новый enterprise IAM scope.
+
+## Minimal Pilot Access Contour — Architecture Clarification
+
+Minimal Pilot Access Contour трактуется как минимальный tenant-facing access completion layer
+поверх уже реализованного Minimal Pilot UI Contour и существующего backend contour текущего MVP.
+
+### Interpretation rule
+- это не новый модуль;
+- это не новый bounded context;
+- это не новый auth platform contour;
+- это не новый backend service family.
+
+### Consumption rule
+Access contour должен опираться на уже существующие слои:
+- existing UI contour как user-facing surface;
+- `user-service` как owner tenant/user/role foundation;
+- `asset-service` как owner asset-side MVP surfaces.
+
+### Architectural rule
+В рамках текущего contour не открываются:
+- отдельный auth service;
+- отдельный IAM backend;
+- отдельный BFF;
+- новый enterprise IAM scope;
+- новые backend endpoints только ради access convenience.
 
 ## Minimal Pilot UI Contour — Architecture Clarification
 

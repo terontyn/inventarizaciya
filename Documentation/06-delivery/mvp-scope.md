@@ -157,3 +157,29 @@ Minimal Pilot UI Contour входит в completion path уже утвержде
 - не открывает barcode / QR / scanning / printer integration / bulk print;
 - не вводит новый auth platform;
 - не меняет domain/API boundaries уже утвержденного MVP.
+
+
+## Minimal Pilot Access Contour
+
+Minimal Pilot Access Contour входит в completion path уже утвержденного MVP
+и не считается новым модулем.
+
+### Purpose
+Дать реальному первому tenant минимально достаточный user-facing access path
+в уже утвержденный MVP contour.
+
+### Minimum cutline
+- minimal login / access entry path
+- minimal first-tenant access / bootstrap path after initial tenant creation
+- tenant-scoped access for approved MVP personas:
+  - Tenant Admin
+  - Asset Operator
+  - Support Reviewer
+- role-aligned visibility into already approved UI surfaces
+
+### Boundary rule
+Этот contour:
+- не открывает новый auth platform;
+- не открывает SSO / federation / MFA / SCIM / IdP integration scope;
+- не меняет существующие bounded contexts;
+- не открывает inventory / warehouse / reporting / printing scope.

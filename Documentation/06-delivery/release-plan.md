@@ -233,3 +233,50 @@ Backend-first managed pilot baseline может считаться internally va
 
 Этот contour не считается новым release track,
 а трактуется как completion path already-approved MVP usability.
+
+## Minimal Pilot UI Contour Closeout Clarification
+
+Minimal Pilot UI Contour считается закрытым на уровне implementation + closeout.
+
+### Current status
+- minimal user-facing contour реализован поверх уже существующих backend services;
+- registry / card / create / update / assign / transfer / return / history / audit / minimal admin surfaces присутствуют;
+- browser-facing UI больше не зависит от internal-only contract;
+- новый backend contour, BFF, UI-only backend или новый auth platform не открывались;
+- UI scope не расширялся за пределы already-approved MVP completion path.
+
+### Practical interpretation
+Следовательно:
+- Minimal Pilot UI Contour не должен снова открываться как новый implementation step;
+- дальнейшая работа должна трактоваться либо как:
+  - конкретный defect / gap closure,
+  - следующий отдельный contour,
+  - или next-level validation path,
+  - но не как повторная реализация minimal pilot UI.
+
+### Remaining limitation
+Даже после UI closeout текущий проектный baseline не доказывает:
+- real tenant validation;
+- real day-to-day operational validation;
+- self-service access / onboarding readiness.
+
+Текущий результат следует трактовать как:
+
+**backend + minimal pilot UI internally validated baseline**
+
+
+## Minimal Pilot Access Contour Clarification
+
+После backend + minimal pilot UI internally validated baseline
+следующим completion path для real tenant operational usability
+становится Minimal Pilot Access Contour.
+
+### Why
+Без minimal tenant-facing access path проект не может считаться
+практически usable для реального первого tenant,
+даже если backend baseline и minimal pilot UI contour already implemented.
+
+### Boundary rule
+- это не новый release track;
+- это не новый auth platform program;
+- это bounded completion layer внутри already-approved MVP.
