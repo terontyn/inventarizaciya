@@ -183,3 +183,29 @@ Minimal Pilot Access Contour входит в completion path уже утверж
 - не открывает SSO / federation / MFA / SCIM / IdP integration scope;
 - не меняет существующие bounded contexts;
 - не открывает inventory / warehouse / reporting / printing scope.
+
+## Minimal Pilot Access Contour — MVP Cutline Clarification
+
+Для текущего MVP Minimal Pilot Access Contour
+не требует repo-owned identity-establishment mechanism.
+
+### Allowed for MVP
+Допускается controlled managed operational access path outside repo,
+если он обеспечивает:
+- появление authenticated context для реального первого tenant;
+- controlled materialization of the first Tenant Admin after initial tenant creation;
+- дальнейший tenant-facing usage already-approved MVP surfaces.
+
+### In-repo cutline
+Внутри repo для MVP обязательно только следующее:
+- already-approved Minimal Pilot UI Contour;
+- role-aligned tenant-facing access into existing MVP surfaces
+  после появления authenticated context;
+- tenant-managed operational use after the first Tenant Admin already exists.
+
+### Boundary rule
+Это не открывает:
+- новый auth platform;
+- новый IAM backend;
+- SSO / federation / MFA / SCIM / IdP scope;
+- новые backend endpoints только ради access convenience.

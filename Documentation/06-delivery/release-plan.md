@@ -280,3 +280,66 @@ Minimal Pilot UI Contour считается закрытым на уровне i
 - это не новый release track;
 - это не новый auth platform program;
 - это bounded completion layer внутри already-approved MVP.
+
+## Minimal Pilot Access Contour — Delivery Clarification
+
+Для текущего managed pilot Minimal Pilot Access Contour
+может считаться выполненным без repo-owned production login path,
+если существует controlled managed operational access path outside repo.
+
+### Practical interpretation
+Для первого tenant допустимо, что:
+- production identity-establishment path находится вне repo;
+- first Tenant Admin materialization остается controlled managed operational step;
+- после этого already-implemented UI and backend contour
+  используются как normal tenant-facing MVP path.
+
+### Not required for current MVP
+Не требуется как mandatory pilot gate:
+- repo-owned auth/session/token mechanics;
+- repo-owned self-service first-Tenant-Admin bootstrap;
+- расширение проекта до нового auth/IAM contour.
+
+## Minimal Pilot Access Contour Closeout Clarification
+
+Для текущего MVP Minimal Pilot Access Contour считается закрытым
+без обязательного нового in-repo implementation slice.
+
+### Current interpretation
+- controlled managed operational access path outside repo допустим;
+- controlled materialization of the first Tenant Admin outside repo допустима;
+- already-implemented UI and backend contour остаются достаточным in-repo baseline
+  после появления authenticated context.
+
+### Practical rule
+Следовательно:
+- новый greenfield access implementation step не требуется;
+- новый ready-to-Codex implementation packet по access не открывается;
+- дальнейшая работа допустима только как:
+  - конкретный defect fix,
+  - hardening,
+  - gap closure,
+  - но не как новый auth/access contour.
+
+## Inventory / Warehouse Contour Decision
+
+Decision: approved candidate
+
+`Inventory / Warehouse` рекомендуется открыть
+как следующий Wave 2 contour
+после завершения текущего Asset Accountability MVP.
+
+### Product intent
+Дать tenant operational control
+над активами, которые уже существуют в asset registry,
+но в данный момент находятся в storage / warehouse custody,
+а не закреплены за конечным пользователем.
+
+### Non-expansion rule
+Первый `Inventory / Warehouse` contour
+не должен трактоваться как запуск большого складского продукта.
+
+Он ограничивается only minimal storage-aware operations
+для individually tracked assets
+и не расширяется в procurement, supplier, finance,
+consumables, advanced logistics или BI-first scope.

@@ -59,3 +59,25 @@ Minimal Pilot Access Contour добавляет minimal tenant-facing access pat
 Access implementation должна повторно использовать уже существующие service boundaries
 и уже реализованный Minimal Pilot UI Contour,
 не меняя текущие domain/API boundaries.
+
+
+## inventory-service
+
+Отвечает за storage custody и warehouse placement
+для already tracked physical assets.
+
+### Narrow Wave 2 interpretation
+`inventory-service` в первом contour
+не трактуется как full warehouse platform.
+
+Он не включает:
+- procurement
+- supplier management
+- finance / depreciation
+- advanced logistics
+- reporting-first scope
+- mandatory barcode / QR / scanning / printer integrations
+
+### Boundary rule
+`inventory-service` работает поверх asset registry,
+но не становится owner asset master record.

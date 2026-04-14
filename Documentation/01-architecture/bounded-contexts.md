@@ -70,3 +70,35 @@ Access contour остается completion layer поверх уже сущес�
 - domain ownership не меняется;
 - current role / permission model не переоткрывается как новый IAM model;
 - contour не оправдывает новый orchestration context или новый identity platform context.
+
+
+## Inventory / Warehouse
+
+Service owner: inventory-service
+
+Purpose:
+- tenant-scoped operational control
+  над already tracked physical assets,
+  которые находятся в storage / warehouse custody,
+  а не в current end-user assigned state.
+
+### Boundary rule
+Этот context:
+- не владеет asset identity;
+- не переопределяет asset master record;
+- не переопределяет responsibility lifecycle;
+- не трактуется как full WMS / ERP warehouse module.
+
+### Relation to existing contexts
+- `Asset Management` остается owner asset identity / master record
+  и responsibility lifecycle;
+- `Inventory / Warehouse` владеет storage custody
+  и warehouse placement как отдельной operational dimension.
+
+### Cross-context implication
+Переход из storage custody в user assignment
+происходит через handoff в existing assign flow.
+
+Переход из user return обратно в storage custody
+не должен маскироваться под сам `return`,
+а трактуется как отдельная inventory-side operation.

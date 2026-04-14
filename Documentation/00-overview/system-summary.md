@@ -66,7 +66,7 @@ MVP должен позволять одному tenant:
 На текущем этапе проектный канон должен различать:
 - scope / architecture / ADR baseline;
 - current implementation baseline in repo.
-- Minimal Pilot UI Contour уже реализован и не должен переоткрываться как новый greenfield implementation contour;
+
 
 ### Current clarification
 Для уже реализованных technical slices повторная постановка greenfield implementation task недопустима.
@@ -78,6 +78,8 @@ MVP должен позволять одному tenant:
   - review / hardening / gap-closure,
   - или следующий implementation step,
   - но не как повторная реализация уже существующего slice.
+- Minimal Pilot UI Contour уже реализован и не должен переоткрываться как новый greenfield implementation contour;
+
 
 ### Rule
 Перед подготовкой нового implementation packet для Codex
@@ -158,3 +160,54 @@ UI contour должен опираться на уже существующие 
 - отдельный UI service;
 - отдельная microfrontend family;
 - новые backend endpoints только ради UI convenience.
+
+
+## Wave 2 Sequencing Clarification
+
+После закрытия Asset Accountability MVP
+следующим рекомендуемым contour внутри Wave 2
+является `Inventory / Warehouse`.
+
+### Why this contour next
+Этот contour является ближайшим product extension
+к уже утвержденному asset accountability baseline.
+
+Текущий MVP отвечает на вопросы:
+- что у нас есть;
+- где это находится;
+- за кем это закреплено;
+- кто это менял.
+
+Следующий практический operational gap:
+- что сейчас находится в storage / warehouse custody;
+- где именно это хранится;
+- что доступно для следующей выдачи;
+- как актив переходит из хранения в выдачу и обратно.
+
+### Interpretation rule
+`Inventory / Warehouse` на первом шаге трактуется не как full WMS / ERP,
+а как bounded storage-aware contour
+для already tracked physical assets.
+
+## Inventory / Warehouse — Architecture Clarification
+
+После закрытия Asset Accountability MVP
+следующим рекомендуемым Wave 2 contour
+является `Inventory / Warehouse`.
+
+### Interpretation rule
+Этот contour трактуется узко:
+как storage-aware operational layer
+для already tracked physical assets.
+
+Он не трактуется как:
+- full WMS;
+- ERP warehouse module;
+- procurement / supplier / finance contour;
+- reporting-first contour.
+
+### Source-of-truth rule
+- `asset-service` остается source of truth для asset identity и master record;
+- existing responsibility flows остаются source of truth для responsibility lifecycle;
+- `Inventory / Warehouse` добавляет отдельную operational dimension:
+  storage custody и warehouse placement.
