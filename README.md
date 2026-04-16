@@ -11,6 +11,7 @@ root `Documentation/` directory and remain the source of truth.
 - `services/asset-service/` already contains Asset CRUD v1, dedicated `assign` / `transfer` / `return` flows, and `/history` + `/audit` read endpoints.
 - `services/asset-service/` now also serves the minimal pilot UI contour at `/`, reusing only the current `asset-service` and `user-service` contracts.
 - `services/asset-service/` keeps `retire` behind the default pilot cutline, so the endpoint remains forbidden for the approved pilot role set.
+- `services/inventory-service/` now contains the first narrow Inventory / Warehouse contour for warehouse read, storage placement read, current storage custody, `place-in-storage`, `move`, and internal assign handoff consumption.
 - `Documentation/` is still the canonical source of truth for scope and architecture decisions.
 
 ## Repository Layout
@@ -18,6 +19,7 @@ root `Documentation/` directory and remain the source of truth.
 - `Documentation/` keeps approved and draft project documentation in the root.
 - `services/user-service/` owns the Identity / Organization bounded context implementation path.
 - `services/asset-service/` owns the Asset Management bounded context implementation path.
+- `services/inventory-service/` owns the Inventory / Warehouse bounded context implementation path.
 - `ops/` contains local docker, Kubernetes placeholders, and monitoring scaffolding.
 - `scripts/` contains development, CI, and local database bootstrap helpers.
 - `.github/workflows/` contains repository checks and service build/test workflows.

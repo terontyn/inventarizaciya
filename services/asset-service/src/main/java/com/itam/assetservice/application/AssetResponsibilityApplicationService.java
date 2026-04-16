@@ -23,6 +23,7 @@ public class AssetResponsibilityApplicationService {
     private final AssetResponsibilityFactRepository assetResponsibilityFactRepository;
     private final AssetReferenceValidator assetReferenceValidator;
     private final AuditWriter auditWriter;
+    private final InventoryAssignHandoffPublisher inventoryAssignHandoffPublisher;
     private final Clock clock;
 
     public AssetResponsibilityApplicationService(
@@ -30,12 +31,14 @@ public class AssetResponsibilityApplicationService {
         AssetResponsibilityFactRepository assetResponsibilityFactRepository,
         AssetReferenceValidator assetReferenceValidator,
         AuditWriter auditWriter,
+        InventoryAssignHandoffPublisher inventoryAssignHandoffPublisher,
         Clock clock
     ) {
         this.assetRepository = assetRepository;
         this.assetResponsibilityFactRepository = assetResponsibilityFactRepository;
         this.assetReferenceValidator = assetReferenceValidator;
         this.auditWriter = auditWriter;
+        this.inventoryAssignHandoffPublisher = inventoryAssignHandoffPublisher;
         this.clock = clock;
     }
 
@@ -77,6 +80,12 @@ public class AssetResponsibilityApplicationService {
             updatedAsset.id(),
             AuditAction.ASSIGN,
             new AssignAuditPayload(updatedAsset.id(), updatedAsset.assignedUserId())
+        );
+        inventoryAssignHandoffPublisher.publishAfterAssign(
+            tenantId,
+            authenticatedUserId,
+            updatedAsset.id(),
+            auditMetadata
         );
 
         return new AssignResult(updatedAsset.id(), updatedAsset.assignedUserId());

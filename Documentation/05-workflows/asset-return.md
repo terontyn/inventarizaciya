@@ -69,3 +69,21 @@ Return не является частью generic PATCH Asset.
 - Конкретное значение `status` для post-return состояния не канонизировано.
 - Финальная physical storage model history остается open decision.
 - Public API для `return` не канонизирован в этом документе.
+
+
+## Inventory / Warehouse Clarification
+`Return` сам по себе
+не создает storage custody
+и не фиксирует warehouse placement.
+
+Если после `Return`
+Asset фактически принимается в warehouse / storage custody,
+это должно трактоваться
+как отдельная explicit inventory-side operation,
+а не как неявная часть existing `return`.
+
+Следовательно:
+- post-return storage intake не маскируется под `return`;
+- до explicit inventory intake
+  Asset не должен считаться `in storage now`
+  только на основании completed `return`.

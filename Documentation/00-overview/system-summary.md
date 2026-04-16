@@ -47,6 +47,7 @@ MVP должен позволять одному tenant:
 - ADR-0003 Org hierarchy: no separate Org entity; Department is managerial dimension; Branch / Location are physical dimensions; Location belongs to Branch.
 - ADR-0004 Asset CRUD vs history: generic CRUD manages only Asset master record; responsibility-changing operations use dedicated flows.
 - ADR-0007 Audit contract: critical writes produce durable local audit records and are delivered asynchronously to central audit storage.
+- ADR-0009 Inventory-to-assign handoff semantics: successful assign in `asset-service` is the canonical trigger point for inventory-side storage custody consumption; handoff is internal-only asynchronous; assign success does not require synchronous inventory completion; eventual consistency is accepted for the first contour.
 
 ## Architectural Rules
 - каждый сервис владеет своей БД;

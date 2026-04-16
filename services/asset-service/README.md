@@ -12,6 +12,7 @@
 - Local durable audit for create/update asset
 - GET-based tenant-scoped validation of `assigned_user_id` and `location_id` via `user-service`
 - Asset-scoped responsibility command flows and operational history/audit read endpoints are implemented
+- Successful `assign` can emit an internal-only async handoff to `inventory-service` for storage-custody consumption
 - Minimal pilot UI contour is served from the same service at `/`
 - Generic PATCH cannot modify `assigned_user_id` or `location_id`
 - `retire` exists in the service surface but remains forbidden by the default managed-pilot cutline
@@ -22,6 +23,7 @@
 This module intentionally keeps responsibility-changing flows out of generic CRUD.
 Generic CRUD remains limited to the Asset master record, while responsibility changes stay on dedicated command paths.
 History and audit remain readable to the approved pilot read roles without opening any reporting/export scope.
+Inventory-side storage exit is not exposed as a new public workflow; the first contour uses internal-only async handoff after successful assign.
 
 ## Minimal Pilot UI
 

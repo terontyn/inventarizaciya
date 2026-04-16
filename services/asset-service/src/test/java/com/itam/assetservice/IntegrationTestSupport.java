@@ -1,7 +1,9 @@
 package com.itam.assetservice;
 
+import static com.itam.assetservice.api.AuthenticatedRequestContextExtractor.AUTHENTICATED_ACTOR_HEADER;
 import static com.itam.assetservice.api.AuthenticatedRequestContextExtractor.AUTHENTICATED_TENANT_HEADER;
 import static com.itam.assetservice.api.AuthenticatedRequestContextExtractor.AUTHENTICATED_USER_HEADER;
+import static com.itam.assetservice.api.AuthenticatedRequestContextExtractor.CORRELATION_ID_HEADER;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.header;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
@@ -47,10 +49,17 @@ public abstract class IntegrationTestSupport {
     @Autowired
     protected RestTemplate userServiceRestTemplate;
 
+    @Autowired
+    protected RestTemplate inventoryServiceRestTemplate;
+
     @Value("${integration.user-service.base-url}")
     protected String userServiceBaseUrl;
 
+    @Value("${integration.inventory-service.base-url}")
+    protected String inventoryServiceBaseUrl;
+
     protected MockRestServiceServer mockUserService;
+    protected MockRestServiceServer mockInventoryService;
 
     @BeforeEach
     void setUp() {
@@ -58,6 +67,9 @@ public abstract class IntegrationTestSupport {
         jdbcTemplate.update("DELETE FROM local_audit_records");
         jdbcTemplate.update("DELETE FROM assets");
         mockUserService = MockRestServiceServer.bindTo(userServiceRestTemplate)
+            .ignoreExpectOrder(true)
+            .build();
+        mockInventoryService = MockRestServiceServer.bindTo(inventoryServiceRestTemplate)
             .ignoreExpectOrder(true)
             .build();
     }
@@ -261,6 +273,27 @@ public abstract class IntegrationTestSupport {
             .andExpect(method(HttpMethod.GET))
             .andExpect(header(AUTHENTICATED_TENANT_HEADER, tenantId.toString()))
             .andExpect(header(AUTHENTICATED_USER_HEADER, authenticatedUserId.toString()))
+            .andRespond(responseStatus.is2xxSuccessful()
+                ? withSuccess("{}", MediaType.APPLICATION_JSON)
+                : withStatus(responseStatus));
+    }
+
+    protected void expectInventoryAssignHandoff(
+        UUID tenantId,
+        UUID authenticatedUserId,
+        UUID assetId,
+        String actor,
+        String correlationId,
+        HttpStatus responseStatus
+    ) {
+        mockInventoryService.expect(ExpectedCount.once(), requestTo(
+                inventoryServiceBaseUrl + "/internal/api/v1/inventory/assets/" + assetId + "/assign-handoff"
+            ))
+            .andExpect(method(HttpMethod.POST))
+            .andExpect(header(AUTHENTICATED_TENANT_HEADER, tenantId.toString()))
+            .andExpect(header(AUTHENTICATED_USER_HEADER, authenticatedUserId.toString()))
+            .andExpect(header(AUTHENTICATED_ACTOR_HEADER, actor))
+            .andExpect(header(CORRELATION_ID_HEADER, correlationId))
             .andRespond(responseStatus.is2xxSuccessful()
                 ? withSuccess("{}", MediaType.APPLICATION_JSON)
                 : withStatus(responseStatus));

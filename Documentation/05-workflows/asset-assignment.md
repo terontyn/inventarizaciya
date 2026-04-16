@@ -59,3 +59,23 @@ Assignment не является частью generic PATCH Asset.
 - Не зафиксирован точный доменный смысл правила "asset available for assignment".
 - Не зафиксировано, должен ли assignment всегда одновременно фиксировать операционную локацию.
 - Не зафиксирована точная граница между first-time assignment и reassignment, если актив ранее не был назначен.
+
+## ADR-0009 Clarification
+
+Если Asset на момент assignment
+currently находится в storage custody,
+successful assign completion в `asset-service`
+является canonical handoff point
+для inventory-side consumption.
+
+Для первого contour:
+- `asset-service` инициирует internal async handoff signal;
+- `inventory-service` consume’ит current storage custody representation;
+- inventory-side consumption не является synchronous precondition
+  для assign success;
+- temporary eventual consistency
+  между assign success и inventory-side closeout допустима.
+
+Compensating rollback of assign
+из-за временного inventory-side failure
+в первом contour не требуется.

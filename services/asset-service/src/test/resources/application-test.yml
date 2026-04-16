@@ -13,3 +13,7 @@ spring:
 integration:
   user-service:
     base-url: http://user-service.test
+  inventory-service:
+    base-url: http://inventory-service.test
+    assign-handoff:
+      enabled: false

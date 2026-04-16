@@ -1,0 +1,22 @@
+spring:
+  application:
+    name: inventory-service
+  jackson:
+    property-naming-strategy: SNAKE_CASE
+  datasource:
+    url: ${INVENTORY_SERVICE_DB_URL:jdbc:postgresql://localhost:5432/inventory_service}
+    username: ${INVENTORY_SERVICE_DB_USERNAME:postgres}
+    password: ${INVENTORY_SERVICE_DB_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+integration:
+  user-service:
+    base-url: ${USER_SERVICE_BASE_URL:http://localhost:8080}
+  asset-service:
+    base-url: ${ASSET_SERVICE_BASE_URL:http://localhost:8081}
+
+server:
+  port: ${SERVER_PORT:8082}

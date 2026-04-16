@@ -82,6 +82,11 @@ Purpose:
   которые находятся в storage / warehouse custody,
   а не в current end-user assigned state.
 
+Entities:
+- Warehouse
+- StoragePlace
+- InventoryRecord
+
 ### Boundary rule
 Этот context:
 - не владеет asset identity;
@@ -95,6 +100,18 @@ Purpose:
 - `Inventory / Warehouse` владеет storage custody
   и warehouse placement как отдельной operational dimension.
 
+### Clarifications
+- `InventoryRecord` является inventory-side operational record,
+  а не новым asset master record;
+- `InventoryRecord` ссылается на Asset только по reference id;
+- `StoragePlace` принадлежит `Warehouse`;
+- inventory context отвечает на вопросы:
+  - что сейчас находится в storage custody;
+  - где именно это размещено;
+  - что inventory-side видит как доступное для следующей выдачи;
+- final responsibility transition в user assignment остается
+  в existing assign flow.
+
 ### Cross-context implication
 Переход из storage custody в user assignment
 происходит через handoff в existing assign flow.
@@ -102,3 +119,16 @@ Purpose:
 Переход из user return обратно в storage custody
 не должен маскироваться под сам `return`,
 а трактуется как отдельная inventory-side operation.
+
+### ADR-0009 Cross-context handoff clarification
+
+Переход из storage custody в user assignment
+инициируется successful assign completion в `asset-service`.
+
+При этом:
+- `asset-service` не удаляет inventory data напрямую;
+- `inventory-service` не управляет responsibility lifecycle;
+- consumption current inventory-side storage custody representation
+  выполняется самим `inventory-service`
+  через internal-only asynchronous integration;
+- direct DB coupling между сервисами остается запрещен.
