@@ -2,7 +2,7 @@ package com.itam.inventoryservice.api;
 
 import com.itam.inventoryservice.application.InventoryApplicationService;
 import com.itam.inventoryservice.application.InventoryAuthorizationService;
-import com.itam.inventoryservice.domain.InventoryRecord;
+import com.itam.inventoryservice.domain.ReadinessState;
 import com.itam.inventoryservice.domain.StoragePlace;
 import com.itam.inventoryservice.domain.Warehouse;
 import jakarta.servlet.http.HttpServletRequest;
@@ -42,7 +42,7 @@ public class InventoryController {
         UUID tenantId = requestContextExtractor.requireTenantId(servletRequest);
         UUID authenticatedUserId = requestContextExtractor.requireAuthenticatedUserId(servletRequest);
         inventoryAuthorizationService.requireInventoryReadAccess(tenantId, authenticatedUserId);
-        return inventoryApplicationService.findAllWarehouses(tenantId).stream()
+        return inventoryApplicationService.findAllWarehouses(tenantId, authenticatedUserId).stream()
             .map(WarehouseResponse::from)
             .toList();
     }
@@ -52,7 +52,7 @@ public class InventoryController {
         UUID tenantId = requestContextExtractor.requireTenantId(servletRequest);
         UUID authenticatedUserId = requestContextExtractor.requireAuthenticatedUserId(servletRequest);
         inventoryAuthorizationService.requireInventoryReadAccess(tenantId, authenticatedUserId);
-        return inventoryApplicationService.findStoragePlaces(tenantId, id).stream()
+        return inventoryApplicationService.findStoragePlaces(tenantId, authenticatedUserId, id).stream()
             .map(StoragePlaceResponse::from)
             .toList();
     }
@@ -62,8 +62,8 @@ public class InventoryController {
         UUID tenantId = requestContextExtractor.requireTenantId(servletRequest);
         UUID authenticatedUserId = requestContextExtractor.requireAuthenticatedUserId(servletRequest);
         inventoryAuthorizationService.requireInventoryReadAccess(tenantId, authenticatedUserId);
-        return inventoryApplicationService.findAssetsInStorage(tenantId).stream()
-            .map(InventoryAssetResponse::fromCurrentRecord)
+        return inventoryApplicationService.findAssetsInStorage(tenantId, authenticatedUserId).stream()
+            .map(InventoryAssetResponse::fromView)
             .toList();
     }
 
@@ -118,10 +118,28 @@ public class InventoryController {
         ));
     }
 
-    public record WarehouseResponse(UUID id) {
+    @PostMapping("/api/v1/inventory/assets/{assetId}/set-readiness")
+    public InventoryAssetResponse setReadiness(
+        @PathVariable UUID assetId,
+        @Valid @RequestBody SetReadinessRequest request,
+        HttpServletRequest servletRequest
+    ) {
+        UUID tenantId = requestContextExtractor.requireTenantId(servletRequest);
+        UUID authenticatedUserId = requestContextExtractor.requireAuthenticatedUserId(servletRequest);
+        inventoryAuthorizationService.requireInventoryMutateAccess(tenantId, authenticatedUserId);
+        return InventoryAssetResponse.fromView(inventoryApplicationService.setReadiness(
+            tenantId,
+            authenticatedUserId,
+            assetId,
+            request.readinessState(),
+            requestContextExtractor.requireAuditMetadata(servletRequest)
+        ));
+    }
+
+    public record WarehouseResponse(UUID id, UUID branchId, UUID locationId) {
 
         private static WarehouseResponse from(Warehouse warehouse) {
-            return new WarehouseResponse(warehouse.id());
+            return new WarehouseResponse(warehouse.id(), warehouse.branchId(), warehouse.locationId());
         }
     }
 
@@ -136,24 +154,17 @@ public class InventoryController {
         UUID assetId,
         boolean inStorageNow,
         UUID warehouseId,
-        UUID storagePlaceId
+        UUID storagePlaceId,
+        ReadinessState readinessState
     ) {
-
-        private static InventoryAssetResponse fromCurrentRecord(InventoryRecord inventoryRecord) {
-            return new InventoryAssetResponse(
-                inventoryRecord.assetId(),
-                true,
-                inventoryRecord.warehouseId(),
-                inventoryRecord.storagePlaceId()
-            );
-        }
 
         private static InventoryAssetResponse fromView(InventoryApplicationService.InventoryAssetView view) {
             return new InventoryAssetResponse(
                 view.assetId(),
                 view.inStorageNow(),
                 view.warehouseId(),
-                view.storagePlaceId()
+                view.storagePlaceId(),
+                view.readinessState()
             );
         }
     }
@@ -162,5 +173,8 @@ public class InventoryController {
     }
 
     public record MoveInStorageRequest(UUID warehouseId, UUID storagePlaceId) {
+    }
+
+    public record SetReadinessRequest(@NotNull ReadinessState readinessState) {
     }
 }

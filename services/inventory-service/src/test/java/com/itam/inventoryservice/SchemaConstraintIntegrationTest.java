@@ -2,6 +2,7 @@ package com.itam.inventoryservice;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.itam.inventoryservice.domain.ReadinessState;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -9,7 +10,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 class SchemaConstraintIntegrationTest extends IntegrationTestSupport {
 
     @Test
-    void migrationsEnforceTenantScopeAndOneCurrentInventoryRecordPerAsset() {
+    void migrationsEnforceWarehouseBranchRequirementAndOneCurrentInventoryRecordPerAsset() {
         assertThatThrownBy(() ->
             jdbcTemplate.update(
                 "INSERT INTO warehouses (id) VALUES (?)",
@@ -18,7 +19,7 @@ class SchemaConstraintIntegrationTest extends IntegrationTestSupport {
         ).isInstanceOf(DataIntegrityViolationException.class);
 
         UUID tenantId = UUID.randomUUID();
-        UUID warehouseId = insertWarehouse(tenantId);
+        UUID warehouseId = insertWarehouse(tenantId, UUID.randomUUID());
         UUID assetId = UUID.randomUUID();
         insertInventoryRecord(tenantId, assetId, warehouseId, null);
 
@@ -37,8 +38,8 @@ class SchemaConstraintIntegrationTest extends IntegrationTestSupport {
     void migrationsRejectCrossTenantWarehouseAndStoragePlaceReferences() {
         UUID tenantA = UUID.randomUUID();
         UUID tenantB = UUID.randomUUID();
-        UUID warehouseA = insertWarehouse(tenantA);
-        UUID warehouseB = insertWarehouse(tenantB);
+        UUID warehouseA = insertWarehouse(tenantA, UUID.randomUUID());
+        UUID warehouseB = insertWarehouse(tenantB, UUID.randomUUID());
         UUID storagePlaceB = insertStoragePlace(tenantB, warehouseB);
 
         assertThatThrownBy(() ->
@@ -61,5 +62,25 @@ class SchemaConstraintIntegrationTest extends IntegrationTestSupport {
                 storagePlaceB
             )
         ).isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void migrationsRejectUnsupportedReadinessVocabulary() {
+        UUID tenantId = UUID.randomUUID();
+        UUID warehouseId = insertWarehouse(tenantId, UUID.randomUUID());
+
+        assertThatThrownBy(() ->
+            jdbcTemplate.update(
+                "INSERT INTO inventory_records (id, tenant_id, asset_id, warehouse_id, readiness_state) "
+                    + "VALUES (?, ?, ?, ?, ?)",
+                UUID.randomUUID(),
+                tenantId,
+                UUID.randomUUID(),
+                warehouseId,
+                "BROKEN"
+            )
+        ).isInstanceOf(DataIntegrityViolationException.class);
+
+        insertInventoryRecord(tenantId, UUID.randomUUID(), warehouseId, null, ReadinessState.NOT_READY);
     }
 }

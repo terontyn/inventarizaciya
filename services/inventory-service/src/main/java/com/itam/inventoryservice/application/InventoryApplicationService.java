@@ -4,6 +4,7 @@ import com.itam.inventoryservice.domain.AuditAction;
 import com.itam.inventoryservice.domain.AuditEntity;
 import com.itam.inventoryservice.domain.InventoryRecord;
 import com.itam.inventoryservice.domain.InventoryRecordRepository;
+import com.itam.inventoryservice.domain.ReadinessState;
 import com.itam.inventoryservice.domain.StoragePlace;
 import com.itam.inventoryservice.domain.StoragePlaceRepository;
 import com.itam.inventoryservice.domain.Warehouse;
@@ -23,6 +24,7 @@ public class InventoryApplicationService {
     private final StoragePlaceRepository storagePlaceRepository;
     private final InventoryRecordRepository inventoryRecordRepository;
     private final AssetServiceAssetLookup assetServiceAssetLookup;
+    private final UserServiceReferenceLookup userServiceReferenceLookup;
     private final AuditWriter auditWriter;
 
     public InventoryApplicationService(
@@ -30,31 +32,43 @@ public class InventoryApplicationService {
         StoragePlaceRepository storagePlaceRepository,
         InventoryRecordRepository inventoryRecordRepository,
         AssetServiceAssetLookup assetServiceAssetLookup,
+        UserServiceReferenceLookup userServiceReferenceLookup,
         AuditWriter auditWriter
     ) {
         this.warehouseRepository = warehouseRepository;
         this.storagePlaceRepository = storagePlaceRepository;
         this.inventoryRecordRepository = inventoryRecordRepository;
         this.assetServiceAssetLookup = assetServiceAssetLookup;
+        this.userServiceReferenceLookup = userServiceReferenceLookup;
         this.auditWriter = auditWriter;
     }
 
-    public List<Warehouse> findAllWarehouses(UUID tenantId) {
-        return warehouseRepository.findAll(tenantId);
+    public List<Warehouse> findAllWarehouses(UUID tenantId, UUID authenticatedUserId) {
+        List<Warehouse> warehouses = warehouseRepository.findAll(tenantId);
+        warehouses.forEach(warehouse -> validateWarehouseAnchoring(tenantId, authenticatedUserId, warehouse));
+        return warehouses;
     }
 
-    public List<StoragePlace> findStoragePlaces(UUID tenantId, UUID warehouseId) {
-        requireWarehouse(tenantId, warehouseId);
+    public List<StoragePlace> findStoragePlaces(UUID tenantId, UUID authenticatedUserId, UUID warehouseId) {
+        requireWarehouse(tenantId, authenticatedUserId, warehouseId);
         return storagePlaceRepository.findByWarehouseId(tenantId, warehouseId);
     }
 
-    public List<InventoryRecord> findAssetsInStorage(UUID tenantId) {
-        return inventoryRecordRepository.findAllCurrent(tenantId);
+    public List<InventoryAssetView> findAssetsInStorage(UUID tenantId, UUID authenticatedUserId) {
+        return inventoryRecordRepository.findAllCurrent(tenantId).stream()
+            .map(record -> toInventoryAssetView(tenantId, authenticatedUserId, record))
+            .toList();
     }
 
     public InventoryAssetView findAssetView(UUID tenantId, UUID authenticatedUserId, UUID assetId) {
         requireTrackedAsset(tenantId, authenticatedUserId, assetId);
-        return toInventoryAssetView(assetId, inventoryRecordRepository.findByAssetId(tenantId, assetId).orElse(null));
+        InventoryRecord inventoryRecord = inventoryRecordRepository.findByAssetId(tenantId, assetId).orElse(null);
+        return toInventoryAssetView(
+            inventoryRecord == null ? assetId : inventoryRecord.assetId(),
+            tenantId,
+            authenticatedUserId,
+            inventoryRecord
+        );
     }
 
     @Transactional
@@ -67,7 +81,7 @@ public class InventoryApplicationService {
         AuditMetadata auditMetadata
     ) {
         requireTrackedAsset(tenantId, authenticatedUserId, assetId);
-        Warehouse warehouse = requireWarehouse(tenantId, warehouseId);
+        Warehouse warehouse = requireWarehouse(tenantId, authenticatedUserId, warehouseId);
         StoragePlace storagePlace = requireStoragePlaceIfPresent(tenantId, storagePlaceId);
         ensureStoragePlaceBelongsToWarehouse(storagePlace, warehouse);
 
@@ -80,7 +94,8 @@ public class InventoryApplicationService {
                 tenantId,
                 assetId,
                 warehouse.id(),
-                storagePlace == null ? null : storagePlace.id()
+                storagePlace == null ? null : storagePlace.id(),
+                ReadinessState.NOT_READY
             );
             auditWriter.record(
                 tenantId,
@@ -91,10 +106,11 @@ public class InventoryApplicationService {
                 new InventoryPlacementAuditPayload(
                     inventoryRecord.assetId(),
                     inventoryRecord.warehouseId(),
-                    inventoryRecord.storagePlaceId()
+                    inventoryRecord.storagePlaceId(),
+                    inventoryRecord.readinessState()
                 )
             );
-            return toInventoryAssetView(assetId, inventoryRecord);
+            return toInventoryAssetView(tenantId, authenticatedUserId, inventoryRecord);
         } catch (DataIntegrityViolationException exception) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Asset is already in storage custody", exception);
         }
@@ -127,7 +143,7 @@ public class InventoryApplicationService {
         UUID resolvedWarehouseId = warehouseId == null
             ? targetStoragePlace.warehouseId()
             : warehouseId;
-        Warehouse targetWarehouse = requireWarehouse(tenantId, resolvedWarehouseId);
+        Warehouse targetWarehouse = requireWarehouse(tenantId, authenticatedUserId, resolvedWarehouseId);
         ensureStoragePlaceBelongsToWarehouse(targetStoragePlace, targetWarehouse);
         UUID resolvedStoragePlaceId = targetStoragePlace == null ? null : targetStoragePlace.id();
 
@@ -160,11 +176,59 @@ public class InventoryApplicationService {
                 currentRecord.warehouseId(),
                 currentRecord.storagePlaceId(),
                 movedRecord.warehouseId(),
-                movedRecord.storagePlaceId()
+                movedRecord.storagePlaceId(),
+                movedRecord.readinessState()
             )
         );
 
-        return toInventoryAssetView(assetId, movedRecord);
+        return toInventoryAssetView(tenantId, authenticatedUserId, movedRecord);
+    }
+
+    @Transactional
+    public InventoryAssetView setReadiness(
+        UUID tenantId,
+        UUID authenticatedUserId,
+        UUID assetId,
+        ReadinessState targetReadinessState,
+        AuditMetadata auditMetadata
+    ) {
+        requireTrackedAsset(tenantId, authenticatedUserId, assetId);
+        InventoryRecord currentRecord = inventoryRecordRepository.findByAssetId(tenantId, assetId)
+            .orElseThrow(() -> new ResponseStatusException(
+                HttpStatus.NOT_FOUND,
+                "Asset is not currently in storage custody"
+            ));
+
+        if (currentRecord.readinessState() == targetReadinessState) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "Readiness change must change readiness_state"
+            );
+        }
+
+        InventoryRecord updatedRecord = inventoryRecordRepository.updateReadiness(
+            tenantId,
+            assetId,
+            targetReadinessState
+        ).orElseThrow(() -> new ResponseStatusException(
+            HttpStatus.NOT_FOUND,
+            "Asset is not currently in storage custody"
+        ));
+
+        auditWriter.record(
+            tenantId,
+            auditMetadata,
+            AuditEntity.INVENTORY_RECORD,
+            updatedRecord.id(),
+            AuditAction.SET_READINESS,
+            new ReadinessChangeAuditPayload(
+                updatedRecord.assetId(),
+                currentRecord.readinessState(),
+                updatedRecord.readinessState()
+            )
+        );
+
+        return toInventoryAssetView(tenantId, authenticatedUserId, updatedRecord);
     }
 
     @Transactional
@@ -184,7 +248,8 @@ public class InventoryApplicationService {
             new InventoryPlacementAuditPayload(
                 currentRecord.assetId(),
                 currentRecord.warehouseId(),
-                currentRecord.storagePlaceId()
+                currentRecord.storagePlaceId(),
+                currentRecord.readinessState()
             )
         );
         return new AssignHandoffResult(assetId, true);
@@ -205,9 +270,11 @@ public class InventoryApplicationService {
         }
     }
 
-    private Warehouse requireWarehouse(UUID tenantId, UUID warehouseId) {
-        return warehouseRepository.findById(tenantId, warehouseId)
+    private Warehouse requireWarehouse(UUID tenantId, UUID authenticatedUserId, UUID warehouseId) {
+        Warehouse warehouse = warehouseRepository.findById(tenantId, warehouseId)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Warehouse not found"));
+        validateWarehouseAnchoring(tenantId, authenticatedUserId, warehouse);
+        return warehouse;
     }
 
     private StoragePlace requireStoragePlaceIfPresent(UUID tenantId, UUID storagePlaceId) {
@@ -227,15 +294,47 @@ public class InventoryApplicationService {
         }
     }
 
-    private InventoryAssetView toInventoryAssetView(UUID assetId, InventoryRecord inventoryRecord) {
-        if (inventoryRecord == null) {
-            return new InventoryAssetView(assetId, false, null, null);
+    private void validateWarehouseAnchoring(UUID tenantId, UUID authenticatedUserId, Warehouse warehouse) {
+        if (warehouse.branchId() == null) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Warehouse branch mapping is invalid");
         }
+        try {
+            if (!userServiceReferenceLookup.branchExists(tenantId, authenticatedUserId, warehouse.branchId())) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "Warehouse branch mapping is invalid");
+            }
+            if (warehouse.locationId() != null
+                && !userServiceReferenceLookup.locationExists(tenantId, authenticatedUserId, warehouse.locationId())) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "Warehouse location mapping is invalid");
+            }
+        } catch (ReferenceLookupUnavailableException exception) {
+            throw new ResponseStatusException(
+                HttpStatus.SERVICE_UNAVAILABLE,
+                "Unable to validate warehouse mapping via user-service",
+                exception
+            );
+        }
+    }
+
+    private InventoryAssetView toInventoryAssetView(UUID tenantId, UUID authenticatedUserId, InventoryRecord inventoryRecord) {
+        return toInventoryAssetView(inventoryRecord.assetId(), tenantId, authenticatedUserId, inventoryRecord);
+    }
+
+    private InventoryAssetView toInventoryAssetView(
+        UUID assetId,
+        UUID tenantId,
+        UUID authenticatedUserId,
+        InventoryRecord inventoryRecord
+    ) {
+        if (inventoryRecord == null) {
+            return new InventoryAssetView(assetId, false, null, null, null);
+        }
+        requireWarehouse(tenantId, authenticatedUserId, inventoryRecord.warehouseId());
         return new InventoryAssetView(
             assetId,
             true,
             inventoryRecord.warehouseId(),
-            inventoryRecord.storagePlaceId()
+            inventoryRecord.storagePlaceId(),
+            inventoryRecord.readinessState()
         );
     }
 
@@ -247,14 +346,20 @@ public class InventoryApplicationService {
         UUID assetId,
         boolean inStorageNow,
         UUID warehouseId,
-        UUID storagePlaceId
+        UUID storagePlaceId,
+        ReadinessState readinessState
     ) {
     }
 
     public record AssignHandoffResult(UUID assetId, boolean consumed) {
     }
 
-    private record InventoryPlacementAuditPayload(UUID assetId, UUID warehouseId, UUID storagePlaceId) {
+    private record InventoryPlacementAuditPayload(
+        UUID assetId,
+        UUID warehouseId,
+        UUID storagePlaceId,
+        ReadinessState readinessState
+    ) {
     }
 
     private record MoveAuditPayload(
@@ -262,7 +367,15 @@ public class InventoryApplicationService {
         UUID previousWarehouseId,
         UUID previousStoragePlaceId,
         UUID newWarehouseId,
-        UUID newStoragePlaceId
+        UUID newStoragePlaceId,
+        ReadinessState readinessState
+    ) {
+    }
+
+    private record ReadinessChangeAuditPayload(
+        UUID assetId,
+        ReadinessState previousReadinessState,
+        ReadinessState newReadinessState
     ) {
     }
 }

@@ -7,12 +7,13 @@ Owner: architecture
 Минимальный API-контракт первого Inventory / Warehouse contour.
 
 ## Scope
-Этот документ покрывает только:
+Этот документ покрывает:
 - warehouse reference read
 - storage placement read
 - current storage custody read
 - inventory-side place-in-storage command
 - inventory-side move command
+- readiness-aware inventory-side read refinement
 
 ## API Principles
 - все API versioned
@@ -74,14 +75,6 @@ Inventory-side visibility `available for next assignment`
 она только показывает,
 что Asset сейчас находится в storage custody.
 
-## Not Fixed In This Document
-- exact public handoff contract from storage custody into existing assign flow
-- exact public handoff contract from existing return outcome back into storage custody
-- full request / response schema
-- separate inventory state vocabulary
-- move-history model beyond audit
-- warehouse-to-branch/location mapping
-- bulk APIs
 
 ## Workflow Semantics Clarification
 
@@ -131,3 +124,118 @@ Inventory-side visibility `available for next assignment`
 
 Это не канонизирует final assign eligibility
 и не заменяет existing assign validations.
+
+## Availability / Readiness Refinement
+
+Следующий API refinement
+должен позволять inventory-side read surfaces
+различать:
+
+- `not in storage now`
+- `in storage and ready`
+- `in storage but not ready`
+
+### Boundary rule
+Inventory-side readiness:
+- означает только storage-side operational readiness;
+- не переопределяет final assign eligibility;
+- не заменяет existing assign validations в `asset-service`.
+
+### Read-surface refinement
+
+#### Warehouses
+`GET /api/v1/warehouses`
+должен отражать minimal warehouse anchoring:
+- `branch_id`
+- `location_id` (optional)
+
+#### Assets currently in storage
+`GET /api/v1/inventory/assets/in-storage`
+должен по-прежнему отвечать на вопрос:
+- what is in storage now
+
+Дополнительно этот read surface
+должен позволять отличать:
+- in storage and ready
+- in storage but not ready
+
+Минимально достаточно,
+чтобы inventory-side read model
+включал:
+- `readiness_state`
+
+#### Single asset inventory-side view
+`GET /api/v1/inventory/assets/{asset_id}`
+должен позволять отличать:
+- asset not in storage now;
+- asset in storage and ready;
+- asset in storage but not ready.
+
+### Recommended readiness vocabulary
+Для этого refinement
+достаточно narrow two-value vocabulary:
+- `READY`
+- `NOT_READY`
+
+### Handoff rule remains unchanged
+ADR-0009 сохраняется без изменений:
+- successful assign в `asset-service`
+  остается canonical trigger point
+  для inventory-side storage custody consumption;
+- readiness semantics
+  не открывает отдельный public inventory exit API.
+
+## Not Fixed In This Document
+- exact public handoff contract from storage custody into existing assign flow
+- exact public handoff contract from existing return outcome back into storage custody
+- full request / response schema
+- query/filter parameter canon
+- move-history model beyond audit
+- bulk APIs
+- broad warehouse state machine
+- final assign eligibility logic
+
+
+## Readiness Workflow Clarification
+
+### Public mutation justification
+Следующий slice оправдывает отдельный public readiness mutation command,
+потому что readiness refinement
+иначе остается без inventory-side system of action.
+
+При этом этот документ по-прежнему не канонизирует:
+- exact endpoint;
+- payload schema;
+- error model.
+
+### Place-in-storage relation
+`place-in-storage`
+должен создавать current `InventoryRecord`
+с initial `readiness_state = NOT_READY`.
+
+### Move relation
+`move`
+не должен автоматически менять `readiness_state`.
+
+### Assign handoff relation
+Readiness refinement
+не меняет ADR-0009 handoff rule:
+
+- successful assign
+  остается canonical trigger point
+  для storage custody consumption;
+- readiness semantics
+  не открывает новый public inventory exit API;
+- readiness semantics
+  не канонизирует new synchronous precondition
+  для assign success.
+
+### Audit implication
+Readiness change
+должен трактоваться как critical inventory-side write
+и попадать в audit.
+
+### History implication
+Separate readiness history surface
+beyond audit
+в этом slice не требуется.

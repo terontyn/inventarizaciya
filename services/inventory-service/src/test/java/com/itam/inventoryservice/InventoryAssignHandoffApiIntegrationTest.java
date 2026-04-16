@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.itam.inventoryservice.domain.ReadinessState;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
@@ -18,9 +19,9 @@ class InventoryAssignHandoffApiIntegrationTest extends IntegrationTestSupport {
     void assignHandoffConsumesCurrentInventoryRecordAndWritesAudit() throws Exception {
         UUID tenantId = UUID.randomUUID();
         UUID assetId = UUID.randomUUID();
-        UUID warehouseId = insertWarehouse(tenantId);
+        UUID warehouseId = insertWarehouse(tenantId, UUID.randomUUID());
         UUID storagePlaceId = insertStoragePlace(tenantId, warehouseId);
-        insertInventoryRecord(tenantId, assetId, warehouseId, storagePlaceId);
+        insertInventoryRecord(tenantId, assetId, warehouseId, storagePlaceId, ReadinessState.READY);
 
         mockMvc.perform(post("/internal/api/v1/inventory/assets/{assetId}/assign-handoff", assetId)
                 .header(AUTHENTICATED_TENANT_HEADER, tenantId)
@@ -37,6 +38,7 @@ class InventoryAssignHandoffApiIntegrationTest extends IntegrationTestSupport {
         assertThat(auditRow.actionType()).isEqualTo("CONSUME_FROM_ASSIGN");
         assertThat(auditRow.correlationId()).isEqualTo("corr-assign-handoff");
         assertThat(auditRow.changePayload()).contains(assetId.toString());
+        assertThat(auditRow.changePayload()).contains("READY");
     }
 
     @Test
@@ -44,7 +46,7 @@ class InventoryAssignHandoffApiIntegrationTest extends IntegrationTestSupport {
         UUID tenantA = UUID.randomUUID();
         UUID tenantB = UUID.randomUUID();
         UUID sharedAssetId = UUID.randomUUID();
-        UUID warehouseB = insertWarehouse(tenantB);
+        UUID warehouseB = insertWarehouse(tenantB, UUID.randomUUID());
         insertInventoryRecord(tenantB, sharedAssetId, warehouseB, null);
 
         mockMvc.perform(post("/internal/api/v1/inventory/assets/{assetId}/assign-handoff", sharedAssetId)

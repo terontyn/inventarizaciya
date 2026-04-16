@@ -87,3 +87,16 @@ Asset фактически принимается в warehouse / storage custody
 - до explicit inventory intake
   Asset не должен считаться `in storage now`
   только на основании completed `return`.
+
+  ## Inventory Readiness Clarification
+Если после `Return`
+Asset проходит explicit inventory intake
+через `place-in-storage`,
+inventory-side readiness
+не должна считаться automatic.
+
+Для readiness refinement
+такой Asset должен входить в current storage custody
+с initial `NOT_READY`,
+пока отдельный explicit readiness-change workflow
+не переведет его в `READY`.

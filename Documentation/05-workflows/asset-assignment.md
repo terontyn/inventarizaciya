@@ -79,3 +79,16 @@ successful assign completion в `asset-service`
 Compensating rollback of assign
 из-за временного inventory-side failure
 в первом contour не требуется.
+
+## Inventory Readiness Clarification
+Inventory-side readiness
+остается только storage-side operational signal
+внутри `inventory-service`.
+
+Этот refinement:
+- не переносит final assign eligibility
+  в inventory context;
+- не канонизирует synchronous requirement,
+  что Asset must be `READY`
+  для assign success;
+- не меняет ADR-0009 handoff semantics.

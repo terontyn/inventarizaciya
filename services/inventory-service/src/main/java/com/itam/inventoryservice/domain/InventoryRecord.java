@@ -7,6 +7,7 @@ public record InventoryRecord(
     UUID tenantId,
     UUID assetId,
     UUID warehouseId,
-    UUID storagePlaceId
+    UUID storagePlaceId,
+    ReadinessState readinessState
 ) {
 }

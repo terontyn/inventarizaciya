@@ -2,6 +2,7 @@ package com.itam.inventoryservice.infrastructure;
 
 import com.itam.inventoryservice.domain.InventoryRecord;
 import com.itam.inventoryservice.domain.InventoryRecordRepository;
+import com.itam.inventoryservice.domain.ReadinessState;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -19,7 +20,8 @@ public class JdbcInventoryRecordRepository implements InventoryRecordRepository 
         resultSet.getObject("tenant_id", UUID.class),
         resultSet.getObject("asset_id", UUID.class),
         resultSet.getObject("warehouse_id", UUID.class),
-        resultSet.getObject("storage_place_id", UUID.class)
+        resultSet.getObject("storage_place_id", UUID.class),
+        ReadinessState.valueOf(resultSet.getString("readiness_state"))
     );
 
     private final NamedParameterJdbcTemplate jdbcTemplate;
@@ -32,7 +34,7 @@ public class JdbcInventoryRecordRepository implements InventoryRecordRepository 
     public List<InventoryRecord> findAllCurrent(UUID tenantId) {
         UUID scopedTenantId = SqlTenantScope.requireTenantId(tenantId);
         return jdbcTemplate.query(
-            "SELECT id, tenant_id, asset_id, warehouse_id, storage_place_id "
+            "SELECT id, tenant_id, asset_id, warehouse_id, storage_place_id, readiness_state "
                 + "FROM inventory_records WHERE tenant_id = :tenantId ORDER BY asset_id, id",
             Map.of("tenantId", scopedTenantId),
             INVENTORY_RECORD_ROW_MAPPER
@@ -43,7 +45,7 @@ public class JdbcInventoryRecordRepository implements InventoryRecordRepository 
     public Optional<InventoryRecord> findByAssetId(UUID tenantId, UUID assetId) {
         UUID scopedTenantId = SqlTenantScope.requireTenantId(tenantId);
         List<InventoryRecord> records = jdbcTemplate.query(
-            "SELECT id, tenant_id, asset_id, warehouse_id, storage_place_id "
+            "SELECT id, tenant_id, asset_id, warehouse_id, storage_place_id, readiness_state "
                 + "FROM inventory_records WHERE tenant_id = :tenantId AND asset_id = :assetId",
             Map.of("tenantId", scopedTenantId, "assetId", assetId),
             INVENTORY_RECORD_ROW_MAPPER
@@ -52,7 +54,13 @@ public class JdbcInventoryRecordRepository implements InventoryRecordRepository 
     }
 
     @Override
-    public InventoryRecord create(UUID tenantId, UUID assetId, UUID warehouseId, UUID storagePlaceId) {
+    public InventoryRecord create(
+        UUID tenantId,
+        UUID assetId,
+        UUID warehouseId,
+        UUID storagePlaceId,
+        ReadinessState readinessState
+    ) {
         UUID scopedTenantId = SqlTenantScope.requireTenantId(tenantId);
         UUID id = UUID.randomUUID();
         MapSqlParameterSource parameters = new MapSqlParameterSource()
@@ -60,13 +68,14 @@ public class JdbcInventoryRecordRepository implements InventoryRecordRepository 
             .addValue("tenantId", scopedTenantId)
             .addValue("assetId", assetId)
             .addValue("warehouseId", warehouseId)
-            .addValue("storagePlaceId", storagePlaceId);
+            .addValue("storagePlaceId", storagePlaceId)
+            .addValue("readinessState", readinessState.name());
         jdbcTemplate.update(
-            "INSERT INTO inventory_records (id, tenant_id, asset_id, warehouse_id, storage_place_id) "
-                + "VALUES (:id, :tenantId, :assetId, :warehouseId, :storagePlaceId)",
+            "INSERT INTO inventory_records (id, tenant_id, asset_id, warehouse_id, storage_place_id, readiness_state) "
+                + "VALUES (:id, :tenantId, :assetId, :warehouseId, :storagePlaceId, :readinessState)",
             parameters
         );
-        return new InventoryRecord(id, scopedTenantId, assetId, warehouseId, storagePlaceId);
+        return new InventoryRecord(id, scopedTenantId, assetId, warehouseId, storagePlaceId, readinessState);
     }
 
     @Override
@@ -85,6 +94,21 @@ public class JdbcInventoryRecordRepository implements InventoryRecordRepository 
                 "assetId", assetId,
                 "warehouseId", warehouseId,
                 "storagePlaceId", storagePlaceId
+            )
+        );
+        return updated == 0 ? Optional.empty() : findByAssetId(scopedTenantId, assetId);
+    }
+
+    @Override
+    public Optional<InventoryRecord> updateReadiness(UUID tenantId, UUID assetId, ReadinessState readinessState) {
+        UUID scopedTenantId = SqlTenantScope.requireTenantId(tenantId);
+        int updated = jdbcTemplate.update(
+            "UPDATE inventory_records SET readiness_state = :readinessState "
+                + "WHERE tenant_id = :tenantId AND asset_id = :assetId",
+            Map.of(
+                "tenantId", scopedTenantId,
+                "assetId", assetId,
+                "readinessState", readinessState.name()
             )
         );
         return updated == 0 ? Optional.empty() : findByAssetId(scopedTenantId, assetId);

@@ -15,7 +15,9 @@ public class JdbcWarehouseRepository implements WarehouseRepository {
 
     private static final RowMapper<Warehouse> WAREHOUSE_ROW_MAPPER = (resultSet, rowNum) -> new Warehouse(
         resultSet.getObject("id", UUID.class),
-        resultSet.getObject("tenant_id", UUID.class)
+        resultSet.getObject("tenant_id", UUID.class),
+        resultSet.getObject("branch_id", UUID.class),
+        resultSet.getObject("location_id", UUID.class)
     );
 
     private final NamedParameterJdbcTemplate jdbcTemplate;
@@ -28,7 +30,7 @@ public class JdbcWarehouseRepository implements WarehouseRepository {
     public List<Warehouse> findAll(UUID tenantId) {
         UUID scopedTenantId = SqlTenantScope.requireTenantId(tenantId);
         return jdbcTemplate.query(
-            "SELECT id, tenant_id FROM warehouses WHERE tenant_id = :tenantId ORDER BY id",
+            "SELECT id, tenant_id, branch_id, location_id FROM warehouses WHERE tenant_id = :tenantId ORDER BY id",
             Map.of("tenantId", scopedTenantId),
             WAREHOUSE_ROW_MAPPER
         );
@@ -38,7 +40,7 @@ public class JdbcWarehouseRepository implements WarehouseRepository {
     public Optional<Warehouse> findById(UUID tenantId, UUID id) {
         UUID scopedTenantId = SqlTenantScope.requireTenantId(tenantId);
         List<Warehouse> warehouses = jdbcTemplate.query(
-            "SELECT id, tenant_id FROM warehouses WHERE tenant_id = :tenantId AND id = :id",
+            "SELECT id, tenant_id, branch_id, location_id FROM warehouses WHERE tenant_id = :tenantId AND id = :id",
             Map.of("tenantId", scopedTenantId, "id", id),
             WAREHOUSE_ROW_MAPPER
         );

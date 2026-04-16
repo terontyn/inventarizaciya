@@ -10,9 +10,17 @@ public interface InventoryRecordRepository {
 
     Optional<InventoryRecord> findByAssetId(UUID tenantId, UUID assetId);
 
-    InventoryRecord create(UUID tenantId, UUID assetId, UUID warehouseId, UUID storagePlaceId);
+    InventoryRecord create(
+        UUID tenantId,
+        UUID assetId,
+        UUID warehouseId,
+        UUID storagePlaceId,
+        ReadinessState readinessState
+    );
 
     Optional<InventoryRecord> updatePlacement(UUID tenantId, UUID assetId, UUID warehouseId, UUID storagePlaceId);
+
+    Optional<InventoryRecord> updateReadiness(UUID tenantId, UUID assetId, ReadinessState readinessState);
 
     void deleteById(UUID tenantId, UUID id);
 }

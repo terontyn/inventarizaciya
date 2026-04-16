@@ -190,25 +190,25 @@ UI contour должен опираться на уже существующие 
 а как bounded storage-aware contour
 для already tracked physical assets.
 
-## Inventory / Warehouse — Architecture Clarification
+ 
+## Inventory Availability / Readiness Refinement
 
-После закрытия Asset Accountability MVP
-следующим рекомендуемым Wave 2 contour
-является `Inventory / Warehouse`.
+После closeout первого narrow `Inventory / Warehouse` contour
+следующим bounded expansion slice
+внутри inventory context
+рекомендуется `Inventory Availability / Readiness Refinement`.
 
-### Interpretation rule
-Этот contour трактуется узко:
-как storage-aware operational layer
-для already tracked physical assets.
+### Purpose
+Этот slice нужен,
+чтобы различать:
+- asset physically in storage;
+- asset in storage and inventory-side ready for next assignment;
+- asset in storage but inventory-side not ready.
 
-Он не трактуется как:
-- full WMS;
-- ERP warehouse module;
-- procurement / supplier / finance contour;
-- reporting-first contour.
-
-### Source-of-truth rule
-- `asset-service` остается source of truth для asset identity и master record;
-- existing responsibility flows остаются source of truth для responsibility lifecycle;
-- `Inventory / Warehouse` добавляет отдельную operational dimension:
-  storage custody и warehouse placement.
+### Boundary rule
+Этот slice:
+- остается внутри `Inventory / Warehouse`;
+- не переопределяет asset identity;
+- не переопределяет responsibility lifecycle;
+- не переносит final assign eligibility в inventory context;
+- не открывает full WMS / ERP scope.

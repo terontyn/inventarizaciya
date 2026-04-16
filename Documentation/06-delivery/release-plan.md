@@ -343,3 +343,25 @@ Decision: approved candidate
 для individually tracked assets
 и не расширяется в procurement, supplier, finance,
 consumables, advanced logistics или BI-first scope.
+
+## Inventory / Warehouse Minimal Contour Closeout
+
+Первый narrow `Inventory / Warehouse` contour считается реализованным
+на уровне minimal Wave 2 implementation.
+
+### Current status
+- `inventory-service` добавлен как отдельная service boundary;
+- storage custody и warehouse placement реализованы как отдельная operational dimension;
+- реализованы minimal reads и commands первого contour;
+- assign-to-inventory handoff реализован через internal-only asynchronous integration;
+- direct DB coupling между сервисами не вводился;
+- scope не расширялся в full WMS / ERP / procurement / reporting / barcode scope.
+
+### Practical interpretation
+Следовательно:
+- первый minimal inventory contour не должен снова открываться как greenfield implementation step;
+- дальнейшая работа по inventory должна трактоваться либо как:
+  - hardening,
+  - gap closure,
+  - либо следующий inventory expansion slice,
+  - но не как повторная реализация базового storage custody contour.

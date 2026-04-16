@@ -9,6 +9,7 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.itam.inventoryservice.domain.ReadinessState;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -70,9 +71,19 @@ public abstract class IntegrationTestSupport {
             .build();
     }
 
-    protected UUID insertWarehouse(UUID tenantId) {
+    protected UUID insertWarehouse(UUID tenantId, UUID branchId) {
+        return insertWarehouse(tenantId, branchId, null);
+    }
+
+    protected UUID insertWarehouse(UUID tenantId, UUID branchId, UUID locationId) {
         UUID id = UUID.randomUUID();
-        jdbcTemplate.update("INSERT INTO warehouses (id, tenant_id) VALUES (?, ?)", id, tenantId);
+        jdbcTemplate.update(
+            "INSERT INTO warehouses (id, tenant_id, branch_id, location_id) VALUES (?, ?, ?, ?)",
+            id,
+            tenantId,
+            branchId,
+            locationId
+        );
         return id;
     }
 
@@ -88,14 +99,26 @@ public abstract class IntegrationTestSupport {
     }
 
     protected UUID insertInventoryRecord(UUID tenantId, UUID assetId, UUID warehouseId, UUID storagePlaceId) {
+        return insertInventoryRecord(tenantId, assetId, warehouseId, storagePlaceId, ReadinessState.NOT_READY);
+    }
+
+    protected UUID insertInventoryRecord(
+        UUID tenantId,
+        UUID assetId,
+        UUID warehouseId,
+        UUID storagePlaceId,
+        ReadinessState readinessState
+    ) {
         UUID id = UUID.randomUUID();
         jdbcTemplate.update(
-            "INSERT INTO inventory_records (id, tenant_id, asset_id, warehouse_id, storage_place_id) VALUES (?, ?, ?, ?, ?)",
+            "INSERT INTO inventory_records (id, tenant_id, asset_id, warehouse_id, storage_place_id, readiness_state) "
+                + "VALUES (?, ?, ?, ?, ?, ?)",
             id,
             tenantId,
             assetId,
             warehouseId,
-            storagePlaceId
+            storagePlaceId,
+            readinessState.name()
         );
         return id;
     }
@@ -107,7 +130,7 @@ public abstract class IntegrationTestSupport {
 
     protected InventoryRecordRow inventoryRecordRow(UUID tenantId, UUID assetId) {
         return jdbcTemplate.query(
-            "SELECT id, tenant_id, asset_id, warehouse_id, storage_place_id "
+            "SELECT id, tenant_id, asset_id, warehouse_id, storage_place_id, readiness_state "
                 + "FROM inventory_records WHERE tenant_id = ? AND asset_id = ?",
             resultSet -> {
                 if (!resultSet.next()) {
@@ -118,7 +141,8 @@ public abstract class IntegrationTestSupport {
                     resultSet.getObject("tenant_id", UUID.class),
                     resultSet.getObject("asset_id", UUID.class),
                     resultSet.getObject("warehouse_id", UUID.class),
-                    resultSet.getObject("storage_place_id", UUID.class)
+                    resultSet.getObject("storage_place_id", UUID.class),
+                    ReadinessState.valueOf(resultSet.getString("readiness_state"))
                 );
             },
             tenantId,
@@ -177,12 +201,46 @@ public abstract class IntegrationTestSupport {
                 : withStatus(responseStatus));
     }
 
+    protected void expectBranchLookup(
+        UUID tenantId,
+        UUID authenticatedUserId,
+        UUID branchId,
+        HttpStatus responseStatus
+    ) {
+        expectUserServiceReferenceLookup("/api/v1/branches/" + branchId, tenantId, authenticatedUserId, responseStatus);
+    }
+
+    protected void expectLocationLookup(
+        UUID tenantId,
+        UUID authenticatedUserId,
+        UUID locationId,
+        HttpStatus responseStatus
+    ) {
+        expectUserServiceReferenceLookup("/api/v1/locations/" + locationId, tenantId, authenticatedUserId, responseStatus);
+    }
+
+    private void expectUserServiceReferenceLookup(
+        String path,
+        UUID tenantId,
+        UUID authenticatedUserId,
+        HttpStatus responseStatus
+    ) {
+        mockUserService.expect(ExpectedCount.once(), requestTo(userServiceBaseUrl + path))
+            .andExpect(method(HttpMethod.GET))
+            .andExpect(header(AUTHENTICATED_TENANT_HEADER, tenantId.toString()))
+            .andExpect(header(AUTHENTICATED_USER_HEADER, authenticatedUserId.toString()))
+            .andRespond(responseStatus.is2xxSuccessful()
+                ? withSuccess("{}", MediaType.APPLICATION_JSON)
+                : withStatus(responseStatus));
+    }
+
     protected record InventoryRecordRow(
         UUID id,
         UUID tenantId,
         UUID assetId,
         UUID warehouseId,
-        UUID storagePlaceId
+        UUID storagePlaceId,
+        ReadinessState readinessState
     ) {
     }
 

@@ -10,10 +10,13 @@ Inventory / Warehouse domain добавляет storage-aware operational layer
 или responsibility lifecycle.
 
 ## Scope
-Этот документ фиксирует только первый narrow Wave 2 contour:
-- storage custody
-- warehouse placement
-- minimal moves between storage places
+Документ фиксирует:
+- первый narrow Wave 2 contour:
+  - storage custody
+  - warehouse placement
+  - minimal moves between storage places
+- и следующий bounded refinement:
+  - inventory-side availability / readiness semantics
 
 ## Core Entities
 - Warehouse
@@ -159,3 +162,124 @@ beyond current-state representation
 
 Final physical current-vs-history model
 остается отдельным open decision.
+
+
+## Inventory Availability / Readiness Refinement
+
+Следующим bounded expansion slice
+внутри `Inventory / Warehouse`
+является уточнение inventory-side availability / readiness semantics.
+
+### Current-state interpretation
+- наличие current `InventoryRecord`
+  по-прежнему означает только,
+  что Asset сейчас находится in storage now;
+- readiness является отдельным inventory-side current-state signal,
+  который имеет смысл только при наличии current storage custody.
+
+### Minimum distinction
+Inventory context должен различать:
+- not in storage now;
+- in storage and ready;
+- in storage but not ready.
+
+### Boundary rule
+Inventory-side readiness:
+- не равна final assign eligibility;
+- не заменяет existing assign validations;
+- не делает `inventory-service` owner assign decision logic.
+
+### Narrowness rule
+Для этого slice достаточно narrow readiness semantics.
+Этот шаг не открывает broad warehouse state machine.
+
+## Warehouse Mapping Refinement
+
+### Mandatory closure
+`Warehouse` должен иметь narrow relation
+к existing `Branch`.
+
+### Optional physical anchor
+`Warehouse` может иметь optional relation
+к existing `Location`
+как narrow physical anchor.
+
+### Narrowness rule
+Эта optional `Location` relation:
+- не создает новую topology hierarchy;
+- не делает `Location`
+  owner warehouse placement model;
+- не переопределяет internal `StoragePlace` hierarchy,
+  которая по-прежнему остается inventory-local.
+
+  ## Readiness Workflow Semantics
+
+### Dedicated workflow rule
+Readiness refinement требует отдельного dedicated inventory-side workflow
+для изменения `readiness_state`
+между `READY` и `NOT_READY`.
+
+Этот workflow:
+- остается внутри `inventory-service`;
+- не переопределяет responsibility lifecycle;
+- не переопределяет final assign decision logic;
+- не открывает broad warehouse state machine.
+
+### System of action
+System of action для readiness change
+остается inventory-side operator action
+внутри `inventory-service`.
+
+### Preconditions
+Readiness change имеет смысл
+только если существует current `InventoryRecord`.
+
+Следовательно:
+- readiness change невозможен для Asset,
+  который сейчас `not in storage now`;
+- readiness change всегда относится
+  к current storage custody representation.
+
+### Transition semantics
+Минимально фиксируются следующие переходы:
+- `NOT_READY -> READY`
+- `READY -> NOT_READY`
+
+Оба перехода:
+- выполняются только explicit action;
+- не канонизируют final assign eligibility;
+- не создают отдельный history surface beyond audit.
+
+### Initial readiness at storage intake
+`place-in-storage`
+должен создавать current storage custody representation
+с initial `readiness_state = NOT_READY`.
+
+Сам факт storage intake
+не означает automatic readiness.
+
+### Move relation
+Inventory-side `move`
+не должен автоматически менять `readiness_state`.
+
+Move меняет placement,
+а readiness change остается отдельным workflow.
+
+### Assign relation
+Inventory-side readiness
+остается storage-side operational signal only.
+
+Этот refinement
+не канонизирует rule,
+что successful assign требует synchronous `READY` check,
+и не меняет ADR-0009 handoff semantics.
+
+### Reason / note rule
+Для первого readiness refinement
+mandatory explicit reason / note
+для `NOT_READY`
+не требуется.
+
+Такой reason model
+может быть введен позже отдельным решением,
+если он действительно понадобится.
