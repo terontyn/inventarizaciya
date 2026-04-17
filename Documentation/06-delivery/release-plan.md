@@ -365,3 +365,76 @@ consumables, advanced logistics или BI-first scope.
   - gap closure,
   - либо следующий inventory expansion slice,
   - но не как повторная реализация базового storage custody contour.
+
+
+## Inventory Availability / Readiness Refinement Closeout Clarification
+
+`Inventory Availability / Readiness Refinement`
+считается закрытым
+как completed bounded expansion slice
+внутри `Inventory / Warehouse`.
+
+### Current interpretation
+После этого closeout inventory context уже покрывает:
+- current storage custody;
+- warehouse placement;
+- warehouse anchoring to existing physical org model;
+- inventory-side readiness semantics.
+
+### Practical rule
+Следовательно:
+- readiness refinement не должен снова открываться
+  как новый greenfield implementation slice;
+- дальнейшее расширение inventory
+  не считается default next step;
+- move history beyond audit,
+  richer current-vs-history representation
+  и stocktaking / reconciliation
+  остаются deferred
+  до отдельного product decision.
+
+## Wave 2 Sequencing Clarification After Inventory Readiness
+
+После closeout `Inventory Availability / Readiness Refinement`
+следующим рекомендуемым шагом Wave 2
+является не еще один bounded inventory slice,
+а переход к следующему большому contour.
+
+### Recommended next contour
+Следующим рекомендуемым contour
+является `Maintenance`.
+
+### Why not continue inventory now
+После readiness refinement
+inventory уже достиг bounded usable state
+для своего narrow product purpose:
+- what is in storage now;
+- where it is placed now;
+- whether it is inventory-side ready or not ready.
+
+Следующие candidate expansions внутри inventory
+уже в основном ведут в:
+- move history platform;
+- richer warehouse current-vs-history model;
+- stocktaking / reconciliation / cycle counting.
+
+Это означает заметно более warehouse-heavy expansion
+и повышает риск drift в full WMS direction.
+
+### Why Maintenance next
+После inventory readiness
+следующий practical operational gap
+смещается из warehouse custody
+в serviceability loop:
+
+- почему asset currently not ready;
+- как он проходит inspection / repair / servicing;
+- как он возвращается
+  в operationally usable state.
+
+### Boundary rule
+Этот sequencing decision:
+- не расширяет inventory в full WMS;
+- не меняет ADR-0009;
+- не переносит readiness ownership из `inventory-service`;
+- не переносит final assign decision logic из `asset-service`.

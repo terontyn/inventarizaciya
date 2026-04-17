@@ -212,3 +212,39 @@ UI contour должен опираться на уже существующие 
 - не переопределяет responsibility lifecycle;
 - не переносит final assign eligibility в inventory context;
 - не открывает full WMS / ERP scope.
+
+## Wave 2 Sequencing Clarification After Inventory Readiness
+
+После closeout `Inventory Availability / Readiness Refinement`
+следующим рекомендуемым шагом Wave 2
+является переход
+к следующему большому contour,
+а не еще один bounded inventory slice.
+
+### Recommended next contour
+Следующим рекомендуемым contour
+является `Maintenance`.
+
+## Maintenance — Wave 2 Architecture Clarification
+
+После closeout `Inventory Availability / Readiness Refinement`
+следующим рекомендуемым большим Wave 2 contour
+является `Maintenance`.
+
+### Purpose
+`Maintenance` трактуется как serviceability layer
+для already tracked physical assets.
+
+Этот contour должен отвечать на вопросы:
+- требует ли Asset inspection / repair / servicing;
+- какой maintenance work сейчас открыт;
+- когда Asset возвращается в serviceable operational state.
+
+### Boundary rule
+`Maintenance`:
+- не переопределяет asset identity или asset master record;
+- не переопределяет inventory custody ownership;
+- не переопределяет inventory readiness ownership;
+- не переопределяет responsibility lifecycle или final assign decision logic;
+- не трактуется как generic service desk / full ITSM suite;
+- не открывает procurement / supplier / finance / depreciation scope.

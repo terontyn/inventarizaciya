@@ -239,3 +239,18 @@ Readiness change
 Separate readiness history surface
 beyond audit
 в этом slice не требуется.
+
+## Maintenance Boundary Clarification
+
+Maintenance-side open / completed work
+не являются inventory-owned readiness mutation сами по себе.
+
+Следовательно:
+- opening maintenance work
+  не канонизирует automatic `NOT_READY`;
+- maintenance completion
+  не канонизирует automatic `READY`.
+
+Если inventory-side readiness change нужен,
+он должен выполняться
+через отдельный inventory-side readiness workflow.

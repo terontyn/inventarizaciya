@@ -8,3 +8,6 @@ project(":services:asset-service").projectDir = file("services/asset-service")
 
 include(":services:inventory-service")
 project(":services:inventory-service").projectDir = file("services/inventory-service")
+
+include(":services:maintenance-service")
+project(":services:maintenance-service").projectDir = file("services/maintenance-service")

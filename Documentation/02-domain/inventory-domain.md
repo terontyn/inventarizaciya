@@ -283,3 +283,19 @@ mandatory explicit reason / note
 Такой reason model
 может быть введен позже отдельным решением,
 если он действительно понадобится.
+
+## Maintenance Relation Clarification
+
+Maintenance completion
+не меняет inventory readiness автоматически.
+
+Maintenance opening
+также не канонизирует automatic readiness mutation.
+
+Следовательно:
+- maintenance-side work lifecycle
+  и inventory-side readiness lifecycle
+  остаются раздельными;
+- readiness mutation,
+  если она нужна после maintenance action,
+  остается отдельным inventory-owned action.
