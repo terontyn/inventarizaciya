@@ -146,3 +146,30 @@ Software allocation visibility:
 - allocation to asset не требует inventory-owned readiness semantics;
 - allocation to asset не требует maintenance-owned workflow semantics
   в first contour canon.
+
+  ## Post-Closeout Clarification
+
+Для current Wave 2 stage
+первый narrow `Software` contour
+считается достаточным
+как minimal software-aware operational layer.
+
+### Current interpretation
+На этом этапе software уже покрывает:
+- software record visibility;
+- current software-to-user allocation visibility;
+- current software-to-asset allocation visibility;
+- explicit create / allocate / remove actions;
+- current-state-only relation model.
+
+### Deferred by default
+Следующие возможные расширения
+не считаются default next step:
+- richer software field model;
+- key / type / status semantics;
+- software history beyond current-state visibility;
+- seat-like allocation refinement;
+- coordination refinement with user / asset lifecycle.
+
+Эти темы остаются deferred
+до отдельного product decision.

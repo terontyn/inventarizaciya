@@ -109,3 +109,23 @@ beyond current visibility
 
 Audit trail остается достаточным minimum fact trail
 до отдельного последующего решения.
+
+## Closeout Clarification
+
+Текущая software ER-модель
+считается достаточной
+для narrow current software stage.
+
+### Current interpretation
+Минимальной current-state модели достаточно,
+чтобы представить:
+- software records;
+- current software-to-user relations;
+- current software-to-asset relations.
+
+### Deferred by default
+Richer software model
+и separate software history surface
+beyond current-state representation + audit
+по-прежнему остаются deferred
+и не открываются как default next step.

@@ -470,7 +470,7 @@ inventory уже достиг bounded usable state
   остаются deferred
   до отдельного product decision.
 
-  ## Wave 2 Sequencing Clarification After Maintenance
+## Wave 2 Sequencing Clarification After Maintenance
 
 После closeout первого narrow `Maintenance` contour
 следующим рекомендуемым шагом Wave 2
@@ -509,4 +509,83 @@ maintenance уже достиг bounded usable state
   в generic helpdesk / ITSM contour;
 - не меняет inventory readiness ownership;
 - не меняет final assign decision ownership;
+- не меняет ADR-0009.
+
+
+## Software Minimal Contour Closeout Clarification
+
+Первый narrow `Software` contour
+считается закрытым
+как completed bounded Wave 2 slice.
+
+### Current interpretation
+После этого closeout software context уже покрывает:
+- software record visibility;
+- current software-to-user allocation visibility;
+- current software-to-asset allocation visibility;
+- explicit create / allocate / remove actions;
+- current-state-only software relation model.
+
+### Practical rule
+Следовательно:
+- первый narrow `Software` contour
+  не должен снова открываться
+  как greenfield implementation step;
+- дальнейшее расширение software
+  не считается default next move;
+- richer software field model,
+  key / type / status semantics,
+  software history beyond current-state visibility,
+  seat-like allocation refinement
+  и coordination refinement with user / asset lifecycle
+  остаются deferred
+  до отдельного product decision.
+
+## Wave 2 Sequencing Clarification After Software
+
+После closeout первого narrow `Software` contour
+следующим рекомендуемым шагом Wave 2
+является переход
+к другому большому contour,
+а не еще один default software expansion slice.
+
+### Recommended next contour
+Следующим рекомендуемым contour
+является `Ticket`.
+
+### Why not continue Software now
+После minimal software closeout
+software уже достиг bounded usable state
+для своего narrow product purpose:
+- what software records tenant tracks now;
+- what current software-to-user relations exist;
+- what current software-to-asset relations exist.
+
+Следующие candidate expansions внутри software
+уже в основном ведут в:
+- richer field model;
+- key / type / status semantics;
+- seat-like refinement;
+- history-heavy refinement;
+- lifecycle coordination convenience.
+
+Это означает,
+что дальнейшее software expansion
+дает менее сильный next product leap
+и повышает риск drift
+в full SAM direction.
+
+### Why not Reporting next
+`Reporting` на этом этапе
+не рекомендуется как next primary contour,
+потому что он остается more derivative layer
+поверх уже открытых operational contours,
+а не следующим самостоятельным product move.
+
+### Boundary rule
+Этот sequencing decision:
+- не открывает full SAM suite;
+- не открывает compliance-heavy program;
+- не открывает reporting / BI as primary goal;
+- не меняет ownership existing contexts;
 - не меняет ADR-0009.

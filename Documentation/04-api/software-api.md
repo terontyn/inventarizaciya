@@ -147,3 +147,25 @@ Create / allocate / remove actions
 ### History implication
 First contour не требует отдельного software history API
 beyond current-state visibility + audit.
+
+## Closeout Clarification
+
+Текущий software API baseline
+считается достаточным
+для narrow current software stage.
+
+### Current interpretation
+Минимального API surface достаточно,
+чтобы покрыть:
+- software record visibility;
+- current software-to-user visibility;
+- current software-to-asset visibility;
+- explicit create / allocate / remove actions.
+
+### Deferred by default
+Следующие API expansions
+не открываются по умолчанию:
+- seat-like refinement APIs;
+- software history APIs;
+- SAM-heavy APIs;
+- richer key / type / status-driven APIs.

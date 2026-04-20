@@ -298,3 +298,61 @@ UI contour должен опираться на уже существующие 
 - не трактуется как full SAM suite;
 - не открывает procurement / renewals / supplier / finance scope;
 - не открывает compliance-heavy program как first-step contour.
+
+## Software Minimal Contour Closeout
+
+Первый narrow `Software` contour реализован
+как отдельный bounded Wave 2 software-aware operational layer
+для already tracked users и already tracked assets.
+
+Этот шаг:
+- не изменил ownership boundaries;
+- не перенес ownership existing contexts в software;
+- не изменил ADR-0009;
+- не открыл full SAM / renewals / supplier / finance / compliance-heavy scope.
+
+## Wave 2 Sequencing Clarification After Software
+
+После closeout первого narrow `Software` contour
+следующим рекомендуемым шагом Wave 2
+является переход
+к другому большому contour,
+а не еще один default software expansion slice.
+
+### Recommended next contour
+Следующим рекомендуемым contour
+является `Ticket`.
+
+### Reporting note
+`Reporting`
+не рекомендуется
+как следующий primary contour
+на текущем этапе.
+
+## Ticket — Wave 2 Architecture Clarification
+
+После closeout первого narrow `Software` contour
+следующим рекомендуемым большим Wave 2 contour
+является `Ticket`.
+
+### Purpose
+`Ticket` трактуется как narrow operational issue / request coordination layer
+для already tracked ITAM objects,
+прежде всего вокруг tracked assets.
+
+Этот contour должен отвечать на вопросы:
+- какие operational issues / requests сейчас открыты;
+- к каким tracked assets они относятся;
+- каков current coordination state этих tickets.
+
+### Boundary rule
+`Ticket`:
+- не переопределяет asset identity или asset master record;
+- не переопределяет responsibility lifecycle или final assign decision logic;
+- не переопределяет inventory custody / readiness ownership;
+- не переопределяет maintenance workflow ownership;
+- не переопределяет software ownership;
+- не трактуется как generic enterprise helpdesk;
+- не открывает full ITSM suite;
+- не открывает SLA / queue / escalation platform;
+- не трактуется как reporting-first contour.
