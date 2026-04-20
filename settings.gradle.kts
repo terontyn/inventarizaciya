@@ -11,3 +11,6 @@ project(":services:inventory-service").projectDir = file("services/inventory-ser
 
 include(":services:maintenance-service")
 project(":services:maintenance-service").projectDir = file("services/maintenance-service")
+
+include(":services:software-service")
+project(":services:software-service").projectDir = file("services/software-service")

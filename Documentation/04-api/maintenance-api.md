@@ -118,3 +118,26 @@ Success outcome:
 ### History implication
 First contour не требует отдельной maintenance history surface
 beyond current-state representation + audit.
+
+## Closeout Clarification
+
+Текущий maintenance API baseline
+считается достаточным
+для narrow current maintenance stage.
+
+### Current interpretation
+Минимального API surface достаточно,
+чтобы покрыть:
+- open maintenance work;
+- complete maintenance work;
+- current open work visibility;
+- asset-scoped maintenance-side current view.
+
+### Deferred by default
+Следующие API expansions
+не открываются по умолчанию:
+- cancellation APIs;
+- reopen APIs;
+- vendor / external servicing APIs;
+- cost-related APIs;
+- separate maintenance history APIs.

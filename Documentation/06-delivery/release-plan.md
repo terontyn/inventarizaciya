@@ -438,3 +438,75 @@ inventory уже достиг bounded usable state
 - не меняет ADR-0009;
 - не переносит readiness ownership из `inventory-service`;
 - не переносит final assign decision logic из `asset-service`.
+
+
+## Maintenance Minimal Contour Closeout Clarification
+
+Первый narrow `Maintenance` contour
+считается закрытым
+как completed bounded Wave 2 slice.
+
+### Current interpretation
+После этого closeout maintenance context уже покрывает:
+- minimal maintenance work representation;
+- open maintenance work lifecycle;
+- maintenance completion lifecycle;
+- current open work visibility;
+- maintenance-side serviceability outcome.
+
+### Practical rule
+Следовательно:
+- первый narrow `Maintenance` contour
+  не должен снова открываться
+  как greenfield implementation step;
+- дальнейшее расширение maintenance
+  не считается default next move;
+- richer outcome taxonomy,
+  cancellation / reopen semantics,
+  vendor workflow,
+  cost linkage,
+  maintenance history beyond audit
+  и serviceability-to-readiness coordination refinement
+  остаются deferred
+  до отдельного product decision.
+
+  ## Wave 2 Sequencing Clarification After Maintenance
+
+После closeout первого narrow `Maintenance` contour
+следующим рекомендуемым шагом Wave 2
+является переход
+к другому большому contour,
+а не еще один default maintenance expansion slice.
+
+### Recommended next contour
+Следующим рекомендуемым contour
+является `Software`.
+
+### Why not continue Maintenance now
+После minimal maintenance closeout
+maintenance уже достиг bounded usable state
+для своего narrow product purpose:
+- why asset currently requires servicing;
+- what maintenance work is open now;
+- when maintenance-side serviceable outcome is reached.
+
+Следующие candidate expansions внутри maintenance
+уже в основном ведут в:
+- workflow hardening / edge semantics;
+- vendor / external servicing workflow;
+- history-heavy refinement;
+- cost / finance adjacency;
+- cross-context coordination convenience.
+
+Это означает,
+что дальнейшее maintenance expansion
+дает менее сильный next product leap
+и повышает риск scope drift.
+
+### Boundary rule
+Этот sequencing decision:
+- не превращает `Maintenance`
+  в generic helpdesk / ITSM contour;
+- не меняет inventory readiness ownership;
+- не меняет final assign decision ownership;
+- не меняет ADR-0009.

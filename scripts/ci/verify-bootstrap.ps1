@@ -17,6 +17,9 @@ $requiredPaths = @(
     "services/maintenance-service/build.gradle.kts",
     "services/maintenance-service/src/main/java/com/itam/maintenanceservice/boot/MaintenanceServiceApplication.java",
     "services/maintenance-service/src/main/resources/application.yml",
+    "services/software-service/build.gradle.kts",
+    "services/software-service/src/main/java/com/itam/softwareservice/boot/SoftwareServiceApplication.java",
+    "services/software-service/src/main/resources/application.yml",
     "ops/docker/docker-compose.local.yml",
     "scripts/db/init-local.sql",
     ".github/workflows/bootstrap-check.yml"

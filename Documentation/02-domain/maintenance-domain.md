@@ -150,3 +150,31 @@ Completion maintenance work
 - cancellation semantics;
 - reopen semantics;
 - separate maintenance history surface beyond audit.
+
+## Post-Closeout Clarification
+
+Для current Wave 2 stage
+первый narrow `Maintenance` contour
+считается достаточным
+как minimal serviceability layer.
+
+### Current interpretation
+На этом этапе maintenance уже покрывает:
+- minimal maintenance work representation;
+- open work;
+- complete work;
+- current open work visibility;
+- maintenance-side serviceability outcome.
+
+### Deferred by default
+Следующие возможные расширения
+не считаются default next step:
+- richer outcome taxonomy;
+- cancellation semantics;
+- reopen semantics;
+- vendor / external servicing workflow;
+- maintenance history beyond audit;
+- serviceability-to-readiness coordination refinement.
+
+Эти темы остаются deferred
+до отдельного product decision.

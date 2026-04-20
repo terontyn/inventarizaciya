@@ -248,3 +248,53 @@ UI contour должен опираться на уже существующие 
 - не переопределяет responsibility lifecycle или final assign decision logic;
 - не трактуется как generic service desk / full ITSM suite;
 - не открывает procurement / supplier / finance / depreciation scope.
+
+## Maintenance Minimal Contour Closeout
+
+Первый narrow `Maintenance` contour реализован
+как отдельный bounded Wave 2 serviceability layer
+для already tracked physical assets.
+
+Этот шаг:
+- не изменил ownership boundaries;
+- не перенес inventory readiness ownership в maintenance;
+- не изменил ADR-0009;
+- не открыл helpdesk / ITSM / spare-parts / finance scope.
+
+## Wave 2 Sequencing Clarification After Maintenance
+
+После closeout первого narrow `Maintenance` contour
+следующим рекомендуемым шагом Wave 2
+является переход
+к другому большому contour,
+а не еще один default maintenance expansion slice.
+
+### Recommended next contour
+Следующим рекомендуемым contour
+является `Software`.
+
+
+## Software — Wave 2 Architecture Clarification
+
+После closeout первого narrow `Maintenance` contour
+следующим рекомендуемым большим Wave 2 contour
+является `Software`.
+
+### Purpose
+`Software` трактуется как software-aware operational layer
+для already tracked users и already tracked assets.
+
+Этот contour должен отвечать на вопросы:
+- какие software records tenant сейчас ведет;
+- какие current software-to-user relations существуют;
+- какие current software-to-asset relations существуют.
+
+### Boundary rule
+`Software`:
+- не переопределяет asset identity или asset master record;
+- не переопределяет responsibility lifecycle или final assign decision logic;
+- не переопределяет inventory custody / readiness ownership;
+- не переопределяет maintenance ownership;
+- не трактуется как full SAM suite;
+- не открывает procurement / renewals / supplier / finance scope;
+- не открывает compliance-heavy program как first-step contour.

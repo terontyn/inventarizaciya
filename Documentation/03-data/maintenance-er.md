@@ -88,3 +88,23 @@ beyond current-state representation
 
 Audit trail остается достаточным minimum fact trail
 до отдельного последующего решения.
+
+## Closeout Clarification
+
+Текущая maintenance ER-модель
+считается достаточной
+для narrow current maintenance stage.
+
+### Current interpretation
+Минимальной модели `maintenance_works`
+достаточно,
+чтобы представить:
+- current open maintenance work;
+- completed maintenance work;
+- minimal maintenance-side serviceability outcome.
+
+### Deferred by default
+Separate maintenance history surface / model
+beyond current-state representation + audit
+по-прежнему остается deferred
+и не открывается как default next step.
