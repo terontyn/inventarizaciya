@@ -15,6 +15,7 @@ root `Documentation/` directory and remain the source of truth.
 - `services/maintenance-service/` now contains the first narrow Maintenance contour for current open work visibility, asset-scoped maintenance current view, and explicit `open` / `complete` lifecycle commands.
 - `services/software-service/` now contains the first narrow Software contour for current software record visibility plus explicit user/asset allocation and removal commands.
 - `services/ticket-service/` now contains the first narrow Ticket contour for asset-linked open ticket visibility and explicit `open` / `close` lifecycle commands.
+- `services/reporting-service/` now contains the first narrow Reporting contour for asset-centric read-only operational current visibility derived from owner-context surfaces.
 - `Documentation/` is still the canonical source of truth for scope and architecture decisions.
 
 ## Repository Layout
@@ -26,6 +27,7 @@ root `Documentation/` directory and remain the source of truth.
 - `services/maintenance-service/` owns the Maintenance bounded context implementation path.
 - `services/software-service/` owns the Software bounded context implementation path.
 - `services/ticket-service/` owns the Ticket bounded context implementation path.
+- `services/reporting-service/` owns the Reporting bounded context implementation path.
 - `ops/` contains local docker, Kubernetes placeholders, and monitoring scaffolding.
 - `scripts/` contains development, CI, and local database bootstrap helpers.
 - `.github/workflows/` contains repository checks and service build/test workflows.
@@ -33,5 +35,5 @@ root `Documentation/` directory and remain the source of truth.
 ## Notes
 
 - The repository is no longer bootstrap-only.
-- Both backend services are implemented and should be treated as active service modules rather than placeholders.
+- Multiple backend service modules are implemented and should be treated as active service modules rather than placeholders.
 - Service boundaries stay explicit; there is no shared business/domain module.

@@ -126,29 +126,6 @@ beyond current-state visibility + audit.
 - reporting-heavy ticket read models
 - umbrella orchestration semantics
 
-## Closeout Clarification
-
-Текущий ticket API baseline
-считается достаточным
-для narrow current ticket stage.
-
-### Current interpretation
-Минимального API surface достаточно,
-чтобы покрыть:
-- open ticket visibility
-- single ticket visibility
-- asset-linked current ticket visibility
-- explicit open / close actions
-
-### Deferred by default
-Следующие API expansions
-не открываются по умолчанию:
-- queue APIs
-- SLA APIs
-- escalation APIs
-- omnichannel request APIs
-- umbrella workflow APIs
-- separate ticket history APIs
 
 ## Asset-linked visibility clarification
 
@@ -198,3 +175,27 @@ path `asset_id`
   и не канонизирует automatic close
   других current `OPEN` tickets
   того же asset.
+
+## Closeout Clarification
+
+Текущий ticket API baseline
+считается достаточным
+для narrow current ticket stage.
+
+### Current interpretation
+Минимального API surface достаточно,
+чтобы покрыть:
+- open ticket visibility;
+- single ticket visibility;
+- asset-linked current ticket visibility;
+- explicit open / close actions.
+
+### Deferred by default
+Следующие API expansions
+не открываются по умолчанию:
+- queue APIs;
+- SLA APIs;
+- escalation APIs;
+- requester / assignee-driven APIs;
+- cross-context action-link APIs;
+- separate ticket history APIs.

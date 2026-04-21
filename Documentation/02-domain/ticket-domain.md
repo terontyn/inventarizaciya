@@ -187,3 +187,31 @@ beyond minimal current model:
   на том же asset;
 - first contour не вводит canonical blocker semantics
   между такими open tickets.
+
+  ## Ticket Post-Closeout Clarification
+
+Для current Wave 2 stage
+первый narrow `Ticket` contour
+считается достаточным
+как minimal operational issue / request coordination layer
+для already tracked assets.
+
+### Current interpretation
+На этом этапе ticket уже покрывает:
+- open ticket visibility;
+- single ticket visibility;
+- asset-linked current ticket visibility;
+- explicit open / close actions;
+- independent-loop semantics for multiple open tickets on one asset.
+
+### Deferred by default
+Следующие возможные расширения
+не считаются default next step:
+- requester / assignee refinement;
+- queue / categorization refinement;
+- richer ticket field model;
+- cross-context action-link refinement;
+- ticket history beyond current-state visibility.
+
+Эти темы остаются deferred
+до отдельного product decision.

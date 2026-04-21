@@ -356,3 +356,102 @@ UI contour должен опираться на уже существующие 
 - не открывает full ITSM suite;
 - не открывает SLA / queue / escalation platform;
 - не трактуется как reporting-first contour.
+
+## Ticket Minimal Contour Closeout
+
+Первый narrow `Ticket` contour реализован
+как отдельный bounded Wave 2 operational issue / request coordination layer
+для already tracked assets.
+
+Этот шаг:
+- не изменил ownership boundaries;
+- не перенес ownership existing contexts в ticket;
+- не изменил ADR-0009;
+- не открыл generic helpdesk / full ITSM / SLA / escalation / omnichannel scope.
+
+## Wave 2 Sequencing Clarification After Ticket
+
+После closeout первого narrow `Ticket` contour
+следующим рекомендуемым шагом Wave 2
+является переход
+к другому большому contour,
+а не еще один default ticket expansion slice.
+
+### Recommended next contour
+Следующим рекомендуемым contour
+является `Reporting`.
+
+### Why not continue Ticket now
+После minimal ticket closeout
+ticket уже достиг bounded usable state
+для своего narrow product purpose:
+- what current open tickets exist;
+- which tracked assets they are linked to;
+- whether a given ticket-side coordination loop is open or closed.
+
+Следующие candidate expansions внутри ticket
+уже в основном ведут в:
+- requester / assignee refinement;
+- queue / categorization refinement;
+- richer ticket field model;
+- cross-context action-link refinement;
+- history-heavy refinement.
+
+Это означает,
+что дальнейшее ticket expansion
+дает менее сильный next product leap
+и повышает риск drift
+в generic helpdesk / ITSM direction.
+
+### Why Reporting now
+После inventory, maintenance, software и ticket closeout
+в проекте уже существуют несколько narrow current-state operational contours.
+
+Следующий practical product gap
+смещается в cross-context visibility:
+- where assets are now;
+- whether they are ready or not ready;
+- whether maintenance is open;
+- whether tickets are open;
+- what software is currently related.
+
+### Boundary rule
+Этот sequencing decision:
+- не открывает generic enterprise helpdesk;
+- не открывает full ITSM suite;
+- не открывает reporting / BI heavy platform;
+- не меняет ownership existing contexts;
+- не меняет ADR-0009.
+
+## Reporting — Wave 2 Architecture Clarification
+
+После closeout первого narrow `Ticket` contour
+следующим рекомендуемым большим Wave 2 contour
+является `Reporting`.
+
+### Purpose
+`Reporting` трактуется узко:
+как cross-context operational visibility layer
+поверх уже существующих current-state contours.
+
+Этот contour должен отвечать на вопросы:
+- какие assets сейчас in storage / ready / not ready;
+- какие assets currently under maintenance;
+- какие assets currently have open tickets;
+- какие current software relations сейчас существуют
+  для already tracked users и assets.
+
+### Boundary rule
+`Reporting`:
+- не переопределяет ownership existing domains;
+- не становится BI-first analytics platform;
+- не открывает heavy KPI / dashboard suite by default;
+- не открывает free-form reporting platform as first step;
+- не открывает umbrella orchestration semantics
+  поверх inventory / maintenance / software / ticket.
+
+### Minimal cutline
+Первый `Reporting` contour
+должен оставаться current-state-first
+и asset-centric,
+а не historical BI-heavy contour.

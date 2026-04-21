@@ -589,3 +589,68 @@ software уже достиг bounded usable state
 - не открывает reporting / BI as primary goal;
 - не меняет ownership existing contexts;
 - не меняет ADR-0009.
+
+## Ticket Minimal Contour Closeout
+
+Первый narrow `Ticket` contour считается реализованным
+на уровне minimal Wave 2 implementation.
+
+### Current status
+- `ticket-service` добавлен как отдельная service boundary;
+- реализован minimal ticket current-state model:
+  - `Ticket`
+  - `OPEN`
+  - `CLOSED`
+- реализованы minimal read surfaces и lifecycle commands:
+  - open ticket
+  - close ticket
+  - open ticket visibility
+  - single ticket visibility
+  - asset-linked current ticket visibility
+- multiple current `OPEN` tickets на одном asset допустимы;
+- independent-loop semantics подтверждены:
+  - opening одного ticket не блокирует другой;
+  - closing одного ticket не закрывает автоматически другие current `OPEN` tickets того же asset;
+- audit для ticket open / close реализован;
+- tenant isolation и negative-path hardening подтверждены тестами;
+- ownership boundaries между `asset-service`, `inventory-service`, `maintenance-service`, `software-service` и `ticket-service` не менялись.
+
+### Practical interpretation
+Следовательно:
+- первый minimal `Ticket` contour не должен снова открываться
+  как greenfield implementation step;
+- дальнейшая работа по ticket должна трактоваться либо как:
+  - hardening,
+  - gap closure,
+  - либо следующий bounded ticket expansion slice,
+  - но не как повторная реализация базового ticket contour.
+
+  ## Wave 2 Sequencing Clarification After Ticket
+
+После closeout первого narrow `Ticket` contour
+следующим рекомендуемым шагом Wave 2
+является переход
+к другому большому contour,
+а не еще один default ticket expansion slice.
+
+### Recommended next contour
+Следующим рекомендуемым contour
+является `Reporting`.
+
+### Practical rule
+Следовательно:
+- дальнейшее расширение ticket
+  не считается default next move;
+- requester / assignee refinement,
+  queue / categorization refinement,
+  richer ticket field model,
+  cross-context action-link refinement
+  и ticket history beyond current-state visibility
+  остаются deferred
+  до отдельного product decision.
+
+### Reporting opening note
+Следующий большой Wave 2 contour
+должен трактоваться узко:
+как current-state-first cross-context operational visibility layer,
+а не как heavy BI / analytics platform.
