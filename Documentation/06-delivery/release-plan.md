@@ -625,7 +625,7 @@ software уже достиг bounded usable state
   - либо следующий bounded ticket expansion slice,
   - но не как повторная реализация базового ticket contour.
 
-  ## Wave 2 Sequencing Clarification After Ticket
+## Wave 2 Sequencing Clarification After Ticket
 
 После closeout первого narrow `Ticket` contour
 следующим рекомендуемым шагом Wave 2
@@ -654,3 +654,141 @@ software уже достиг bounded usable state
 должен трактоваться узко:
 как current-state-first cross-context operational visibility layer,
 а не как heavy BI / analytics platform.
+
+## Reporting Minimal Contour Closeout
+
+Первый narrow `Reporting` contour считается реализованным
+на уровне minimal Wave 2 implementation.
+
+### Current status
+- `reporting-service` добавлен как отдельная service boundary;
+- реализован primary reporting-side read model:
+  - `AssetOperationalCurrentView`
+- реализованы minimal read-only reporting surfaces:
+  - `GET /api/v1/reporting/assets`
+  - `GET /api/v1/reporting/assets/{asset_id}`
+- reporting остается:
+  - current-state-first
+  - asset-centric
+  - read-only
+- reporting-side fields остаются derived visibility
+  поверх existing owner contexts,
+  а не новыми canonical operational facts;
+- safe partial composition реализована;
+- short-lived lag / eventual consistency допускаются;
+- strict synchronous cross-context snapshot не обещается;
+- owner context остается authoritative source
+  при расхождении fact slice;
+- reporting-side write APIs и write workflow не добавлялись;
+- ownership existing contexts не менялся.
+
+### Practical interpretation
+Следовательно:
+- первый minimal `Reporting` contour не должен снова открываться
+  как greenfield implementation step;
+- дальнейшая работа по reporting должна трактоваться либо как:
+  - hardening,
+  - gap closure,
+  - либо следующий bounded reporting expansion slice,
+  - но не как повторная реализация базового reporting contour.
+
+## Wave 2 Completion Clarification After Reporting
+
+После closeout первого narrow `Reporting` contour
+current Wave 2 narrow map
+следует трактовать
+как effectively complete.
+
+### Current interpretation
+На этом этапе уже minimally closed:
+- `Inventory / Warehouse`
+- `Maintenance`
+- `Software`
+- `Ticket`
+- `Reporting`
+
+### Practical rule
+Следовательно:
+- следующим default move
+  не должен становиться
+  еще один bounded reporting slice;
+- следующий новый large contour
+  не должен auto-opened
+  из текущего Wave 2 map;
+- historical reporting,
+  KPI / dashboard catalog,
+  trend semantics
+  и broader aggregation
+  остаются deferred
+  до отдельного product decision.
+
+
+## Post-Wave-2 Hardening / Validation — Delivery Clarification
+
+После effective closeout current narrow Wave 2 map
+следующий delivery move
+должен трактоваться
+как combined hardening + validation stage,
+а не как новый contour opening.
+
+### Delivery interpretation
+Этот stage допускает только:
+- hardening уже реализованных contours;
+- gap closure,
+  если validation показывает конкретный mismatch
+  внутри already approved scope;
+- validation of combined operational behavior
+  across existing contours.
+
+### Not automatic
+Этот stage не означает automatic opening of:
+- new APIs;
+- new bounded contexts;
+- second reporting expansion;
+- BI / dashboard scope;
+- next large contour.
+
+### Cutline
+Пока работа остается
+внутри validation and hardening
+already approved semantics,
+она принадлежит этому stage.
+
+Если работа требует:
+- нового owner,
+- новой standalone model family,
+- нового primary API family,
+- нового orchestration layer,
+она должна трактоваться
+как новый product expansion
+и требовать отдельного решения.
+
+## Post-Wave-2 Hardening / Validation — Validation Focus
+
+На этом stage
+должны быть явно подтверждены
+следующие области:
+
+- cross-context consistency;
+- preservation of owner boundaries;
+- alignment between owner-side current-state reads
+  и reporting-side derived visibility;
+- acceptability of short-lived lag
+  и eventual consistency;
+- operational usability
+  combined narrow Wave 2 stack
+  как единого product baseline.
+
+### Important note
+Цель stage
+не в том,
+чтобы убрать любую eventual consistency.
+
+Цель stage
+в том,
+чтобы подтвердить,
+что допустимая eventual consistency:
+- понятна;
+- ограничена;
+- не ломает operational meaning;
+- не делает reporting source of truth.

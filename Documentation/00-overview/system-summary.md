@@ -455,3 +455,133 @@ ticket уже достиг bounded usable state
 должен оставаться current-state-first
 и asset-centric,
 а не historical BI-heavy contour.
+
+## Reporting Minimal Contour Closeout
+
+Первый narrow `Reporting` contour реализован
+как отдельный bounded Wave 2 cross-context operational visibility layer
+поверх already existing current-state owner contours.
+
+Этот шаг:
+- не изменил ownership boundaries;
+- не перенес ownership existing contexts в reporting;
+- не изменил ADR-0009;
+- не открыл BI-first / KPI-heavy / free-form analytics scope;
+- не открыл reporting-side write ownership или write workflow.
+
+## Wave 2 Completion Clarification
+
+После closeout первого narrow `Reporting` contour
+current Wave 2 map
+следует трактовать
+как effectively complete
+в его narrow operational interpretation.
+
+### Why
+На этом этапе уже открыты и minimally closed:
+- `Inventory / Warehouse`
+- `Maintenance`
+- `Software`
+- `Ticket`
+- `Reporting`
+
+Следовательно,
+current Wave 2
+уже покрывает narrow set of:
+- storage / readiness visibility;
+- serviceability visibility;
+- software allocation visibility;
+- ticket coordination visibility;
+- cross-context operational reporting visibility.
+
+### Practical rule
+Это означает,
+что следующим default move
+не должен становиться
+еще один bounded reporting slice
+или новый large contour
+внутри current Wave 2 map.
+
+## Post-Wave-2 Transition Clarification
+
+После effective closeout current Wave 2 map
+следующим правильным шагом
+следует считать
+не opening another default contour,
+а переход
+к следующему product stage.
+
+### Immediate recommended move
+Ближайший justified move:
+**cross-contour hardening / validation**
+поверх уже открытого narrow Wave 2 stack.
+
+### Why not Reporting expansion now
+Следующие candidate expansions внутри reporting
+в основном ведут в:
+- historical reporting;
+- KPI / dashboard catalog;
+- trend semantics;
+- broader aggregation semantics.
+
+Это означает drift
+в сторону BI / analytics platform,
+что не соответствует
+narrow first-step reporting interpretation.
+
+### Boundary rule
+Этот post-Wave-2 move:
+- не открывает BI-first platform;
+- не открывает free-form analytics;
+- не переносит ownership existing contexts;
+- не открывает umbrella orchestration semantics.
+
+
+## Post-Wave-2 Hardening / Validation — Architecture Invariants
+
+Post-Wave-2 `cross-contour hardening / validation`
+должен трактоваться
+как limited cross-cutting architecture stage
+поверх already approved narrow Wave 2 stack.
+
+### Architecture interpretation
+Этот stage:
+- не является новым bounded context;
+- не является новым large contour;
+- не открывает автоматически новый Wave map;
+- не открывает новый integration layer;
+- не открывает новый orchestration layer;
+- не открывает новый primary API family;
+- не открывает reporting-side write ownership;
+- не открывает BI-first / KPI-heavy / free-form analytics platform.
+
+### Core validation purpose
+На этом stage
+должны быть подтверждены:
+- preservation of ownership boundaries;
+- cross-context consistency;
+- alignment between owner-side current-state visibility
+  and reporting-side derived visibility;
+- acceptability of bounded lag / eventual consistency;
+- operational usability
+  combined narrow Wave 2 stack
+  as a single product baseline.
+
+### Authoritative-source rule
+При расхождении
+между owner-context dedicated surface
+и reporting-side derived visibility
+authoritative source
+остается owner context
+для соответствующего fact slice.
+
+### Expansion cutline
+Если работа начинает требовать:
+- нового owner;
+- новой standalone model family;
+- нового write-owning context;
+- нового orchestration layer;
+- нового BI/reporting capability family,
+
+это уже не данный stage,
+а новый product expansion.

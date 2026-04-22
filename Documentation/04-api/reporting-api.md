@@ -110,3 +110,72 @@ authoritative source
 - historical reporting APIs;
 - KPI / dashboard APIs;
 - free-form analytics APIs.
+
+## Closeout Clarification
+
+Текущий read-only reporting API baseline
+считается достаточным
+для current Wave 2 stage.
+
+### Current interpretation
+Минимального API surface достаточно,
+чтобы покрыть:
+- asset-centric current-state reporting visibility;
+- list visibility through `GET /api/v1/reporting/assets`;
+- single-asset visibility through `GET /api/v1/reporting/assets/{asset_id}`;
+- derived read-only operational picture
+  поверх existing owner contexts.
+
+### Deferred by default
+Следующие API expansions
+не открываются по умолчанию:
+- historical reporting APIs;
+- KPI / dashboard APIs;
+- trend-oriented APIs;
+- broader aggregation APIs beyond current asset-centric cutline;
+- free-form analytics / report-builder APIs.
+
+
+## Post-Wave-2 Validation API Interpretation
+
+На post-Wave-2 hardening / validation stage
+existing read-only reporting surfaces
+остаются sufficient API basis
+for validation of derived current visibility:
+
+- `GET /api/v1/reporting/assets`
+- `GET /api/v1/reporting/assets/{asset_id}`
+
+### Validation-basis rule
+Эти endpoints
+должны трактоваться
+как reporting-side derived visibility surfaces
+for alignment checks
+against owner-context dedicated surfaces.
+
+### Authoritative-source rule
+При расхождении
+между reporting response
+и owner-context dedicated response
+authoritative source
+остается owner context
+для соответствующего fact slice.
+
+### Consistency interpretation
+Validation
+не должна трактовать
+short-lived lag by itself
+как architectural failure,
+если lag:
+- bounded;
+- compatible with already approved semantics;
+- не делает reporting source of truth.
+
+### Non-expansion rule
+Этот stage
+не оправдывает автоматически:
+- новый reporting API family;
+- reporting-side write APIs;
+- KPI / dashboard APIs;
+- free-form analytics APIs;
+- orchestration APIs.

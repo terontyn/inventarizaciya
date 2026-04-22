@@ -116,3 +116,29 @@ First contour допускает partial current-state composition.
 `AssetOperationalCurrentView`
 является достаточным primary read model
 для narrow first Reporting contour.
+
+## Reporting Post-Closeout Clarification
+
+Для current Wave 2 stage
+первый narrow `Reporting` contour
+считается достаточным
+как minimal cross-context operational visibility layer.
+
+### Current interpretation
+На этом этапе reporting уже покрывает:
+- asset-centric current-state reporting visibility;
+- `AssetOperationalCurrentView`;
+- cross-context derived read aggregation;
+- read-only reporting semantics.
+
+### Deferred by default
+Следующие возможные расширения
+не считаются default next step:
+- historical reporting;
+- KPI / dashboard catalog;
+- trend semantics;
+- broader read surfaces beyond asset-centric current view;
+- richer aggregation semantics.
+
+Эти темы остаются deferred
+до отдельного product decision.

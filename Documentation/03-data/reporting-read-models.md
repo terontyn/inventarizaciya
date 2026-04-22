@@ -113,3 +113,88 @@ First contour не требует:
 - trend model;
 - KPI / dashboard catalog;
 - free-form analytics model.
+
+## Closeout Clarification
+
+Текущий reporting read-model baseline
+считается достаточным
+для current Wave 2 stage.
+
+### Current interpretation
+Текущего asset-centric read model
+достаточно,
+чтобы представить:
+- current operational picture по tracked asset;
+- current derived visibility
+  поверх inventory / maintenance / software / ticket owner contexts.
+
+### Deferred by default
+Следующие расширения
+не открываются по умолчанию:
+- broader aggregation beyond current asset-centric model;
+- historical read models;
+- trend-oriented read models;
+- KPI / dashboard-oriented read models.
+
+
+
+## Post-Wave-2 Validation Interpretation
+
+### Validation-target rule
+На post-Wave-2 hardening / validation stage
+`AssetOperationalCurrentView`
+остается sufficient validation target
+for derived visibility alignment.
+
+Этот stage
+не требует:
+- новой reporting read-model family;
+- нового validation snapshot model;
+- broader aggregation family.
+
+### Comparison-basis rule
+Для каждого derived slice
+comparison basis
+остается owner-context dedicated surface
+соответствующего bounded context.
+
+### Alignment interpretation
+Validation alignment
+не требует strict synchronous equality
+между каждым owner-side response slice
+и reporting-side derived visibility.
+
+Достаточно подтвердить,
+что derived reporting view:
+- semantically соответствует owner-side current-state fact;
+- допускает only bounded lag;
+- не ломает operational meaning;
+- не создает reporting-owned canonical fact.
+
+### Non-expansion rule
+Этот validation use
+не оправдывает автоматически:
+- historical reporting layer;
+- KPI / dashboard family;
+- free-form analytics family;
+- новую standalone read-model family.
+
+## Validation Outcome Clarification
+
+Для post-Wave-2 validation
+`AssetOperationalCurrentView`
+должен использоваться
+как derived visibility target only.
+
+Следовательно:
+- confirmed alignment
+  означает semantic compatibility
+  with owner-side current-state facts;
+- accepted lag
+  не трактуется как defect by default,
+  если lag bounded and approved-semantics-compatible;
+- concrete mismatch
+  требует gap closure only inside approved scope;
+- need for broader reporting family
+  трактуется как separate expansion,
+  а не как continuation of this stage.
