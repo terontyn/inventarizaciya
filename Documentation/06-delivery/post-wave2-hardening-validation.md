@@ -408,3 +408,113 @@ Data / API change
 - нового primary API family;
 - reporting-side write semantics;
 - orchestration semantics.
+
+
+## Minimal Execution Packet Closeout Clarification
+
+Первый minimal execution packet
+для post-Wave-2 `cross-contour hardening / validation`
+считается закрытым
+на уровне implementation + verification.
+
+### Current status
+- narrow Wave 2 stack подтвержден
+  как already implemented and wired;
+- `cross-contour hardening / validation`
+  подтвержден
+  как hardening/validation stage,
+  а не как новый contour opening;
+- отдельный stage-level validation suite добавлен
+  для:
+  - confirmed alignment;
+  - accepted lag around ADR-0009;
+  - safe partial composition;
+- reporting остался:
+  - read-only;
+  - derived-only;
+  - non-authoritative;
+- owner contexts остались authoritative
+  для соответствующих fact slices;
+- новых API/model/orchestration families
+  не добавлялось;
+- escalation items
+  по итогам этого minimal packet
+  не потребовались.
+
+### Practical interpretation
+Следовательно:
+- этот minimal execution packet
+  не должен снова открываться
+  как новый implementation step;
+- дальнейшая работа внутри post-Wave-2 stage
+  допустима только как:
+  - следующий concrete hardening packet,
+  - конкретный gap closure,
+  - или отдельный escalation case,
+  - но не как повторная реализация
+    уже закрытого validation packet.
+
+## Transition to First-Tenant Operational Validation
+
+После closeout
+first minimal post-Wave-2 hardening / validation packet
+следующий default move
+не должен открываться
+по инерции как еще один validation packet.
+
+### Rule
+Новый packet
+внутри current stage
+допустим только если
+real tenant evidence
+показал:
+- concrete in-scope mismatch;
+- или concrete blocking gap
+  внутри already approved scope.
+
+### Non-expansion cutline
+Если resolution требует:
+- нового owner;
+- новой standalone model family;
+- нового primary API family;
+- orchestration layer;
+- BI / dashboard / analytics family;
+
+это уже не continuation of validation,
+а separate product expansion decision.
+
+### Important note
+Real tenant evidence
+не равно release-ready evidence.
+Confirmed one-tenant validation
+по-прежнему не означает
+release-ready tenant-facing claim.
+
+## Post-Minimal-Packet Transition Hold
+
+После closeout первого minimal execution packet
+post-Wave-2 hardening / validation
+не должен продолжаться как автоматический repeated hardening.
+
+### Rule
+
+Новый packet внутри этого stage допустим только если есть:
+- real tenant evidence, показывающий concrete in-scope mismatch;
+- concrete blocking gap внутри already approved scope;
+- или specific hardening target, justified by observed behavior.
+
+### Not allowed
+
+Отсутствие real tenant validation нельзя компенсировать через:
+- synthetic tests, presented as operational validation;
+- another generic validation packet;
+- новые API или model families;
+- orchestration layer opening;
+- BI / dashboard / analytics expansion.
+
+### Transition
+
+Пока нет real tenant evidence или concrete mismatch,
+правильное состояние проекта:
+
+**Project Stabilization / First-Adopter-Gated Hold**

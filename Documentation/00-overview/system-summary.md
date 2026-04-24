@@ -585,3 +585,32 @@ authoritative source
 
 это уже не данный stage,
 а новый product expansion.
+
+## Current Project Stage Clarification
+
+Current narrow Wave 2 map should be treated as effectively complete
+in its narrow operational interpretation.
+
+The first minimal post-Wave-2 hardening / validation packet
+is closed at implementation + verification level.
+
+### Honest baseline interpretation
+The current baseline should be treated as:
+- internally validated managed pilot-like product baseline;
+
+and not as:
+- release-ready tenant-facing product;
+- fully proven real pilot usage;
+- fully validated operational tenant rollout.
+
+### Recommended next stage
+The next recommended stage is:
+
+**First-Tenant Operational Validation**
+
+This stage must be treated as a dedicated user-facing validation contour
+for one real tenant,
+not as:
+- a new bounded context;
+- another Wave 2 contour;
+- a release-ready claim.

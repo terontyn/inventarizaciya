@@ -143,6 +143,51 @@ implementation label v1 может быть отложен без пересмо
 - или будет отдельно открыто решение на minimal asset detail / card UI slice;
 - или будет запущен отдельный user-facing validation contour.
 
+## First-Tenant Operational Validation — Delivery Clarification
+
+После closeout
+backend-first internally validated baseline
+и first minimal post-Wave-2 hardening / validation packet
+следующим stage
+следует трактовать:
+
+**First-Tenant Operational Validation**
+
+### Delivery interpretation
+Этот stage нужен,
+чтобы prove or falsify
+practical tenant-facing usability
+already approved baseline
+через one real tenant operational loop.
+
+### Important rule
+Этот stage:
+- не является новым Wave 2 contour;
+- не является новым bounded context;
+- не является release-ready claim.
+
+### Evidence rule
+Full stage exit
+не должен claim’иться
+по одному internal demo
+или по одному scripted happy-path walkthrough.
+
+Нужен real tenant evidence loop
+с:
+- real tenant actors;
+- real approved actions;
+- owner-side current-state evidence;
+- reporting-side derived evidence,
+  если релевантно;
+- explicit outcome classification.
+
+### Outcome rule
+Допустимы только outcomes:
+- confirmed one-tenant validation;
+- partial validation only;
+- in-scope gap closure required;
+- escalation to separate expansion.
+
 ## Implementation Progress Clarification
 
 Для текущего delivery state нужно отдельно различать:
@@ -792,3 +837,94 @@ already approved semantics,
 - ограничена;
 - не ломает operational meaning;
 - не делает reporting source of truth.
+
+## Post-Wave-2 Hardening / Validation — Minimal Packet Closeout
+
+Первый minimal packet
+для post-Wave-2 `cross-contour hardening / validation`
+считается закрытым
+на уровне implementation + verification.
+
+### What was confirmed
+По итогам этого packet подтверждено:
+- reporting остается read-only derived visibility layer;
+- owner-side current-state slices
+  семантически мапятся
+  в reporting-side current view;
+- bounded lag around ADR-0009
+  остается accepted
+  и не трактуется как defect by default;
+- safe partial composition
+  остается допустимой
+  без превращения reporting
+  в source-of-truth layer;
+- новых API/model/orchestration families
+  не появилось.
+
+### Delivery rule
+Следовательно:
+- этот packet не должен снова открываться
+  как новый default execution step;
+- следующий delivery move
+  внутри post-Wave-2 stage
+  допустим только если найден:
+  - новый concrete mismatch
+    внутри already approved scope;
+  - или новый justified hardening target
+    без выхода за текущий cutline;
+- если resolution требует:
+  - нового owner;
+  - новой standalone model family;
+  - нового primary API family;
+  - нового orchestration layer;
+  - нового BI/reporting capability family;
+  такой move уже не принадлежит
+  данному stage
+  и требует отдельного product decision.
+
+## Выбор следующего workstream после post-Wave-2 minimal packet
+
+После effective closeout текущей narrow Wave 2 map
+и closeout первого minimal post-Wave-2 hardening / validation packet
+следующий justified move не должен автоматически открывать новый contour.
+
+### Текущее решение
+
+Текущий режим проекта:
+
+**Project Stabilization / First-Adopter-Gated Hold**
+
+### Интерпретация
+
+Это означает:
+- baseline остается только internally validated;
+- real tenant / real operational validation еще не достигнуты;
+- First-Tenant Operational Validation остается правильным следующим validation stage;
+- First-Tenant Operational Validation не executable,
+  пока нет real tenant, real tenant actors и real usage loop.
+
+### Что разрешено внутри hold
+
+Разрешено только:
+- выравнивание docs вокруг текущего validation ceiling;
+- подготовка first-tenant evidence capture;
+- уточнение entry / exit gate;
+- подготовка concrete gap register;
+- сохранение границ уже закрытых contours.
+
+### Что не разрешено по умолчанию
+
+Этот hold не разрешает автоматически открывать:
+- новый bounded context;
+- новую Wave map;
+- новый reporting / BI expansion;
+- generic engineering hardening без concrete mismatch;
+- synthetic validation как замену real tenant evidence;
+- release-ready tenant-facing claim.
+
+### Exit triggers
+
+Hold завершается только если:
+1. появляется real tenant / first adopter для operational validation;
+2. найден concrete in-scope defect или mismatch;
+3. отдельно approved новый product expansion decision.
