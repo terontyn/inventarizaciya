@@ -212,3 +212,23 @@ First-Tenant Operational Validation exit.
 а проект остается в режиме:
 
 **Project Stabilization / First-Adopter-Gated Hold**
+
+## Managed Demo Non-Substitution Rule
+
+Managed Pilot UI demo readiness является полезной подготовкой,
+но не заменяет First-Tenant Operational Validation.
+
+Managed internal demo может показать,
+что existing MVP surfaces demonstrable,
+но не может доказать:
+
+- real tenant adoption;
+- real day-to-day operational usage;
+- repeated real user behavior;
+- operational friction under real tenant conditions;
+- First-Tenant Operational Validation exit.
+
+Следовательно,
+managed demo evidence может прикладываться как preparation context,
+но не может использоваться как stage exit evidence
+для First-Tenant Operational Validation.

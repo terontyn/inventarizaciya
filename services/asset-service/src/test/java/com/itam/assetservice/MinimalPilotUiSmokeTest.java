@@ -36,7 +36,10 @@ class MinimalPilotUiSmokeTest {
             .andExpect(content().string(containsString("data-responsibility-flows=\"assign,transfer,return\"")))
             .andExpect(content().string(containsString("id=\"session-form\"")))
             .andExpect(content().string(containsString("id=\"asset-create-form\"")))
-            .andExpect(content().string(containsString("id=\"admin-resource-nav\"")));
+            .andExpect(content().string(containsString("id=\"workspace-overview\"")))
+            .andExpect(content().string(containsString("id=\"asset-journey-banner\"")))
+            .andExpect(content().string(containsString("id=\"admin-resource-nav\"")))
+            .andExpect(content().string(containsString("id=\"setup-overview\"")));
     }
 
     @Test
@@ -55,7 +58,13 @@ class MinimalPilotUiSmokeTest {
             .andExpect(content().string(containsString("/api/v1/departments")))
             .andExpect(content().string(containsString("/api/v1/branches")))
             .andExpect(content().string(containsString("/api/v1/locations")))
+            .andExpect(content().string(containsString("/api/v1/users/${userId}/roles")))
             .andExpect(content().string(not(containsString("/internal/api/v1/users/"))))
-            .andExpect(content().string(not(containsString("/retire"))));
+            .andExpect(content().string(not(containsString("/retire"))))
+            .andExpect(content().string(not(containsString("/api/v1/inventory/"))))
+            .andExpect(content().string(not(containsString("/api/v1/maintenance/"))))
+            .andExpect(content().string(not(containsString("/api/v1/software/"))))
+            .andExpect(content().string(not(containsString("/api/v1/tickets/"))))
+            .andExpect(content().string(not(containsString("/api/v1/reporting/"))));
     }
 }

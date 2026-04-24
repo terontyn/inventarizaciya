@@ -614,3 +614,59 @@ not as:
 - a new bounded context;
 - another Wave 2 contour;
 - a release-ready claim.
+
+## Pilot UI Stabilization / Managed Demo Readiness Clarification
+
+Текущий repo baseline подтверждает,
+что Pilot UI уже существует как managed pilot / internal pilot surface.
+
+Этот UI surface включает:
+- managed pilot context entry;
+- asset registry;
+- asset card;
+- asset create / update master-record path;
+- dedicated assign / transfer / return entry points;
+- history / audit visibility;
+- minimal admin/setup layer для roles, users, departments, branches и locations.
+
+Это не означает,
+что продукт является release-ready.
+
+Текущий UI следует трактовать как:
+
+**managed demo / internal pilot surface поверх уже approved MVP contour**
+
+а не как:
+- production tenant-facing UI;
+- self-service onboarding;
+- auth/IAM platform;
+- First-Tenant Operational Validation evidence;
+- release-ready tenant-facing baseline.
+
+## Productized Tenant-Facing Operational UX Expansion — Direction Gate
+
+After Product Expansion Decision Gate,
+the strongest approved separate product expansion direction is:
+
+**Productized Tenant-Facing Operational UX Expansion**
+
+This direction recognizes that:
+- Pilot UI already exists as managed pilot / internal pilot surface;
+- managed demo is not the next required step;
+- First-Tenant Operational Validation remains not executable
+  without real tenant / first adopter / real usage loop;
+- release-ready tenant-facing claim is not supported.
+
+The expansion direction is limited to defining richer tenant-facing operational UX
+over already approved MVP and narrow Wave 2 surfaces.
+
+It is not:
+- a new bounded context;
+- a new Wave map;
+- an IAM / auth platform expansion;
+- self-service onboarding;
+- BI / dashboard / analytics expansion;
+- WMS / ITSM / SAM expansion;
+- a release-ready claim.
+
+Implementation remains blocked until a specialized docs-first scope packet is approved.

@@ -928,3 +928,62 @@ Hold завершается только если:
 1. появляется real tenant / first adopter для operational validation;
 2. найден concrete in-scope defect или mismatch;
 3. отдельно approved новый product expansion decision.
+
+## Pilot UI Stabilization / Managed Demo Readiness
+
+После closeout Minimal Pilot UI Contour
+существующий Pilot UI может быть стабилизирован
+как managed demo / internal pilot surface.
+
+### Interpretation
+
+Это не новый contour и не новый release track.
+
+Это readiness clarification
+для controlled demonstration уже approved MVP surfaces.
+
+### Managed demo readiness requires
+
+Managed demo readiness требует:
+
+- repeatable managed context setup;
+- Tenant Admin setup path walkthrough;
+- Asset Operator asset lifecycle walkthrough;
+- Support Reviewer read-only walkthrough;
+- visible asset registry / card / history / audit evidence;
+- explicit known-limitation statement;
+- evidence packet,
+  который явно помечает это как managed demo evidence only.
+
+### Non-claim rule
+
+Managed demo readiness нельзя использовать как evidence для:
+
+- production tenant-facing readiness;
+- release-ready claim;
+- First-Tenant Operational Validation exit;
+- real tenant operational validation.
+
+## Product Expansion Direction — Tenant-Facing Operational UX
+
+The next approved direction-gate movement is not managed demo,
+not First-Tenant Operational Validation,
+and not release readiness.
+
+A separate product expansion direction is approved for:
+
+**Productized Tenant-Facing Operational UX Expansion**
+
+This direction exists to define a richer tenant-facing operational UX
+over already approved MVP and narrow Wave 2 surfaces.
+
+This does not reopen:
+- MVP / Pilot baseline;
+- Minimal Pilot UI as greenfield;
+- Minimal Pilot Access;
+- narrow Wave 2 contours;
+- post-Wave-2 hardening packet.
+
+This does not authorize implementation until a dedicated docs-first scope packet is approved.
+
+The expansion must remain within existing product ownership boundaries unless a later explicit decision approves otherwise.

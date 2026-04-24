@@ -209,3 +209,27 @@ Minimal Pilot Access Contour входит в completion path уже утверж
 - новый IAM backend;
 - SSO / federation / MFA / SCIM / IdP scope;
 - новые backend endpoints только ради access convenience.
+
+## Minimal Pilot UI — Managed Demo Readiness Clarification
+
+Minimal Pilot UI существует как managed pilot surface
+для уже approved Asset Accountability MVP.
+
+Для managed demo readiness
+UI должен поддерживать controlled walkthrough:
+
+- Tenant Admin setup для roles, users, departments, branches и locations;
+- Asset Operator asset create / update и assign / transfer / return flows;
+- Support Reviewer read-only registry / card / history / audit visibility.
+
+Этот readiness level ограничен controlled managed demo / internal pilot use.
+
+Он не добавляет:
+
+- production login;
+- self-service onboarding;
+- auth/IAM platform;
+- barcode / QR / printer integration;
+- dashboard / BI;
+- новые backend APIs;
+- новые bounded contexts.

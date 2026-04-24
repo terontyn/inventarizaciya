@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ITAM Pilot UI</title>
+    <title>ITAM Operational Workspace</title>
     <link rel="stylesheet" href="/app.css">
     <script src="/app.js" defer></script>
 </head>
@@ -17,25 +17,28 @@
         <header class="hero">
             <div class="hero-copy">
                 <p class="eyebrow">IT Asset Management SaaS</p>
-                <h1>Минимальный пилотный контур</h1>
+                <h1>Операционный рабочий контур v1</h1>
                 <p class="hero-text">
-                    Реестр активов, карточка, dedicated responsibility flows, история, аудит и минимальный
-                    admin/setup слой поверх уже существующих контрактов `asset-service` и `user-service`.
+                    Текущий tenant-facing UX работает только поверх уже существующих контрактов `asset-service`
+                    и `user-service`. Здесь остаются approved operational surfaces: реестр, карточка,
+                    master-record edit, dedicated assign / transfer / return, history / audit и минимальный
+                    setup/admin слой.
                 </p>
             </div>
 
             <form id="session-form" class="session-card">
                 <div class="panel-heading">
                     <div>
-                        <p class="section-kicker">Managed Pilot Context</p>
-                        <h2>Контекст пилота</h2>
+                        <p class="section-kicker">Current Access Context</p>
+                        <h2>Контекст доступа</h2>
                     </div>
                     <span id="role-summary-badge" class="summary-badge">UI-профиль ещё не определён</span>
                 </div>
 
                 <p class="helper-copy">
-                    UI не меняет auth-платформу и использует текущий header-based контекст. Значения ниже нужны
-                    только для уже существующего managed pilot режима.
+                    UI не меняет auth/IAM-контур и использует текущий header-based доступ.
+                    Значения ниже нужны только для уже реализованного operational path внутри существующих
+                    сервисных границ.
                 </p>
 
                 <div class="field-grid">
@@ -68,7 +71,7 @@
                 </div>
 
                 <div class="button-row">
-                    <button class="button button-primary" type="submit">Подключить контур</button>
+                    <button class="button button-primary" type="submit">Подключить рабочий контур</button>
                     <button class="button button-secondary" id="refresh-all" type="button">Обновить всё</button>
                     <button class="button button-ghost" id="clear-session" type="button">Очистить</button>
                 </div>
@@ -84,6 +87,8 @@
 
         <nav id="screen-nav" class="screen-nav" aria-label="Основные разделы"></nav>
 
+        <section id="workspace-overview" class="workspace-overview panel panel-tight" aria-live="polite"></section>
+
         <main class="workspace">
             <section id="assets-screen" class="screen">
                 <div class="screen-header">
@@ -91,14 +96,16 @@
                         <p class="section-kicker">Asset Management</p>
                         <h2>Реестр и карточка актива</h2>
                         <p class="screen-copy">
-                            Generic create/update ограничены master record полями. Для ответственности используйте
-                            только выделенные действия assign / transfer / return.
+                            Карточка актива остаётся главным decision point. Generic create/update ограничены только
+                            master-record полями, а ответственность меняется через dedicated assign / transfer / return.
                         </p>
                     </div>
                     <span class="boundary-chip">
                         Generic edit never mutates <code>assigned_user_id</code> or <code>location_id</code>
                     </span>
                 </div>
+
+                <div id="asset-journey-banner" class="journey-banner" aria-live="polite"></div>
 
                 <div id="asset-create-panel" class="panel panel-tight" hidden>
                     <div class="panel-heading">
@@ -128,10 +135,12 @@
                         </div>
                     </form>
                     <p class="muted-note">
-                        Стартовая ответственность в UI не задаётся через generic create. После создания используйте
-                        отдельные entry points assign / transfer / return.
+                        Начальная ответственность не задаётся через generic create. После создания используйте
+                        отдельные entry points assign / transfer / return и вернитесь в карточку актива.
                     </p>
                 </div>
+
+                <section id="asset-registry-overview" class="workspace-overview panel panel-tight" aria-live="polite"></section>
 
                 <div class="assets-grid">
                     <section class="panel">
@@ -156,7 +165,7 @@
                                 </thead>
                                 <tbody id="asset-registry-body">
                                     <tr>
-                                        <td colspan="5" class="empty-cell">Подключите контур, чтобы загрузить активы.</td>
+                                        <td colspan="5" class="empty-cell">Подключите рабочий контур, чтобы загрузить активы.</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -168,7 +177,7 @@
                             <div class="empty-state">
                                 <p class="empty-kicker">Asset Card</p>
                                 <h3>Карточка ещё не выбрана</h3>
-                                <p>Выберите актив из реестра, чтобы открыть карточку, историю и аудит.</p>
+                                <p>Выберите актив из реестра, чтобы открыть карточку, историю, аудит и доступные operational actions.</p>
                             </div>
                         </div>
                     </section>
@@ -179,18 +188,20 @@
                 <div class="screen-header">
                     <div>
                         <p class="section-kicker">Reference Data</p>
-                        <h2>Минимальный admin/setup слой</h2>
+                        <h2>Setup и reference data</h2>
                         <p class="screen-copy">
-                            Только существующие контракты `user-service`: roles, users, departments, branches,
-                            locations и role assignment.
+                            Tenant Admin работает только через существующие public contracts `user-service`:
+                            roles, users, departments, branches, locations и role assignment.
                         </p>
                     </div>
                     <span class="boundary-chip">Tenant Admin only</span>
                 </div>
 
                 <div class="setup-order">
-                    Порядок первой настройки: <strong>roles -> users -> branches -> locations -> departments</strong>
+                    Порядок первой настройки: <strong>roles -&gt; users -&gt; branches -&gt; locations -&gt; departments</strong>
                 </div>
+
+                <section id="setup-overview" class="workspace-overview panel panel-tight" aria-live="polite"></section>
 
                 <nav id="admin-resource-nav" class="admin-nav" aria-label="Reference data sections"></nav>
 
@@ -209,7 +220,7 @@
                                 <thead id="admin-table-head"></thead>
                                 <tbody id="admin-table-body">
                                     <tr>
-                                        <td class="empty-cell">Раздел будет доступен после загрузки ролей пользователя.</td>
+                                        <td class="empty-cell">Раздел станет доступен после загрузки reference-data и проверки роли.</td>
                                     </tr>
                                 </tbody>
                             </table>
