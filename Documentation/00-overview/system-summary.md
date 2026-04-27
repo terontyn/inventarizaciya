@@ -669,4 +669,37 @@ It is not:
 - WMS / ITSM / SAM expansion;
 - a release-ready claim.
 
-Implementation remains blocked until a specialized docs-first scope packet is approved.
+This direction has since been scoped, implemented, and accepted as:
+
+**Productized Tenant-Facing Operational UX v1**
+
+It is now closed as frontend-only UX refinement of the existing static Pilot UI.
+
+Further work in this area must be treated as targeted defect / gap closure unless separately approved.
+
+
+## Current Baseline Update — Productized Tenant-Facing Operational UX v1
+
+The current project baseline should now be interpreted as:
+
+internally validated backend + minimal pilot UI/access baseline with Productized Tenant-Facing Operational UX v1 implemented.
+
+Productized Tenant-Facing Operational UX v1 was implemented as frontend-only refinement of the existing static Pilot UI over already approved MVP and narrow Wave 2 surfaces.
+
+Implementation closeout precision:
+- production backend/API behavior was not changed;
+- no new backend endpoint or API family was introduced;
+- no new bounded context was opened;
+- no BFF, UI backend, auth service, or IAM platform was introduced;
+- no new Wave map or Wave 2 surface expansion was opened;
+- test-only smoke coverage was updated through MinimalPilotUiSmokeTest.java.
+
+This baseline remains internally validated only.
+
+It is not:
+- release-ready tenant-facing product;
+- First-Tenant Operational Validation exit;
+- fully proven real tenant usage;
+- fully validated day-to-day operational tenant rollout.
+
+Future First-Tenant Operational Validation still requires real tenant / first adopter / real usage loop.

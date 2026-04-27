@@ -1,26 +1,46 @@
 # Productized Tenant-Facing Operational UX — Scope for Implementation
 
-Status: candidate
+Status: accepted / implemented closeout
 Owner: product
 Filename: productized-tenant-facing-operational-ux-scope.md
 
+## Implementation Closeout Note
+
+Productized Tenant-Facing Operational UX v1 has been implemented and accepted as frontend-only UX refinement of the existing static Pilot UI over already approved MVP and narrow Wave 2 surfaces.
+
+No production backend/API changes were made; test-only smoke coverage was updated.
+
+This closeout does not prove:
+- release-ready tenant-facing state;
+- real tenant validation;
+- real day-to-day operational validation;
+- First-Tenant Operational Validation exit.
+
 ## 1. Decision
 
-Approved direction-gate movement:
+Approved and implemented scope:
 
-**Productized Tenant-Facing Operational UX Expansion**
+**Productized Tenant-Facing Operational UX v1**
 
-This scope packet defines the next UX development scope required to move the existing pilot-level UI toward a more productized tenant-facing operational UX.
+This packet originally defined the UX development scope required to move the existing pilot-level UI toward a more productized tenant-facing operational UX.
+
+Implementation has now been completed and accepted as:
+
+**frontend-only UX refinement of the existing static Pilot UI over already approved MVP and narrow Wave 2 surfaces.**
+
+This closeout does not change the original scope boundaries.
 
 This is not:
 - pilot testing;
 - managed demo workstream;
 - pilot readiness re-check;
 - release-ready claim;
+- First-Tenant Operational Validation claim;
 - new bounded context;
-- new backend/API scope by default.
-
-Implementation remains blocked until this scope packet is explicitly approved.
+- new backend/API scope;
+- BFF / UI backend;
+- auth / IAM expansion;
+- new Wave 2 UI surface expansion.
 
 ## 2. Correct Interpretation
 
@@ -374,29 +394,35 @@ Included work:
 - continuity between surfaces;
 - clear owner-vs-derived visibility copy where reporting is involved.
 
+
 ## 10. Acceptance Criteria
 
-This scope is ready for implementation planning when:
+This scope is accepted as implemented when:
 
-- included personas are fixed;
-- included surfaces are listed;
-- included journeys are described;
-- explicit non-goals are documented;
-- backend/API policy is documented;
-- each journey has entry point, success state, failure/empty state and return path;
-- role-based visibility is defined without creating new RBAC semantics;
-- current-state visibility remains inside existing domain boundaries;
-- reporting remains read-only and derived;
-- no release-ready claim is made;
-- no First-Tenant Operational Validation claim is made;
-- stop conditions are listed;
-- docs delta is approved.
+- included personas remained fixed;
+- included surfaces remained limited to already approved MVP and narrow Wave 2 surfaces;
+- implementation stayed frontend-only by default;
+- role-based navigation and role-aligned UX refinement were implemented without creating new RBAC semantics;
+- current-state visibility remained inside existing domain boundaries;
+- reporting remained read-only and derived where represented;
+- no production backend/API change was introduced;
+- no new endpoint, API family, BFF, UI backend, auth service, IAM platform, bounded context, or Wave map was introduced;
+- no release-ready claim was made;
+- no First-Tenant Operational Validation claim was made;
+- test-only smoke coverage was updated where needed.
 
-UX scope is done when:
+UX scope is now closed as:
 
-- a Codex-ready implementation planning packet can be prepared without guessing product intent;
-- implementation can proceed using existing backend/API surfaces by default;
-- any exception is separately justified before code work.
+**accepted / implemented frontend-only UX refinement.**
+
+
+## Closeout State
+
+This packet should now be treated as a closed implementation scope.
+
+Further work must not reopen Productized Tenant-Facing Operational UX v1 as a greenfield implementation step.
+
+Allowed follow-up work is limited to concrete defect fix, targeted UX gap closure inside accepted scope, or documentation alignment.
 
 ## 11. Stop Conditions
 
@@ -421,32 +447,3 @@ Stop and return to product/architecture decision if work requires:
 - release-ready claim;
 - real tenant validation claim without real tenant evidence.
 
-## 12. Candidate Docs Delta
-
-Create:
-
-- `/Documentation/06-delivery/productized-tenant-facing-operational-ux-scope.md`
-
-After approval, optionally align:
-
-- `/Documentation/06-delivery/roadmap.md`
-- `/Documentation/06-delivery/release-plan.md`
-- `/Documentation/00-overview/system-summary.md`
-
-Do not update domain/API docs unless a separately justified backend/API exception is approved.
-
-## 13. Next Step After Approval
-
-After this scope packet is approved, prepare:
-
-**Implementation Planning Packet for Productized Tenant-Facing Operational UX v1**
-
-That packet should be Codex-ready and must include:
-
-- exact screens / routes only after product scope approval;
-- per-persona navigation;
-- per-surface UX tasks;
-- no backend/API changes unless separately justified;
-- stop conditions preserved.
-
-No code implementation should begin before this scope packet is approved.

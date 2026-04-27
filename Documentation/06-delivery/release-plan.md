@@ -964,26 +964,25 @@ Managed demo readiness нельзя использовать как evidence д�
 - First-Tenant Operational Validation exit;
 - real tenant operational validation.
 
-## Product Expansion Direction — Tenant-Facing Operational UX
 
-The next approved direction-gate movement is not managed demo,
-not First-Tenant Operational Validation,
-and not release readiness.
+## Productized Tenant-Facing Operational UX v1 Closeout Clarification
 
-A separate product expansion direction is approved for:
+Productized Tenant-Facing Operational UX v1 is accepted as implemented.
 
-**Productized Tenant-Facing Operational UX Expansion**
+The implementation refined the existing static Pilot UI into a more productized tenant-facing operational UX over already approved MVP and narrow Wave 2 surfaces.
 
-This direction exists to define a richer tenant-facing operational UX
-over already approved MVP and narrow Wave 2 surfaces.
+This closeout is accepted as frontend-only UX refinement.
 
-This does not reopen:
-- MVP / Pilot baseline;
-- Minimal Pilot UI as greenfield;
-- Minimal Pilot Access;
-- narrow Wave 2 contours;
-- post-Wave-2 hardening packet.
+No production backend/API changes were made; test-only smoke coverage was updated.
 
-This does not authorize implementation until a dedicated docs-first scope packet is approved.
+This is not:
+- new backend/API delivery;
+- new bounded context;
+- new BFF or UI backend;
+- new auth / IAM expansion;
+- new Wave 2 contour or surface expansion;
+- release-ready tenant-facing claim;
+- First-Tenant Operational Validation claim.
 
-The expansion must remain within existing product ownership boundaries unless a later explicit decision approves otherwise.
+Current project baseline remains internally validated only.
+Real tenant validation and real day-to-day operational validation are still not proven.

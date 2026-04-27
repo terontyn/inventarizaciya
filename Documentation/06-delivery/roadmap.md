@@ -349,6 +349,31 @@ managed Pilot UI stabilization разрешена только как bounded re
 Это docs-first product expansion direction,
 а не implementation packet и не release-ready claim.
 
+### Implementation closeout
+
+The dedicated docs-first scope packet for this direction was approved as Productized Tenant-Facing Operational UX v1.
+
+This specific approved expansion has now been implemented and accepted as frontend-only UX refinement of the existing static Pilot UI over already approved MVP and narrow Wave 2 surfaces.
+
+This changes the state of this direction from approved direction awaiting scope / implementation to approved scope implemented and closed.
+
+This implementation did not open:
+- new bounded context;
+- new Wave map;
+- new Wave 2 contour;
+- managed demo workstream;
+- production release claim;
+- auth / IAM platform;
+- self-service onboarding;
+- BFF or UI backend;
+- BI / dashboard / analytics expansion;
+- WMS / ITSM / SAM expansion;
+- new backend endpoints solely for UI convenience.
+
+No production backend/API changes were made; test-only smoke coverage was updated.
+
+The project remains under the same real-tenant validation ceiling.
+
 ### Rationale
 
 Это направление является strongest justified product move, потому что:
@@ -361,45 +386,15 @@ managed Pilot UI stabilization разрешена только как bounded re
 - tenant-facing operational UX остается ближайшим product investment
   к approved value proposition.
 
-### Scope interpretation
+### Current post-closeout interpretation
 
-Это направление может определить richer tenant-facing operational UX
-поверх уже approved MVP и narrow Wave 2 surfaces.
+This direction is no longer awaiting initial scope approval or implementation planning.
 
-Оно может включать:
-- role-aligned operational navigation;
-- usability refinement для existing tenant-facing workflows;
-- continuity между registry, asset card, responsibility flows, history / audit
-  и relevant current-state visibility;
-- UX-level friction reduction для будущего real tenant usage;
-- preparation для будущего First-Tenant Operational Validation evidence capture.
+`Productized Tenant-Facing Operational UX v1` has been implemented and closed as frontend-only UX refinement.
 
-Оно не разрешает по умолчанию:
-- implementation work;
-- новый bounded context;
-- новую Wave map;
-- managed demo workstream;
-- production release claim;
-- новый auth / IAM platform;
-- self-service onboarding;
-- SSO / federation / MFA / SCIM / IdP scope;
-- BI / dashboard / analytics expansion;
-- WMS / ITSM / SAM expansion;
-- новые backend endpoints solely for UI convenience.
+Further work in this area is allowed only as:
+- concrete defect fix;
+- targeted UX gap closure inside accepted scope;
+- documentation alignment.
 
-### Next required step
-
-До implementation должен быть подготовлен и approved отдельный docs-first scope packet:
-
-**Productized Tenant-Facing Operational UX Expansion Scope**
-
-Этот packet должен определить:
-- included personas;
-- included existing surfaces;
-- included user journeys;
-- explicit non-goals;
-- UX cutline;
-- backend/API change constraints;
-- acceptance criteria;
-- stop conditions;
-- docs deltas required before Codex implementation.
+Any new product expansion requires a separate explicit decision.
