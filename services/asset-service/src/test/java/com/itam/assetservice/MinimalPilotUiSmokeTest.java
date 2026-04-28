@@ -31,13 +31,19 @@ class MinimalPilotUiSmokeTest {
 
         mockMvc.perform(get("/index.html"))
             .andExpect(status().isOk())
-            .andExpect(content().string(containsString("data-ui-surface=\"minimal-pilot-ui\"")))
+            .andExpect(content().string(containsString("data-ui-surface=\"operational-workspace-ux-v2\"")))
+            .andExpect(content().string(containsString("data-existing-surface=\"minimal-pilot-ui\"")))
             .andExpect(content().string(containsString("data-edit-boundary=\"asset-master-record-only\"")))
             .andExpect(content().string(containsString("data-responsibility-flows=\"assign,transfer,return\"")))
             .andExpect(content().string(containsString("id=\"session-form\"")))
+            .andExpect(content().string(containsString("id=\"workspace-screen\"")))
+            .andExpect(content().string(containsString("id=\"assets-screen\"")))
+            .andExpect(content().string(containsString("id=\"review-screen\"")))
             .andExpect(content().string(containsString("id=\"asset-create-form\"")))
             .andExpect(content().string(containsString("id=\"workspace-overview\"")))
             .andExpect(content().string(containsString("id=\"asset-journey-banner\"")))
+            .andExpect(content().string(containsString("id=\"review-section-nav\"")))
+            .andExpect(content().string(containsString("id=\"review-detail-panel\"")))
             .andExpect(content().string(containsString("id=\"admin-resource-nav\"")))
             .andExpect(content().string(containsString("id=\"setup-overview\"")));
     }
@@ -53,6 +59,12 @@ class MinimalPilotUiSmokeTest {
             .andExpect(content().string(containsString("/return")))
             .andExpect(content().string(containsString("/history")))
             .andExpect(content().string(containsString("/audit")))
+            .andExpect(content().string(containsString("PRIMARY_SCREENS")))
+            .andExpect(content().string(containsString("ASSET_SECTIONS")))
+            .andExpect(content().string(containsString("REVIEW_SECTIONS")))
+            .andExpect(content().string(containsString("data-asset-section")))
+            .andExpect(content().string(containsString("data-review-section")))
+            .andExpect(content().string(containsString("renderAuditDetails")))
             .andExpect(content().string(containsString("/api/v1/users")))
             .andExpect(content().string(containsString("/api/v1/roles")))
             .andExpect(content().string(containsString("/api/v1/departments")))
@@ -65,6 +77,10 @@ class MinimalPilotUiSmokeTest {
             .andExpect(content().string(not(containsString("/api/v1/maintenance/"))))
             .andExpect(content().string(not(containsString("/api/v1/software/"))))
             .andExpect(content().string(not(containsString("/api/v1/tickets/"))))
-            .andExpect(content().string(not(containsString("/api/v1/reporting/"))));
+            .andExpect(content().string(not(containsString("/api/v1/reporting/"))))
+            .andExpect(content().string(not(containsString("saved views"))))
+            .andExpect(content().string(not(containsString("bulk actions"))))
+            .andExpect(content().string(not(containsString("dashboard"))))
+            .andExpect(content().string(not(containsString("Elasticsearch"))));
     }
 }

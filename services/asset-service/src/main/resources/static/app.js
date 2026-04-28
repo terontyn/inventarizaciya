@@ -7,26 +7,46 @@ const UI_PROFILE_NAMES = {
     NO_APPROVED_ROLE: "Нет approved role"
 };
 
+const PRIMARY_SCREENS = {
+    WORKSPACE: "workspace",
+    ASSETS: "assets",
+    REVIEW: "review",
+    SETUP: "setup"
+};
+
+const ASSET_SECTIONS = [
+    { key: "overview", label: "Обзор" },
+    { key: "master", label: "Master data" },
+    { key: "responsibility", label: "Ответственность" },
+    { key: "actions", label: "Действия" },
+    { key: "history", label: "History / Audit" }
+];
+
+const REVIEW_SECTIONS = [
+    { key: "history", label: "История" },
+    { key: "audit", label: "Аудит" }
+];
+
 const SETUP_SEQUENCE = [
     {
         key: "roles",
         label: "Роли",
-        description: "Сначала зафиксируйте canonical tenant-roles для текущего operational contour."
+        description: "Сначала зафиксируйте роли tenant для текущего рабочего контура."
     },
     {
         key: "users",
         label: "Пользователи",
-        description: "После создания пользователей назначьте роли через отдельный public role-binding contract."
+        description: "После создания пользователей назначьте роли через отдельный role-binding flow."
     },
     {
         key: "branches",
         label: "Филиалы",
-        description: "Филиалы создают физическую основу для локаций и дальнейших responsibility flows."
+        description: "Филиалы задают физическую основу для локаций."
     },
     {
         key: "locations",
         label: "Локации",
-        description: "Локации используются как текущая operating location и меняются только dedicated flow."
+        description: "Локации используются как текущая operating location."
     },
     {
         key: "departments",
@@ -37,22 +57,22 @@ const SETUP_SEQUENCE = [
 
 const ADMIN_RESOURCE_META = {
     roles: {
-        helper: "Создайте базовые роли Tenant Admin, Asset Operator и Support Reviewer перед полноценным tenant setup.",
+        helper: "Создайте базовые роли Tenant Admin, Asset Operator и Support Reviewer перед настройкой пользователей.",
         empty: "Роли ещё не созданы. Начните именно с этого шага.",
         prerequisite: null
     },
     users: {
-        helper: "После создания пользователя назначьте ему роль через отдельный public contract.",
+        helper: "После создания пользователя назначьте ему роль отдельным действием.",
         empty: "Пользователи ещё не созданы.",
         prerequisite: "Рекомендуется сначала создать роли, чтобы role assignment не откладывался."
     },
     branches: {
-        helper: "Филиалы помогают держать branch/location структуру явной и понятной.",
+        helper: "Филиалы помогают держать структуру локаций понятной.",
         empty: "Филиалы ещё не созданы.",
         prerequisite: null
     },
     locations: {
-        helper: "Локации используются в transfer flow и показываются отдельно от asset status.",
+        helper: "Локации используются в transfer flow и показываются отдельно от статуса актива.",
         empty: "Локации ещё не созданы.",
         prerequisite: "Для создания локации нужен хотя бы один филиал."
     },
@@ -64,17 +84,28 @@ const ADMIN_RESOURCE_META = {
 };
 
 const HISTORY_FACT_LABELS = {
+    ASSIGN: "Assign",
     ASSIGNED: "Assign",
+    TRANSFER: "Transfer",
     TRANSFERRED: "Transfer",
-    RETURNED: "Return"
+    RETURN: "Return",
+    RETURNED: "Return",
+    RETIRE: "Retire",
+    RETIRED: "Retire"
 };
 
 const AUDIT_ACTION_LABELS = {
+    CREATE: "Создание актива",
     CREATE_ASSET: "Создание актива",
+    UPDATE: "Обновление master record",
     UPDATE_ASSET: "Обновление master record",
+    ASSIGN: "Assign",
     ASSIGN_ASSET: "Assign",
+    TRANSFER: "Transfer",
     TRANSFER_ASSET: "Transfer",
-    RETURN_ASSET: "Return"
+    RETURN: "Return",
+    RETURN_ASSET: "Return",
+    RETIRE: "Retire"
 };
 
 const ADMIN_RESOURCES = {
@@ -192,7 +223,9 @@ const state = {
         locations: []
     },
     loading: createEmptyLoadingState(),
-    activeScreen: "assets",
+    activeScreen: PRIMARY_SCREENS.WORKSPACE,
+    activeAssetSection: "overview",
+    activeReviewSection: "history",
     activeAdminResource: "roles",
     selectedAdminItemId: null
 };
@@ -221,6 +254,7 @@ function cacheElements() {
     ui.activeScreenLabel = document.getElementById("active-screen-label");
     ui.flashStack = document.getElementById("flash-stack");
     ui.screenNav = document.getElementById("screen-nav");
+    ui.workspaceScreen = document.getElementById("workspace-screen");
     ui.workspaceOverview = document.getElementById("workspace-overview");
     ui.assetsScreen = document.getElementById("assets-screen");
     ui.assetJourneyBanner = document.getElementById("asset-journey-banner");
@@ -229,6 +263,9 @@ function cacheElements() {
     ui.assetRegistryOverview = document.getElementById("asset-registry-overview");
     ui.assetRegistryBody = document.getElementById("asset-registry-body");
     ui.assetDetailPanel = document.getElementById("asset-detail-panel");
+    ui.reviewScreen = document.getElementById("review-screen");
+    ui.reviewSectionNav = document.getElementById("review-section-nav");
+    ui.reviewDetailPanel = document.getElementById("review-detail-panel");
     ui.adminScreen = document.getElementById("admin-screen");
     ui.setupOverview = document.getElementById("setup-overview");
     ui.adminResourceNav = document.getElementById("admin-resource-nav");
@@ -256,6 +293,8 @@ function bindStaticEvents() {
     ui.assetRegistryBody.addEventListener("click", onAssetRegistryClick);
     ui.assetDetailPanel.addEventListener("submit", onAssetDetailSubmit);
     ui.assetDetailPanel.addEventListener("click", onAssetInteractionClick);
+    ui.reviewSectionNav.addEventListener("click", onReviewInteractionClick);
+    ui.reviewDetailPanel.addEventListener("click", onReviewInteractionClick);
     ui.adminResourceNav.addEventListener("click", onAdminResourceClick);
     ui.setupOverview.addEventListener("click", onAdminResourceClick);
     ui.adminTableBody.addEventListener("click", onAdminTableClick);
@@ -328,7 +367,9 @@ function clearSession() {
         locations: []
     };
     state.loading = createEmptyLoadingState();
-    state.activeScreen = "assets";
+    state.activeScreen = PRIMARY_SCREENS.WORKSPACE;
+    state.activeAssetSection = "overview";
+    state.activeReviewSection = "history";
     state.activeAdminResource = "roles";
     state.selectedAdminItemId = null;
 
@@ -511,7 +552,7 @@ async function resolveUiProfile() {
                     : UI_PROFILE_NAMES.NO_APPROVED_ROLE;
 
         if (!canAssetRead()) {
-            state.activeScreen = canTenantAdmin() ? "admin" : "assets";
+            state.activeScreen = canTenantAdmin() ? PRIMARY_SCREENS.SETUP : PRIMARY_SCREENS.WORKSPACE;
         }
     });
 }
@@ -701,6 +742,7 @@ async function onAssetCreateSubmit(event) {
         });
         event.currentTarget.reset();
         state.selectedAssetId = created.id;
+        state.activeAssetSection = "overview";
         await refreshAssets();
         scrollToElement(ui.assetDetailPanel);
         showFlash(`Актив ${created.asset_tag} создан и открыт в карточке.`, "success");
@@ -740,6 +782,7 @@ async function onAssetDetailSubmit(event) {
                 method: "PATCH",
                 body: payload
             });
+            state.activeAssetSection = "master";
             await refreshAssets();
             scrollToElement(ui.assetDetailPanel);
             showFlash("Карточка актива обновлена без изменения responsibility-полей.", "success");
@@ -756,6 +799,8 @@ async function onAssetDetailSubmit(event) {
                 method: "POST",
                 body: { target_user_id: targetUserId }
             });
+            state.activeAssetSection = "history";
+            state.activeReviewSection = "history";
             await refreshAssets();
             scrollToElement(ui.assetDetailPanel);
             showFlash("Assign выполнен через dedicated flow.", "success");
@@ -770,8 +815,8 @@ async function onAssetDetailSubmit(event) {
                 showFlash("Transfer требует target user или target location.", "warning");
                 return;
             }
-            if (!hasVisibleResponsibility(state.selectedAsset)) {
-                showFlash("Transfer доступен только когда у актива уже есть текущая ответственность или operating location.", "warning");
+            if (!hasCurrentUserResponsibility(state.selectedAsset) && targetUserId) {
+                showFlash("Transfer не создаёт первую пользовательскую ответственность. Для первого пользователя используйте assign.", "warning");
                 return;
             }
             await requestJson("asset", `/api/v1/assets/${state.selectedAssetId}/transfer`, {
@@ -781,6 +826,8 @@ async function onAssetDetailSubmit(event) {
                     target_location_id: targetLocationId || null
                 }
             });
+            state.activeAssetSection = "history";
+            state.activeReviewSection = "history";
             await refreshAssets();
             scrollToElement(ui.assetDetailPanel);
             showFlash("Transfer выполнен через dedicated flow.", "success");
@@ -788,13 +835,15 @@ async function onAssetDetailSubmit(event) {
         }
 
         if (form.id === "asset-return-form") {
-            if (!hasVisibleResponsibility(state.selectedAsset)) {
-                showFlash("Return не выполняется, если в карточке не видно текущей ответственности.", "warning");
+            if (!hasCurrentUserResponsibility(state.selectedAsset)) {
+                showFlash("Return завершает только текущую пользовательскую ответственность. В карточке нет назначенного пользователя.", "warning");
                 return;
             }
             await requestJson("asset", `/api/v1/assets/${state.selectedAssetId}/return`, {
                 method: "POST"
             });
+            state.activeAssetSection = "history";
+            state.activeReviewSection = "history";
             await refreshAssets();
             scrollToElement(ui.assetDetailPanel);
             showFlash("Return выполнен через dedicated flow.", "success");
@@ -805,6 +854,21 @@ async function onAssetDetailSubmit(event) {
 }
 
 function onAssetInteractionClick(event) {
+    const screenButton = event.target.closest("[data-screen]");
+    if (screenButton) {
+        state.activeScreen = screenButton.dataset.screen;
+        render();
+        return;
+    }
+
+    const sectionButton = event.target.closest("[data-asset-section]");
+    if (sectionButton) {
+        state.activeAssetSection = sectionButton.dataset.assetSection;
+        render();
+        scrollToElement(ui.assetDetailPanel);
+        return;
+    }
+
     const refreshButton = event.target.closest("[data-refresh-asset]");
     if (refreshButton && state.selectedAssetId) {
         loadAssetBundle(state.selectedAssetId)
@@ -831,12 +895,35 @@ function onAssetInteractionClick(event) {
     }
 }
 
+function onReviewInteractionClick(event) {
+    const screenButton = event.target.closest("[data-screen]");
+    if (screenButton) {
+        state.activeScreen = screenButton.dataset.screen;
+        render();
+        return;
+    }
+
+    const sectionButton = event.target.closest("[data-review-section]");
+    if (sectionButton) {
+        state.activeReviewSection = sectionButton.dataset.reviewSection;
+        render();
+        return;
+    }
+
+    const refreshButton = event.target.closest("[data-refresh-asset]");
+    if (refreshButton && state.selectedAssetId) {
+        loadAssetBundle(state.selectedAssetId)
+            .then(render)
+            .catch(handleUnexpectedError);
+    }
+}
+
 function onAdminResourceClick(event) {
     const button = event.target.closest("[data-resource-key]");
     if (!button) {
         return;
     }
-    state.activeScreen = "admin";
+    state.activeScreen = PRIMARY_SCREENS.SETUP;
     state.activeAdminResource = button.dataset.resourceKey;
     state.selectedAdminItemId = null;
     render();
@@ -936,10 +1023,11 @@ async function refreshAdminResource() {
 function render() {
     renderRoleSummary();
     renderScreenNav();
-    renderWorkspaceOverview();
+    renderWorkspaceScreen();
     renderAssetsScreen();
+    renderReviewScreen();
     renderAdminScreen();
-    ui.activeScreenLabel.textContent = state.activeScreen;
+    ui.activeScreenLabel.textContent = getScreenLabel(state.activeScreen);
     ui.assetServiceOrigin.textContent = window.location.origin;
 }
 
@@ -964,21 +1052,20 @@ function renderRoleSummary() {
 }
 
 function renderScreenNav() {
-    const screens = [];
+    const screens = [{ key: PRIMARY_SCREENS.WORKSPACE, label: "Рабочее место" }];
     if (canAssetRead()) {
-        screens.push({ key: "assets", label: "Активы" });
+        screens.push({ key: PRIMARY_SCREENS.ASSETS, label: "Активы" });
+        screens.push({ key: PRIMARY_SCREENS.REVIEW, label: "Review" });
     }
     if (canTenantAdmin()) {
-        screens.push({ key: "admin", label: "Setup / Admin" });
+        screens.push({ key: PRIMARY_SCREENS.SETUP, label: "Setup" });
     }
 
     if (!screens.some((screen) => screen.key === state.activeScreen)) {
-        state.activeScreen = screens[0]?.key || "assets";
+        state.activeScreen = PRIMARY_SCREENS.WORKSPACE;
     }
 
-    ui.screenNav.innerHTML = screens.length === 0
-        ? `<div class="summary-pill is-muted">Для текущего контекста нет доступных UI-разделов.</div>`
-        : screens.map((screen) => `
+    ui.screenNav.innerHTML = screens.map((screen) => `
             <button
                 class="nav-chip ${screen.key === state.activeScreen ? "is-active" : ""}"
                 type="button"
@@ -987,6 +1074,11 @@ function renderScreenNav() {
                 ${escapeHtml(screen.label)}
             </button>
         `).join("");
+}
+
+function renderWorkspaceScreen() {
+    ui.workspaceScreen.hidden = state.activeScreen !== PRIMARY_SCREENS.WORKSPACE;
+    renderWorkspaceOverview();
 }
 
 function renderWorkspaceOverview() {
@@ -1009,26 +1101,20 @@ function renderWorkspaceOverview() {
     }
 
     const guidance = getProfileGuidance();
-    const availableScreens = [
-        canAssetRead() ? "Активы" : null,
-        canTenantAdmin() ? "Setup / Admin" : null
-    ].filter(Boolean);
+    const workAreas = getWorkspaceAreas();
 
     ui.workspaceOverview.innerHTML = `
         <div class="stack">
             <div class="panel-heading">
                 <div>
                     <p class="section-kicker">Workspace</p>
-                    <h3>Профиль и доступные пути</h3>
+                    <h3>Ориентация по рабочим зонам</h3>
                 </div>
                 <span class="summary-pill">${escapeHtml(state.profileLabel || UI_PROFILE_NAMES.NO_APPROVED_ROLE)}</span>
             </div>
 
-            <div class="overview-grid">
-                ${renderMetricCard("Текущий профиль", state.profileLabel || UI_PROFILE_NAMES.NO_APPROVED_ROLE, guidance.headline)}
-                ${renderMetricCard("Доступные разделы", availableScreens.length ? availableScreens.join(" + ") : "Нет разделов", guidance.summary)}
-                ${renderMetricCard("Реестр активов", canAssetMutate() ? "Mutate" : canAssetRead() ? "Read-only" : "Скрыт", "Asset registry и карточка остаются главным operational path.")}
-                ${renderMetricCard("Setup/Admin", canTenantAdmin() ? "Tenant Admin only" : canReferenceRead() ? "Read-only reference lookups" : "Скрыт", "Reference-data write surfaces не выводятся вне Tenant Admin.")}
+            <div class="workspace-path-grid">
+                ${workAreas.map(renderWorkspaceAreaCard).join("")}
             </div>
 
             <div class="journey-banner tone-info">
@@ -1037,8 +1123,9 @@ function renderWorkspaceOverview() {
                     <p>${escapeHtml(guidance.bannerBody)}</p>
                 </div>
                 <div class="button-row">
-                    ${canAssetRead() ? `<button class="button button-secondary" type="button" data-screen="assets">Открыть активы</button>` : ""}
-                    ${canTenantAdmin() ? `<button class="button button-secondary" type="button" data-screen="admin">Открыть setup/admin</button>` : ""}
+                    ${canAssetRead() ? `<button class="button button-secondary" type="button" data-screen="${PRIMARY_SCREENS.ASSETS}">Открыть активы</button>` : ""}
+                    ${canAssetRead() ? `<button class="button button-secondary" type="button" data-screen="${PRIMARY_SCREENS.REVIEW}">Открыть review</button>` : ""}
+                    ${canTenantAdmin() ? `<button class="button button-secondary" type="button" data-screen="${PRIMARY_SCREENS.SETUP}">Открыть setup</button>` : ""}
                 </div>
             </div>
         </div>
@@ -1046,7 +1133,7 @@ function renderWorkspaceOverview() {
 }
 
 function renderAssetsScreen() {
-    const visible = canAssetRead() && state.activeScreen === "assets";
+    const visible = canAssetRead() && state.activeScreen === PRIMARY_SCREENS.ASSETS;
     ui.assetsScreen.hidden = !visible;
     ui.assetCreatePanel.hidden = !canAssetMutate();
 
@@ -1075,11 +1162,12 @@ function renderAssetJourneyBanner() {
     if (canAssetMutate()) {
         ui.assetJourneyBanner.innerHTML = renderJourneyBanner(
             "tone-info",
-            "Операционный путь: реестр -> карточка -> dedicated flow",
-            "Status ACTIVE / RETIRED показывается отдельно от ответственного пользователя и локации. Generic edit остаётся только для master-record полей.",
+            "Операционный путь: реестр -> карточка -> отдельное действие",
+            "Статус ACTIVE / RETIRED показывается отдельно от ответственного пользователя и локации. Generic edit остаётся только для master-record полей.",
             `
                 <button class="button button-secondary" type="button" data-focus-registry>К реестру</button>
                 <button class="button button-ghost" type="button" data-focus-create">К созданию</button>
+                ${state.selectedAsset ? `<button class="button button-ghost" type="button" data-screen="${PRIMARY_SCREENS.REVIEW}">К review</button>` : ""}
             `
         );
         return;
@@ -1088,8 +1176,8 @@ function renderAssetJourneyBanner() {
     ui.assetJourneyBanner.innerHTML = renderJourneyBanner(
         "tone-readonly",
         "Read-only review path",
-        "Support Reviewer видит только registry, card, history и audit. Write entry points intentionally скрыты.",
-        state.selectedAsset ? `<button class="button button-secondary" type="button" data-focus-card>К карточке</button>` : ""
+        "Support Reviewer видит реестр, карточку, history и audit без write entry points.",
+        state.selectedAsset ? `<button class="button button-secondary" type="button" data-screen="${PRIMARY_SCREENS.REVIEW}">К review</button>` : ""
     );
 }
 
@@ -1111,22 +1199,23 @@ function renderAssetRegistryOverview() {
         <div class="stack">
             <div class="panel-heading">
                 <div>
-                    <p class="section-kicker">Registry Overview</p>
-                    <h3>Текущее состояние реестра</h3>
+                    <p class="section-kicker">Реестр</p>
+                    <h3>Рабочая выборка активов</h3>
                 </div>
                 <span class="summary-pill">${escapeHtml(canAssetMutate() ? "Mutate path" : "Read-only path")}</span>
             </div>
 
             <div class="overview-grid">
-                ${renderMetricCard("Всего активов", String(total), total === 0 ? "В текущем tenant scope пока нет записей." : "Текущая выборка owner-side asset registry.")}
+                ${renderMetricCard("Активов в реестре", String(total), total === 0 ? "В текущем tenant scope пока нет записей." : "Загружено из существующего asset registry.")}
                 ${renderMetricCard("ACTIVE", String(active), "Статус отражается отдельно от ответственности и локации.")}
-                ${renderMetricCard("RETIRED", String(retired), "Retired не выводится как responsibility state.")}
+                ${renderMetricCard("RETIRED", String(retired), "Retired не является состоянием ответственности.")}
                 ${renderMetricCard("Выбранный актив", selectedLabel, selectedState)}
             </div>
 
             <div class="button-row">
                 ${canAssetMutate() ? `<button class="button button-secondary" type="button" data-focus-create">Создать актив</button>` : ""}
                 ${state.selectedAsset ? `<button class="button button-ghost" type="button" data-focus-card">К карточке</button>` : ""}
+                ${state.selectedAsset ? `<button class="button button-ghost" type="button" data-screen="${PRIMARY_SCREENS.REVIEW}">К review</button>` : ""}
             </div>
         </div>
     `;
@@ -1163,11 +1252,11 @@ function renderAssetRegistry() {
 
     ui.assetRegistryBody.innerHTML = state.assets.map((asset) => `
         <tr class="${asset.id === state.selectedAssetId ? "is-active" : ""}" data-asset-id="${escapeHtml(asset.id)}">
-            <td>${escapeHtml(asset.asset_tag)}</td>
+            <td>${renderAssetIdentity(asset)}</td>
             <td>${escapeHtml(asset.asset_type)}</td>
             <td>${renderStatusBadge(asset.status)}</td>
-            <td>${escapeHtml(resolveUserName(asset.assigned_user_id))}</td>
-            <td>${escapeHtml(resolveLocationName(asset.location_id))}</td>
+            <td>${renderUserReference(asset.assigned_user_id)}</td>
+            <td>${renderLocationReference(asset.location_id)}</td>
         </tr>
     `).join("");
 }
@@ -1175,7 +1264,7 @@ function renderAssetRegistry() {
 function renderAssetDetail() {
     if (state.loading.assetDetail && !state.selectedAsset) {
         ui.assetDetailPanel.innerHTML = renderPanelEmpty(
-            "Asset Card",
+            "Карточка",
             "Загружаем карточку",
             "Как только owner-side current-state данные будут доступны, UI откроет карточку, history и audit."
         );
@@ -1185,7 +1274,7 @@ function renderAssetDetail() {
     if (!state.selectedAsset) {
         ui.assetDetailPanel.innerHTML = `
             <div class="empty-state">
-                <p class="empty-kicker">Asset Card</p>
+                <p class="empty-kicker">Карточка</p>
                 <h3>Карточка ещё не выбрана</h3>
                 <p>Выберите актив из реестра, чтобы открыть карточку, history и audit.</p>
                 <div class="button-row">
@@ -1201,153 +1290,248 @@ function renderAssetDetail() {
     const canMutate = canAssetMutate();
     const hasUsers = state.references.users.length > 0;
     const hasLocations = state.references.locations.length > 0;
-    const hasResponsibility = hasVisibleResponsibility(asset);
+    const hasCurrentUser = hasCurrentUserResponsibility(asset);
+
+    if (!ASSET_SECTIONS.some((section) => section.key === state.activeAssetSection)) {
+        state.activeAssetSection = "overview";
+    }
 
     ui.assetDetailPanel.innerHTML = `
         <div class="stack">
             <div class="panel-heading">
                 <div>
-                    <p class="section-kicker">Asset Card</p>
+                    <p class="section-kicker">Карточка актива</p>
                     <h3>${escapeHtml(asset.asset_tag)}</h3>
+                    <p class="reference-meta">Asset ID: ${escapeHtml(asset.id)}</p>
                 </div>
                 <div class="button-row">
                     <button class="button button-secondary" data-refresh-asset type="button">Обновить карточку</button>
                     <button class="button button-ghost" data-focus-registry type="button">К реестру</button>
+                    <button class="button button-ghost" data-screen="${PRIMARY_SCREENS.REVIEW}" type="button">К review</button>
                     ${canMutate ? `<button class="button button-ghost" data-focus-create type="button">К созданию</button>` : ""}
                 </div>
             </div>
 
-            <div class="journey-banner tone-info">
-                <div class="journey-copy">
-                    <strong>Статус и ответственность разделены</strong>
-                    <p>ACTIVE / RETIRED — это status актива. Ответственный пользователь и operating location показаны отдельно и меняются только через dedicated flows.</p>
-                </div>
-            </div>
+            ${renderAssetSectionNav()}
 
             <div class="asset-card">
-                <div class="asset-summary-grid">
-                    <article class="summary-card">
-                        <p>Статус</p>
-                        <strong>${renderStatusBadge(asset.status)}</strong>
-                    </article>
-                    <article class="summary-card">
-                        <p>Тип актива</p>
-                        <strong>${escapeHtml(asset.asset_type)}</strong>
-                    </article>
-                    <article class="summary-card">
-                        <p>Ответственный</p>
-                        <strong>${escapeHtml(resolveUserName(asset.assigned_user_id))}</strong>
-                    </article>
-                    <article class="summary-card">
-                        <p>Локация</p>
-                        <strong>${escapeHtml(resolveLocationName(asset.location_id))}</strong>
-                    </article>
-                    <article class="summary-card">
-                        <p>Серийный номер</p>
-                        <strong>${escapeHtml(asset.serial_number)}</strong>
-                    </article>
-                    <article class="summary-card">
-                        <p>Asset ID</p>
-                        <strong><code>${escapeHtml(asset.id)}</code></strong>
-                    </article>
-                </div>
-
-                ${canMutate ? `
-                    <div class="detail-grid">
-                        <section class="panel panel-tight">
-                            <div class="panel-heading">
-                                <div>
-                                    <p class="section-kicker">CRUD v1</p>
-                                    <h3>Редактировать master record</h3>
-                                </div>
-                                <span class="summary-pill">Generic PATCH only</span>
-                            </div>
-
-                            <p class="muted-note">
-                                Эта форма управляет только master-record полями. После сохранения вы остаётесь в карточке,
-                                а responsibility-поля продолжают меняться только через dedicated flows.
-                            </p>
-
-                            <form id="asset-update-form" class="form-grid">
-                                <label class="field">
-                                    <span>Инвентарный тег</span>
-                                    <input name="asset_tag" type="text" value="${escapeAttribute(asset.asset_tag)}" required>
-                                </label>
-                                <label class="field">
-                                    <span>Серийный номер</span>
-                                    <input name="serial_number" type="text" value="${escapeAttribute(asset.serial_number)}" required>
-                                </label>
-                                <label class="field">
-                                    <span>Тип актива</span>
-                                    <input name="asset_type" type="text" value="${escapeAttribute(asset.asset_type)}" required>
-                                </label>
-                                <div class="button-row button-row-inline">
-                                    <button class="button button-primary" type="submit">Сохранить изменения</button>
-                                </div>
-                            </form>
-
-                            <p class="muted-note">
-                                Generic PATCH intentionally не отправляет <code>assigned_user_id</code> и <code>location_id</code>.
-                            </p>
-                        </section>
-
-                        <section class="panel panel-tight">
-                            <div class="panel-heading">
-                                <div>
-                                    <p class="section-kicker">Responsibility Flows</p>
-                                    <h3>Dedicated entry points</h3>
-                                </div>
-                                <span class="summary-pill">${escapeHtml(hasResponsibility ? "Есть текущая ответственность" : "Ответственность не показана")}</span>
-                            </div>
-
-                            <div class="action-grid">
-                                ${renderAssignCard(hasUsers)}
-                                ${renderTransferCard(hasUsers, hasLocations, hasResponsibility)}
-                                ${renderReturnCard(hasResponsibility)}
-                            </div>
-                        </section>
-                    </div>
-                ` : `
-                    <div class="journey-banner tone-readonly">
-                        <div class="journey-copy">
-                            <strong>Read-only review</strong>
-                            <p>Текущая роль видит registry, card, history и audit. Write entry points intentionally скрыты.</p>
-                        </div>
-                    </div>
-                `}
-
-                <div class="detail-grid detail-grid-wide">
-                    <section class="panel panel-tight">
-                        <div class="panel-heading">
-                            <div>
-                                <p class="section-kicker">History</p>
-                                <h3>История ответственности</h3>
-                            </div>
-                            <span class="summary-pill">${escapeHtml(String(state.assetHistory.length))}</span>
-                        </div>
-                        <p class="muted-note">Read-only журнал показывает, кто менялся до и после каждой dedicated responsibility операции.</p>
-                        ${renderHistoryTable()}
-                    </section>
-
-                    <section class="panel panel-tight">
-                        <div class="panel-heading">
-                            <div>
-                                <p class="section-kicker">Audit</p>
-                                <h3>Локальный аудит</h3>
-                            </div>
-                            <span class="summary-pill">${escapeHtml(String(state.assetAudit.length))}</span>
-                        </div>
-                        <p class="muted-note">Здесь остаётся трассировка who changed what and when по уже существующим backend events.</p>
-                        ${renderAuditTable()}
-                    </section>
-                </div>
+                ${renderAssetSectionContent(asset, canMutate, hasUsers, hasLocations, hasCurrentUser)}
             </div>
         </div>
     `;
 }
 
-function renderAssignCard(hasUsers) {
-    const disabled = !hasUsers ? "disabled" : "";
+function renderAssetSectionNav() {
+    return `
+        <nav class="local-tabs" aria-label="Разделы карточки актива">
+            ${ASSET_SECTIONS.map((section) => `
+                <button
+                    class="local-tab ${section.key === state.activeAssetSection ? "is-active" : ""}"
+                    type="button"
+                    data-asset-section="${section.key}"
+                >
+                    ${escapeHtml(section.label)}
+                </button>
+            `).join("")}
+        </nav>
+    `;
+}
+
+function renderAssetSectionContent(asset, canMutate, hasUsers, hasLocations, hasCurrentUser) {
+    if (state.activeAssetSection === "master") {
+        return renderAssetMasterSection(asset, canMutate);
+    }
+
+    if (state.activeAssetSection === "responsibility") {
+        return renderAssetResponsibilitySection(asset, hasCurrentUser);
+    }
+
+    if (state.activeAssetSection === "actions") {
+        return renderAssetActionsSection(canMutate, hasUsers, hasLocations, hasCurrentUser);
+    }
+
+    if (state.activeAssetSection === "history") {
+        return renderAssetHistoryAuditSection();
+    }
+
+    return renderAssetOverviewSection(asset, canMutate);
+}
+
+function renderAssetOverviewSection(asset, canMutate) {
+    return `
+        <section class="asset-section">
+            <div class="journey-banner tone-info">
+                <div class="journey-copy">
+                    <strong>Статус и ответственность разделены</strong>
+                    <p>ACTIVE / RETIRED — это статус актива. Ответственный пользователь и operating location показаны отдельно и меняются через dedicated flows.</p>
+                </div>
+            </div>
+
+            <div class="asset-summary-grid">
+                ${renderSummaryCard("Инвентарный тег", escapeHtml(asset.asset_tag), "Главный пользовательский идентификатор в реестре.")}
+                ${renderSummaryCard("Статус", renderStatusBadge(asset.status), "Не кодирует текущую ответственность.")}
+                ${renderSummaryCard("Тип", escapeHtml(asset.asset_type), "Master-record поле.")}
+                ${renderSummaryCard("Серийный номер", escapeHtml(asset.serial_number), "Master-record поле.")}
+                ${renderSummaryCard("Ответственный", renderUserReference(asset.assigned_user_id), "Текущая пользовательская ответственность.")}
+                ${renderSummaryCard("Локация", renderLocationReference(asset.location_id), "Текущая operating location.")}
+            </div>
+
+            <div class="button-row">
+                ${canMutate ? `<button class="button button-secondary" type="button" data-asset-section="master">Редактировать master record</button>` : ""}
+                ${canMutate ? `<button class="button button-secondary" type="button" data-asset-section="actions">Открыть действия</button>` : ""}
+                <button class="button button-ghost" type="button" data-asset-section="history">History / Audit</button>
+            </div>
+        </section>
+    `;
+}
+
+function renderAssetMasterSection(asset, canMutate) {
+    if (!canMutate) {
+        return `
+            <section class="asset-section">
+                <div class="asset-summary-grid">
+                    ${renderSummaryCard("Инвентарный тег", escapeHtml(asset.asset_tag), "Read-only для текущей роли.")}
+                    ${renderSummaryCard("Серийный номер", escapeHtml(asset.serial_number), "Read-only для текущей роли.")}
+                    ${renderSummaryCard("Тип", escapeHtml(asset.asset_type), "Read-only для текущей роли.")}
+                    ${renderSummaryCard("Asset ID", `<code>${escapeHtml(asset.id)}</code>`, "Справочная техническая ссылка.")}
+                </div>
+                <div class="journey-banner tone-readonly">
+                    <div class="journey-copy">
+                        <strong>Master data только для просмотра</strong>
+                        <p>Текущая роль не получает create/update и не видит write entry points.</p>
+                    </div>
+                </div>
+            </section>
+        `;
+    }
+
+    return `
+        <section class="asset-section">
+            <div class="panel-heading">
+                <div>
+                    <p class="section-kicker">Master data</p>
+                    <h3>Редактировать master record</h3>
+                </div>
+                <span class="summary-pill">Generic PATCH only</span>
+            </div>
+
+            <p class="muted-note">
+                Эта форма управляет только asset tag, serial number и type. Она не отправляет
+                <code>assigned_user_id</code> и <code>location_id</code>.
+            </p>
+
+            <form id="asset-update-form" class="form-grid">
+                <label class="field">
+                    <span>Инвентарный тег</span>
+                    <input name="asset_tag" type="text" value="${escapeAttribute(asset.asset_tag)}" required>
+                </label>
+                <label class="field">
+                    <span>Серийный номер</span>
+                    <input name="serial_number" type="text" value="${escapeAttribute(asset.serial_number)}" required>
+                </label>
+                <label class="field">
+                    <span>Тип актива</span>
+                    <input name="asset_type" type="text" value="${escapeAttribute(asset.asset_type)}" required>
+                </label>
+                <div class="button-row button-row-inline">
+                    <button class="button button-primary" type="submit">Сохранить master record</button>
+                </div>
+            </form>
+        </section>
+    `;
+}
+
+function renderAssetResponsibilitySection(asset, hasCurrentUser) {
+    return `
+        <section class="asset-section">
+            <div class="asset-summary-grid">
+                ${renderSummaryCard("Текущий пользователь", renderUserReference(asset.assigned_user_id), hasCurrentUser ? "Активная пользовательская ответственность." : "Пользовательская ответственность не показана.")}
+                ${renderSummaryCard("Текущая локация", renderLocationReference(asset.location_id), "Return не меняет локацию канонически.")}
+                ${renderSummaryCard("Статус актива", renderStatusBadge(asset.status), "Статус не заменяет responsibility state.")}
+                ${renderSummaryCard("Следующее действие", escapeHtml(getNextResponsibilityHint(asset)), "Выбор остаётся в dedicated flows.")}
+            </div>
+
+            <div class="journey-banner tone-info">
+                <div class="journey-copy">
+                    <strong>Граница responsibility flow</strong>
+                    <p>Assign задаёт пользователя, transfer меняет пользователя и/или локацию, return завершает только текущую пользовательскую ответственность.</p>
+                </div>
+            </div>
+        </section>
+    `;
+}
+
+function renderAssetActionsSection(canMutate, hasUsers, hasLocations, hasCurrentUser) {
+    if (!canMutate) {
+        return `
+            <section class="asset-section">
+                <div class="journey-banner tone-readonly">
+                    <div class="journey-copy">
+                        <strong>Read-only review</strong>
+                        <p>Текущая роль видит registry, card, history и audit. Write entry points скрыты.</p>
+                    </div>
+                </div>
+            </section>
+        `;
+    }
+
+    return `
+        <section class="asset-section">
+            <div class="panel-heading">
+                <div>
+                    <p class="section-kicker">Dedicated flows</p>
+                    <h3>Assign / Transfer / Return</h3>
+                </div>
+                <span class="summary-pill">${escapeHtml(hasCurrentUser ? "Есть текущий пользователь" : "Нет текущего пользователя")}</span>
+            </div>
+
+            <div class="action-grid">
+                ${renderAssignCard(hasUsers, hasCurrentUser)}
+                ${renderTransferCard(hasUsers, hasLocations, hasCurrentUser)}
+                ${renderReturnCard(hasCurrentUser)}
+            </div>
+        </section>
+    `;
+}
+
+function renderAssetHistoryAuditSection() {
+    return `
+        <section class="asset-section">
+            <div class="detail-grid">
+                <section>
+                    <div class="panel-heading">
+                        <div>
+                            <p class="section-kicker">History</p>
+                            <h3>История ответственности</h3>
+                        </div>
+                        <span class="summary-pill">${escapeHtml(String(state.assetHistory.length))}</span>
+                    </div>
+                    <p class="muted-note">Read-only журнал показывает доступные before / after значения без дополнительной интерпретации.</p>
+                    ${renderHistoryTable()}
+                </section>
+
+                <section>
+                    <div class="panel-heading">
+                        <div>
+                            <p class="section-kicker">Audit</p>
+                            <h3>Локальный аудит</h3>
+                        </div>
+                        <span class="summary-pill">${escapeHtml(String(state.assetAudit.length))}</span>
+                    </div>
+                    <p class="muted-note">Аудит показывает actor, time, result и детали изменения только из уже доступных полей.</p>
+                    ${renderAuditTable()}
+                </section>
+            </div>
+
+            <div class="button-row">
+                <button class="button button-secondary" type="button" data-screen="${PRIMARY_SCREENS.REVIEW}">Открыть focused review</button>
+            </div>
+        </section>
+    `;
+}
+
+function renderAssignCard(hasUsers, hasCurrentUser) {
+    const disabled = !hasUsers || hasCurrentUser ? "disabled" : "";
     return `
         <article class="action-card">
             <div class="action-card-header">
@@ -1356,6 +1540,7 @@ function renderAssignCard(hasUsers) {
             </div>
             <p class="muted-note">Используйте assign для явного назначения ответственного пользователя. Если у актива уже есть ответственность, переходите в transfer.</p>
             ${!hasUsers ? `<p class="inline-warning">Для assign нужен хотя бы один пользователь в reference-data.</p>` : ""}
+            ${hasCurrentUser ? `<p class="inline-warning">В карточке уже есть текущий пользователь. Для смены пользователя используйте transfer.</p>` : ""}
             <form id="asset-assign-form" class="form-grid">
                 <label class="field">
                     <span>Назначить пользователю</span>
@@ -1372,14 +1557,13 @@ function renderAssignCard(hasUsers) {
     `;
 }
 
-function renderTransferCard(hasUsers, hasLocations, hasResponsibility) {
+function renderTransferCard(hasUsers, hasLocations, hasCurrentUser) {
     const blockedByReferences = !hasUsers && !hasLocations;
-    const blockedByState = !hasResponsibility;
-    const disabled = blockedByReferences || blockedByState ? "disabled" : "";
-    const warning = blockedByState
-        ? "Transfer имеет смысл только когда карточка уже показывает текущую ответственность или operating location."
-        : blockedByReferences
+    const disabled = blockedByReferences ? "disabled" : "";
+    const warning = blockedByReferences
             ? "Для transfer нужен хотя бы один пользователь или локация в reference-data."
+            : !hasCurrentUser
+                ? "Без текущего пользователя transfer допустим только как location-only change. Первое назначение пользователя выполняется через assign."
             : "";
 
     return `
@@ -1413,8 +1597,8 @@ function renderTransferCard(hasUsers, hasLocations, hasResponsibility) {
     `;
 }
 
-function renderReturnCard(hasResponsibility) {
-    const disabled = hasResponsibility ? "" : "disabled";
+function renderReturnCard(hasCurrentUser) {
+    const disabled = hasCurrentUser ? "" : "disabled";
     return `
         <article class="action-card">
             <div class="action-card-header">
@@ -1422,7 +1606,7 @@ function renderReturnCard(hasResponsibility) {
                 <h4>Возврат из ответственности</h4>
             </div>
             <p class="muted-note">Return остаётся отдельным operational action и не трактуется как generic relocation или master-record edit.</p>
-            ${!hasResponsibility ? `<p class="inline-warning">Карточка не показывает текущую ответственность, поэтому return сейчас недоступен.</p>` : ""}
+            ${!hasCurrentUser ? `<p class="inline-warning">В карточке нет текущего назначенного пользователя, поэтому return сейчас недоступен.</p>` : ""}
             <form id="asset-return-form" class="form-grid">
                 <div class="button-row button-row-inline">
                     <button class="button button-secondary" type="submit" ${disabled}>Выполнить return</button>
@@ -1483,10 +1667,10 @@ function renderAuditTable() {
             <table class="data-table">
                 <thead>
                     <tr>
-                        <th>Action</th>
+                        <th>Действие</th>
                         <th>Когда</th>
                         <th>Actor</th>
-                        <th>Payload</th>
+                        <th>Детали</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -1496,9 +1680,9 @@ function renderAuditTable() {
                             <td>${escapeHtml(formatTimestamp(item.occurred_at))}</td>
                             <td>
                                 <div>${escapeHtml(item.actor || "-")}</div>
-                                <div><code>${escapeHtml(item.correlation_id || "-")}</code></div>
+                                <div class="reference-meta">Correlation: ${escapeHtml(item.correlation_id || "-")}</div>
                             </td>
-                            <td><pre class="json-block">${escapeHtml(formatAuditPayload(item.payload))}</pre></td>
+                            <td>${renderAuditDetails(item)}</td>
                         </tr>
                     `).join("")}
                 </tbody>
@@ -1507,8 +1691,98 @@ function renderAuditTable() {
     `;
 }
 
+function renderReviewScreen() {
+    const visible = canAssetRead() && state.activeScreen === PRIMARY_SCREENS.REVIEW;
+    ui.reviewScreen.hidden = !visible;
+
+    if (!canAssetRead()) {
+        ui.reviewSectionNav.innerHTML = "";
+        ui.reviewDetailPanel.innerHTML = "";
+        return;
+    }
+
+    renderReviewNav();
+    renderReviewDetail();
+}
+
+function renderReviewNav() {
+    ui.reviewSectionNav.innerHTML = REVIEW_SECTIONS.map((section) => `
+        <button
+            class="nav-chip ${section.key === state.activeReviewSection ? "is-active" : ""}"
+            type="button"
+            data-review-section="${section.key}"
+        >
+            ${escapeHtml(section.label)}
+        </button>
+    `).join("");
+}
+
+function renderReviewDetail() {
+    if (!state.selectedAsset) {
+        ui.reviewDetailPanel.innerHTML = `
+            <div class="empty-state">
+                <p class="empty-kicker">Review</p>
+                <h3>Актив не выбран</h3>
+                <p>Откройте актив из реестра. После этого здесь появятся history и audit выбранной карточки.</p>
+                <div class="button-row">
+                    <button class="button button-secondary" type="button" data-screen="${PRIMARY_SCREENS.ASSETS}">К реестру активов</button>
+                </div>
+            </div>
+        `;
+        return;
+    }
+
+    const isAudit = state.activeReviewSection === "audit";
+    ui.reviewDetailPanel.innerHTML = `
+        <div class="stack">
+            <div class="panel-heading">
+                <div>
+                    <p class="section-kicker">Focused review</p>
+                    <h3>${escapeHtml(state.selectedAsset.asset_tag)}</h3>
+                    <p class="reference-meta">Asset ID: ${escapeHtml(state.selectedAsset.id)}</p>
+                </div>
+                <div class="button-row">
+                    <button class="button button-secondary" type="button" data-refresh-asset>Обновить review</button>
+                    <button class="button button-ghost" type="button" data-screen="${PRIMARY_SCREENS.ASSETS}">К карточке</button>
+                </div>
+            </div>
+
+            <div class="asset-summary-grid">
+                ${renderSummaryCard("Ответственный", renderUserReference(state.selectedAsset.assigned_user_id), "Текущее значение из карточки актива.")}
+                ${renderSummaryCard("Локация", renderLocationReference(state.selectedAsset.location_id), "Текущее значение из карточки актива.")}
+                ${renderSummaryCard("History events", escapeHtml(String(state.assetHistory.length)), "Append-only responsibility facts.")}
+                ${renderSummaryCard("Audit events", escapeHtml(String(state.assetAudit.length)), "Durable local audit records.")}
+            </div>
+
+            ${isAudit ? `
+                <section>
+                    <div class="panel-heading">
+                        <div>
+                            <p class="section-kicker">Audit</p>
+                            <h3>Локальный аудит</h3>
+                        </div>
+                        <span class="summary-pill">${escapeHtml(String(state.assetAudit.length))}</span>
+                    </div>
+                    ${renderAuditTable()}
+                </section>
+            ` : `
+                <section>
+                    <div class="panel-heading">
+                        <div>
+                            <p class="section-kicker">History</p>
+                            <h3>История ответственности</h3>
+                        </div>
+                        <span class="summary-pill">${escapeHtml(String(state.assetHistory.length))}</span>
+                    </div>
+                    ${renderHistoryTable()}
+                </section>
+            `}
+        </div>
+    `;
+}
+
 function renderAdminScreen() {
-    const visible = canTenantAdmin() && state.activeScreen === "admin";
+    const visible = canTenantAdmin() && state.activeScreen === PRIMARY_SCREENS.SETUP;
     ui.adminScreen.hidden = !visible;
 
     if (!canTenantAdmin()) {
@@ -1730,7 +2004,7 @@ function buildAdminSelectOptions(fieldName, currentValue) {
 
 function buildUserOptions() {
     return state.references.users.map((user) => `
-        <option value="${escapeAttribute(user.id)}">${escapeHtml(user.name)} | ${escapeHtml(user.id)}</option>
+        <option value="${escapeAttribute(user.id)}">${escapeHtml(user.name || user.id)}</option>
     `).join("");
 }
 
@@ -1774,19 +2048,19 @@ function getSetupStepStatuses() {
 function getProfileGuidance() {
     if (state.profileLabel === UI_PROFILE_NAMES.TENANT_ADMIN) {
         return {
-            headline: "Assets + setup/admin",
-            summary: "Можно работать и с operational asset path, и с reference-data setup.",
-            bannerTitle: "Tenant Admin видит обе рабочие поверхности",
-            bannerBody: "Сначала можно пройти setup order, затем вернуться в assets screen и использовать create/update и dedicated responsibility flows."
+            headline: "Активы и настройка",
+            summary: "Доступны рабочие пути с активами и setup tenant.",
+            bannerTitle: "Tenant Admin видит assets и setup",
+            bannerBody: "Сначала можно пройти setup order, затем вернуться в активы и использовать create/update и dedicated responsibility flows."
         };
     }
 
     if (state.profileLabel === UI_PROFILE_NAMES.ASSET_OPERATOR) {
         return {
-            headline: "Operational asset path",
-            summary: "Главный путь: registry -> card -> dedicated assign/transfer/return.",
-            bannerTitle: "Asset Operator работает только в asset surfaces",
-            bannerBody: "Reference-data write UX не показывается. Все действия выполняются из реестра и карточки актива."
+            headline: "Работа с активами",
+            summary: "Главный путь: реестр -> карточка -> assign/transfer/return.",
+            bannerTitle: "Asset Operator работает в asset surfaces",
+            bannerBody: "Setup write UX не показывается. Все действия выполняются из реестра и карточки актива."
         };
     }
 
@@ -1795,7 +2069,7 @@ function getProfileGuidance() {
             headline: "Read-only review",
             summary: "Доступны registry, card, history и audit без write entry points.",
             bannerTitle: "Support Reviewer остаётся read-only",
-            bannerBody: "UI скрывает create/update и dedicated responsibility flows, но оставляет понятный review path."
+            bannerBody: "UI скрывает create/update и responsibility flows, но оставляет понятный review path."
         };
     }
 
@@ -1807,12 +2081,66 @@ function getProfileGuidance() {
     };
 }
 
+function getWorkspaceAreas() {
+    return [
+        {
+            title: "Активы",
+            status: canAssetRead() ? (canAssetMutate() ? "Доступно: create/update/actions" : "Read-only") : "Недоступно",
+            copy: "Реестр, карточка, master data и dedicated responsibility flows.",
+            screen: canAssetRead() ? PRIMARY_SCREENS.ASSETS : null
+        },
+        {
+            title: "Review",
+            status: canAssetRead() ? "History / Audit" : "Недоступно",
+            copy: "Focused read-only просмотр истории и аудита выбранного актива.",
+            screen: canAssetRead() ? PRIMARY_SCREENS.REVIEW : null
+        },
+        {
+            title: "Setup",
+            status: canTenantAdmin() ? "Tenant Admin" : "Скрыто",
+            copy: "Roles, users, departments, branches, locations без нового IAM scope.",
+            screen: canTenantAdmin() ? PRIMARY_SCREENS.SETUP : null
+        }
+    ];
+}
+
+function getScreenLabel(screen) {
+    const labels = {
+        [PRIMARY_SCREENS.WORKSPACE]: "Рабочее место",
+        [PRIMARY_SCREENS.ASSETS]: "Активы",
+        [PRIMARY_SCREENS.REVIEW]: "Review",
+        [PRIMARY_SCREENS.SETUP]: "Setup"
+    };
+    return labels[screen] || screen;
+}
+
+function renderWorkspaceAreaCard(area) {
+    return `
+        <article class="workspace-area-card ${area.screen ? "" : "is-disabled"}">
+            <p class="metric-label">${escapeHtml(area.status)}</p>
+            <strong>${escapeHtml(area.title)}</strong>
+            <p>${escapeHtml(area.copy)}</p>
+            ${area.screen ? `<button class="button button-secondary" type="button" data-screen="${area.screen}">Открыть</button>` : ""}
+        </article>
+    `;
+}
+
 function renderMetricCard(label, value, copy) {
     return `
         <article class="metric-card">
             <p class="metric-label">${escapeHtml(label)}</p>
             <strong class="metric-value">${escapeHtml(value)}</strong>
             <p class="metric-copy">${escapeHtml(copy)}</p>
+        </article>
+    `;
+}
+
+function renderSummaryCard(label, valueHtml, copy) {
+    return `
+        <article class="summary-card">
+            <p>${escapeHtml(label)}</p>
+            <div class="summary-value">${valueHtml}</div>
+            ${copy ? `<span class="reference-meta">${escapeHtml(copy)}</span>` : ""}
         </article>
     `;
 }
@@ -1850,11 +2178,21 @@ function getAdminPrerequisiteMessage(resourceKey) {
     return ADMIN_RESOURCE_META[resourceKey]?.prerequisite || "";
 }
 
-function hasVisibleResponsibility(asset) {
+function hasCurrentUserResponsibility(asset) {
     if (!asset) {
         return false;
     }
-    return Boolean(asset.assigned_user_id || asset.location_id);
+    return Boolean(asset.assigned_user_id);
+}
+
+function getNextResponsibilityHint(asset) {
+    if (!asset) {
+        return "-";
+    }
+    if (!asset.assigned_user_id) {
+        return "Assign или location-only transfer";
+    }
+    return "Transfer или Return";
 }
 
 function canTenantAdmin() {
@@ -1873,6 +2211,49 @@ function canReferenceRead() {
     return state.capabilities.referenceRead;
 }
 
+function renderAssetIdentity(asset) {
+    return `
+        <span class="reference-label">
+            <strong>${escapeHtml(asset.asset_tag || "-")}</strong>
+            <span class="reference-meta">SN: ${escapeHtml(asset.serial_number || "-")}</span>
+            <span class="reference-meta">ID: ${escapeHtml(asset.id || "-")}</span>
+        </span>
+    `;
+}
+
+function renderUserReference(userId) {
+    if (!userId) {
+        return `<span class="reference-empty">Не назначен</span>`;
+    }
+
+    const user = canReferenceRead()
+        ? state.references.users.find((item) => item.id === userId)
+        : null;
+    return renderReferenceLabel(user?.name || "User ID", userId);
+}
+
+function renderLocationReference(locationId) {
+    if (!locationId) {
+        return `<span class="reference-empty">Не указана</span>`;
+    }
+
+    const location = canReferenceRead()
+        ? state.references.locations.find((item) => item.id === locationId)
+        : null;
+    const branchName = location ? resolveBranchName(location.branch_id) : "";
+    return renderReferenceLabel(location?.name || "Location ID", locationId, branchName && branchName !== "-" ? branchName : "");
+}
+
+function renderReferenceLabel(primary, id, detail = "") {
+    return `
+        <span class="reference-label">
+            <strong>${escapeHtml(primary)}</strong>
+            ${detail ? `<span class="reference-meta">${escapeHtml(detail)}</span>` : ""}
+            <span class="reference-meta">ID: ${escapeHtml(id)}</span>
+        </span>
+    `;
+}
+
 function resolveUserName(userId) {
     if (!userId) {
         return "-";
@@ -1881,7 +2262,7 @@ function resolveUserName(userId) {
         return String(userId);
     }
     const user = state.references.users.find((item) => item.id === userId);
-    return user ? `${user.name} | ${user.id}` : String(userId);
+    return user ? user.name : String(userId);
 }
 
 function resolveDepartmentName(departmentId) {
@@ -1908,7 +2289,7 @@ function resolveLocationName(locationId) {
         return String(locationId);
     }
     const location = state.references.locations.find((item) => item.id === locationId);
-    return location ? `${location.name} | ${resolveBranchName(location.branch_id)}` : String(locationId);
+    return location ? location.name : String(locationId);
 }
 
 function renderStatusBadge(status) {
@@ -1929,6 +2310,89 @@ function describeHistoryFact(factType) {
 function describeAuditAction(action) {
     const normalized = String(action || "").toUpperCase();
     return AUDIT_ACTION_LABELS[normalized] || normalized || "-";
+}
+
+function renderAuditDetails(item) {
+    const payload = parseAuditPayload(item.payload);
+    const entries = [];
+
+    if (item.entity) {
+        entries.push(["Entity", escapeHtml(item.entity)]);
+    }
+    if (item.entity_id) {
+        entries.push(["Object ID", `<code>${escapeHtml(item.entity_id)}</code>`]);
+    }
+
+    if (payload && typeof payload === "object" && !Array.isArray(payload)) {
+        Object.entries(payload).forEach(([key, value]) => {
+            entries.push([describeAuditPayloadKey(key), renderAuditPayloadValue(key, value)]);
+        });
+    }
+
+    const readableRows = entries.length > 0
+        ? `<dl class="audit-detail-list">${entries.map(([label, value]) => `
+            <div>
+                <dt>${escapeHtml(label)}</dt>
+                <dd>${value}</dd>
+            </div>
+        `).join("")}</dl>`
+        : `<span class="reference-empty">Нет структурированных деталей.</span>`;
+
+    return `
+        <div class="audit-detail-stack">
+            ${readableRows}
+            <details class="audit-raw">
+                <summary>Технические поля</summary>
+                <pre class="json-block">${escapeHtml(formatAuditPayload(item.payload))}</pre>
+            </details>
+        </div>
+    `;
+}
+
+function parseAuditPayload(payload) {
+    if (!payload) {
+        return null;
+    }
+    try {
+        return JSON.parse(payload);
+    } catch (error) {
+        return null;
+    }
+}
+
+function describeAuditPayloadKey(key) {
+    const normalized = String(key || "").replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`).toLowerCase();
+    const labels = {
+        id: "Asset ID",
+        asset_tag: "Asset tag",
+        serial_number: "Serial number",
+        asset_type: "Asset type",
+        status: "Status",
+        assigned_user_id: "Assigned user",
+        location_id: "Location"
+    };
+    return labels[normalized] || key;
+}
+
+function renderAuditPayloadValue(key, value) {
+    if (value === null || value === undefined || value === "") {
+        return `<span class="reference-empty">-</span>`;
+    }
+
+    const normalized = String(key || "").replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`).toLowerCase();
+    if (normalized === "assigned_user_id") {
+        return renderUserReference(String(value));
+    }
+    if (normalized === "location_id") {
+        return renderLocationReference(String(value));
+    }
+    if (normalized === "id") {
+        return `<code>${escapeHtml(value)}</code>`;
+    }
+    if (typeof value === "object") {
+        return `<code>${escapeHtml(JSON.stringify(value))}</code>`;
+    }
+    return escapeHtml(value);
 }
 
 function formatTimestamp(value) {

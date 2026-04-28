@@ -986,3 +986,46 @@ This is not:
 
 Current project baseline remains internally validated only.
 Real tenant validation and real day-to-day operational validation are still not proven.
+
+## Operational Workspace UX v2 — Delivery Pointer
+
+`Operational Workspace UX v2 / Release UI Layout & Navigation Cutline`
+is approved as a canonical docs-first scope.
+
+Canonical scope doc:
+
+`/Documentation/06-delivery/operational-workspace-ux-v2-release-layout-navigation-cutline.md`
+
+### Delivery interpretation
+
+This scope is a frontend-only layout, navigation and readability refinement
+over existing accepted operational UI surfaces.
+
+It may guide a future implementation planning packet,
+but it does not itself authorize implementation or Codex work.
+
+### Non-claim rule
+
+This scope does not change the current validation ceiling.
+
+It does not prove:
+- release-ready tenant-facing product state;
+- real tenant validation;
+- real day-to-day operational validation;
+- First-Tenant Operational Validation exit.
+
+### Boundary rule
+
+This scope does not open:
+- backend/API changes;
+- new endpoints;
+- DTO / read-model expansion;
+- BFF / UI backend;
+- auth/IAM expansion;
+- new bounded context;
+- new Wave 2 surface;
+- dashboard / BI / analytics;
+- Asset 360 cross-context implementation;
+- global search;
+- saved views;
+- bulk actions.

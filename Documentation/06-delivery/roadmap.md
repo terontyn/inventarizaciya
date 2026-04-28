@@ -398,3 +398,36 @@ Further work in this area is allowed only as:
 - documentation alignment.
 
 Any new product expansion requires a separate explicit decision.
+
+
+### Operational Workspace UX v2 — Scope Pointer
+
+A new docs-first scope has been approved:
+
+**Operational Workspace UX v2 / Release UI Layout & Navigation Cutline**
+
+Canonical scope doc:
+
+`/Documentation/06-delivery/operational-workspace-ux-v2-release-layout-navigation-cutline.md`
+
+This scope is approved only as:
+
+**frontend-only layout, navigation and readability refinement over existing accepted operational UI surfaces.**
+
+It does not authorize:
+- implementation work;
+- Codex task creation;
+- backend/API changes;
+- BFF / UI backend;
+- auth/IAM expansion;
+- new bounded context;
+- new Wave 2 surface;
+- dashboard / BI / analytics;
+- Asset 360 cross-context implementation;
+- global search;
+- saved views;
+- bulk actions;
+- release-ready claim;
+- First-Tenant Operational Validation claim.
+
+Any implementation planning for this scope must be opened separately.

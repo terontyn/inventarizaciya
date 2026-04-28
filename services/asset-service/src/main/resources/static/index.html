@@ -4,41 +4,40 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ITAM Operational Workspace</title>
-    <link rel="stylesheet" href="/app.css">
-    <script src="/app.js" defer></script>
+    <link rel="stylesheet" href="app.css">
+    <script src="app.js" defer></script>
 </head>
 <body>
     <div
         class="app-shell"
-        data-ui-surface="minimal-pilot-ui"
+        data-ui-surface="operational-workspace-ux-v2"
+        data-existing-surface="minimal-pilot-ui"
         data-edit-boundary="asset-master-record-only"
         data-responsibility-flows="assign,transfer,return"
     >
-        <header class="hero">
-            <div class="hero-copy">
+        <header class="app-header">
+            <div class="header-copy">
                 <p class="eyebrow">IT Asset Management SaaS</p>
-                <h1>Операционный рабочий контур v1</h1>
-                <p class="hero-text">
-                    Текущий tenant-facing UX работает только поверх уже существующих контрактов `asset-service`
-                    и `user-service`. Здесь остаются approved operational surfaces: реестр, карточка,
-                    master-record edit, dedicated assign / transfer / return, history / audit и минимальный
-                    setup/admin слой.
+                <h1>Операционное рабочее место</h1>
+                <p class="header-text">
+                    Единый вход в уже существующие рабочие поверхности: реестр и карточка актива,
+                    master-record create/update, отдельные assign / transfer / return, review history / audit
+                    и setup для справочников tenant.
                 </p>
             </div>
 
             <form id="session-form" class="session-card">
                 <div class="panel-heading">
                     <div>
-                        <p class="section-kicker">Current Access Context</p>
+                        <p class="section-kicker">Сессия</p>
                         <h2>Контекст доступа</h2>
                     </div>
                     <span id="role-summary-badge" class="summary-badge">UI-профиль ещё не определён</span>
                 </div>
 
                 <p class="helper-copy">
-                    UI не меняет auth/IAM-контур и использует текущий header-based доступ.
-                    Значения ниже нужны только для уже реализованного operational path внутри существующих
-                    сервисных границ.
+                    Укажите текущий tenant, пользователя и адрес user-service. Интерфейс использует только
+                    уже существующие сервисные контракты и не расширяет модель доступа.
                 </p>
 
                 <div class="field-grid">
@@ -71,9 +70,9 @@
                 </div>
 
                 <div class="button-row">
-                    <button class="button button-primary" type="submit">Подключить рабочий контур</button>
-                    <button class="button button-secondary" id="refresh-all" type="button">Обновить всё</button>
-                    <button class="button button-ghost" id="clear-session" type="button">Очистить</button>
+                    <button class="button button-primary" type="submit">Подключить</button>
+                    <button class="button button-secondary" id="refresh-all" type="button">Обновить</button>
+                    <button class="button button-ghost" id="clear-session" type="button">Сбросить</button>
                 </div>
 
                 <div class="inline-meta">
@@ -87,21 +86,23 @@
 
         <nav id="screen-nav" class="screen-nav" aria-label="Основные разделы"></nav>
 
-        <section id="workspace-overview" class="workspace-overview panel panel-tight" aria-live="polite"></section>
-
         <main class="workspace">
+            <section id="workspace-screen" class="screen">
+                <section id="workspace-overview" class="workspace-overview panel panel-tight" aria-live="polite"></section>
+            </section>
+
             <section id="assets-screen" class="screen">
                 <div class="screen-header">
                     <div>
-                        <p class="section-kicker">Asset Management</p>
-                        <h2>Реестр и карточка актива</h2>
+                        <p class="section-kicker">Активы</p>
+                        <h2>Реестр, карточка и действия</h2>
                         <p class="screen-copy">
-                            Карточка актива остаётся главным decision point. Generic create/update ограничены только
-                            master-record полями, а ответственность меняется через dedicated assign / transfer / return.
+                            Реестр открывает карточку актива. Create/update остаются master-record-only,
+                            а ответственность меняется только через отдельные assign / transfer / return.
                         </p>
                     </div>
                     <span class="boundary-chip">
-                        Generic edit never mutates <code>assigned_user_id</code> or <code>location_id</code>
+                        Generic edit: только master record
                     </span>
                 </div>
 
@@ -110,7 +111,7 @@
                 <div id="asset-create-panel" class="panel panel-tight" hidden>
                     <div class="panel-heading">
                         <div>
-                            <p class="section-kicker">CRUD v1</p>
+                            <p class="section-kicker">Create</p>
                             <h3>Создать актив</h3>
                         </div>
                     </div>
@@ -146,7 +147,7 @@
                     <section class="panel">
                         <div class="panel-heading">
                             <div>
-                                <p class="section-kicker">Registry</p>
+                                <p class="section-kicker">Реестр</p>
                                 <h3>Реестр активов</h3>
                             </div>
                             <button class="button button-secondary" id="refresh-assets" type="button">Обновить реестр</button>
@@ -156,7 +157,7 @@
                             <table class="data-table">
                                 <thead>
                                     <tr>
-                                        <th>Asset Tag</th>
+                                        <th>Актив</th>
                                         <th>Тип</th>
                                         <th>Статус</th>
                                         <th>Ответственный</th>
@@ -175,7 +176,7 @@
                     <section class="panel">
                         <div id="asset-detail-panel" class="detail-host">
                             <div class="empty-state">
-                                <p class="empty-kicker">Asset Card</p>
+                                <p class="empty-kicker">Карточка</p>
                                 <h3>Карточка ещё не выбрана</h3>
                                 <p>Выберите актив из реестра, чтобы открыть карточку, историю, аудит и доступные operational actions.</p>
                             </div>
@@ -184,21 +185,38 @@
                 </div>
             </section>
 
+            <section id="review-screen" class="screen" hidden>
+                <div class="screen-header">
+                    <div>
+                        <p class="section-kicker">Review</p>
+                        <h2>История и аудит</h2>
+                        <p class="screen-copy">
+                            Read-only review выбранного актива поверх уже загруженных history / audit данных.
+                            Раздел не создаёт отдельную витрину данных или новый read model.
+                        </p>
+                    </div>
+                    <span class="boundary-chip">Read-only</span>
+                </div>
+
+                <nav id="review-section-nav" class="admin-nav" aria-label="Review sections"></nav>
+                <section id="review-detail-panel" class="panel panel-tight" aria-live="polite"></section>
+            </section>
+
             <section id="admin-screen" class="screen" hidden>
                 <div class="screen-header">
                     <div>
-                        <p class="section-kicker">Reference Data</p>
-                        <h2>Setup и reference data</h2>
+                        <p class="section-kicker">Setup</p>
+                        <h2>Настройка tenant</h2>
                         <p class="screen-copy">
-                            Tenant Admin работает только через существующие public contracts `user-service`:
+                            Tenant Admin работает с уже существующими справочниками user-service:
                             roles, users, departments, branches, locations и role assignment.
                         </p>
                     </div>
-                    <span class="boundary-chip">Tenant Admin only</span>
+                    <span class="boundary-chip">Только Tenant Admin</span>
                 </div>
 
                 <div class="setup-order">
-                    Порядок первой настройки: <strong>roles -&gt; users -&gt; branches -&gt; locations -&gt; departments</strong>
+                    Порядок первой настройки: <strong>roles -> users -> branches -> locations -> departments</strong>
                 </div>
 
                 <section id="setup-overview" class="workspace-overview panel panel-tight" aria-live="polite"></section>
@@ -232,7 +250,7 @@
                             <div class="empty-state">
                                 <p class="empty-kicker">Admin Editor</p>
                                 <h3>Выберите ресурс</h3>
-                                <p>Tenant Admin получает create/update и role binding только через существующие `user-service` API.</p>
+                                <p>Tenant Admin получает create/update и role binding только через уже доступный user-service.</p>
                             </div>
                         </div>
                     </section>

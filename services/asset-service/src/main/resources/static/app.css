@@ -1,9 +1,8 @@
 :root {
-    --bg-1: #f4ecde;
-    --bg-2: #dfe8e1;
-    --panel: rgba(255, 252, 247, 0.88);
-    --panel-strong: rgba(255, 255, 255, 0.94);
-    --ink: #16202a;
+    --bg: #f5f7f8;
+    --panel: #ffffff;
+    --panel-strong: #fbfcfd;
+    --ink: #18212b;
     --muted: #5b6772;
     --line: rgba(22, 32, 42, 0.12);
     --accent: #0f766e;
@@ -18,10 +17,10 @@
     --info-soft: #e0efff;
     --readonly-soft: #ebe8ff;
     --readonly-ink: #4338ca;
-    --shadow: 0 28px 60px rgba(29, 32, 37, 0.14);
-    --radius-lg: 28px;
-    --radius-md: 18px;
-    --radius-sm: 12px;
+    --shadow: 0 12px 28px rgba(29, 32, 37, 0.08);
+    --radius-lg: 8px;
+    --radius-md: 8px;
+    --radius-sm: 6px;
 }
 
 * {
@@ -36,10 +35,7 @@ body {
     margin: 0;
     min-height: 100vh;
     color: var(--ink);
-    background:
-        radial-gradient(circle at top left, rgba(255, 255, 255, 0.82), transparent 28%),
-        radial-gradient(circle at bottom right, rgba(15, 118, 110, 0.14), transparent 30%),
-        linear-gradient(135deg, var(--bg-1), var(--bg-2));
+    background: var(--bg);
     font-family: "Aptos", "Trebuchet MS", "Segoe UI Variable Text", sans-serif;
 }
 
@@ -64,24 +60,23 @@ code {
     padding: 2rem 0 2.5rem;
 }
 
-.hero {
+.app-header {
     display: grid;
     grid-template-columns: 1.2fr 1fr;
     gap: 1.25rem;
     align-items: stretch;
 }
 
-.hero-copy,
+.header-copy,
 .session-card,
 .panel {
-    border: 1px solid rgba(255, 255, 255, 0.55);
+    border: 1px solid var(--line);
     border-radius: var(--radius-lg);
     background: var(--panel);
     box-shadow: var(--shadow);
-    backdrop-filter: blur(20px);
 }
 
-.hero-copy {
+.header-copy {
     padding: 2rem 2.1rem;
 }
 
@@ -91,12 +86,12 @@ code {
 .metric-label {
     margin: 0 0 0.45rem;
     font-size: 0.8rem;
-    letter-spacing: 0.16em;
+    letter-spacing: 0;
     text-transform: uppercase;
     color: var(--accent-ink);
 }
 
-.hero-copy h1,
+.header-copy h1,
 .screen-header h2,
 .panel-heading h2,
 .panel-heading h3,
@@ -104,18 +99,16 @@ code {
 .action-card h4,
 .setup-card strong {
     margin: 0;
-    font-family: "Iowan Old Style", "Georgia", serif;
     font-weight: 700;
-    letter-spacing: -0.03em;
 }
 
-.hero-copy h1 {
-    font-size: clamp(2.4rem, 4vw, 4.2rem);
-    line-height: 0.98;
-    max-width: 12ch;
+.header-copy h1 {
+    font-size: 2.4rem;
+    line-height: 1.05;
+    max-width: 18ch;
 }
 
-.hero-text,
+.header-text,
 .helper-copy,
 .screen-copy,
 .muted-note,
@@ -129,7 +122,7 @@ code {
     color: var(--muted);
 }
 
-.hero-text {
+.header-text {
     margin: 1rem 0 0;
     max-width: 56ch;
     line-height: 1.6;
@@ -175,6 +168,7 @@ code {
 .field-grid,
 .form-grid,
 .overview-grid,
+.workspace-path-grid,
 .action-grid,
 .stack,
 .detail-grid,
@@ -189,6 +183,10 @@ code {
 
 .overview-grid {
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.workspace-path-grid {
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
 }
 
 .action-grid {
@@ -261,7 +259,7 @@ code {
 
 .button-primary {
     color: #f9fbfb;
-    background: linear-gradient(135deg, #0f766e, #155e75);
+    background: #0f766e;
     box-shadow: 0 12px 24px rgba(15, 118, 110, 0.22);
 }
 
@@ -340,7 +338,7 @@ code {
 
 .nav-chip.is-active {
     color: #fbfffe;
-    background: linear-gradient(135deg, #0f766e, #1d4ed8);
+    background: #0f766e;
     box-shadow: 0 14px 28px rgba(29, 78, 216, 0.18);
 }
 
@@ -366,7 +364,7 @@ code {
 }
 
 .screen-header h2 {
-    font-size: clamp(1.9rem, 3vw, 2.5rem);
+    font-size: 2.2rem;
 }
 
 .assets-grid {
@@ -414,10 +412,10 @@ code {
 .data-table th {
     position: sticky;
     top: 0;
-    background: rgba(244, 236, 222, 0.94);
+    background: #edf4f2;
     font-size: 0.85rem;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
+    letter-spacing: 0;
     color: var(--muted);
 }
 
@@ -467,6 +465,7 @@ code {
 
 .summary-card,
 .metric-card,
+.workspace-area-card,
 .action-card,
 .setup-card {
     padding: 1rem;
@@ -477,22 +476,40 @@ code {
 
 .summary-card p,
 .metric-card p,
+.workspace-area-card p,
 .action-card p,
 .setup-card p {
     margin: 0;
 }
 
+.workspace-area-card {
+    display: grid;
+    gap: 0.75rem;
+    align-content: start;
+}
+
+.workspace-area-card.is-disabled {
+    opacity: 0.72;
+}
+
+.workspace-area-card strong {
+    font-size: 1.18rem;
+}
+
 .summary-card strong,
+.summary-value,
 .metric-value {
     display: block;
     margin-top: 0.35rem;
     font-size: 1.05rem;
 }
 
+.summary-value {
+    font-weight: 700;
+}
+
 .metric-value {
-    font-family: "Iowan Old Style", "Georgia", serif;
     font-size: 1.4rem;
-    letter-spacing: -0.03em;
     color: var(--ink);
 }
 
@@ -601,6 +618,87 @@ code {
     color: var(--muted);
 }
 
+.local-tabs {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    padding: 0.35rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    background: var(--panel-strong);
+}
+
+.local-tab {
+    border: 0;
+    border-radius: var(--radius-sm);
+    padding: 0.65rem 0.8rem;
+    background: transparent;
+    color: var(--muted);
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.local-tab.is-active {
+    color: #f9fbfb;
+    background: var(--accent);
+}
+
+.asset-section {
+    display: grid;
+    gap: 1rem;
+}
+
+.reference-label {
+    display: grid;
+    gap: 0.18rem;
+}
+
+.reference-meta,
+.reference-empty {
+    display: block;
+    color: var(--muted);
+    font-size: 0.82rem;
+    font-weight: 500;
+    overflow-wrap: anywhere;
+}
+
+.reference-empty {
+    color: var(--warning);
+}
+
+.audit-detail-stack {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.audit-detail-list {
+    display: grid;
+    gap: 0.55rem;
+    margin: 0;
+}
+
+.audit-detail-list div {
+    display: grid;
+    gap: 0.2rem;
+}
+
+.audit-detail-list dt {
+    color: var(--muted);
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.audit-detail-list dd {
+    margin: 0;
+}
+
+.audit-raw summary {
+    color: var(--muted);
+    cursor: pointer;
+    font-weight: 700;
+}
+
 .json-block {
     margin: 0;
     padding: 0.9rem 1rem;
@@ -642,7 +740,7 @@ code {
 }
 
 @media (max-width: 1180px) {
-    .hero,
+    .app-header,
     .assets-grid,
     .admin-grid,
     .detail-grid,
@@ -662,14 +760,15 @@ code {
         padding-top: 0.75rem;
     }
 
-    .hero-copy,
+    .header-copy,
     .session-card,
     .panel {
-        border-radius: 22px;
+        border-radius: var(--radius-lg);
     }
 
     .field-grid,
     .overview-grid,
+    .workspace-path-grid,
     .action-grid {
         grid-template-columns: 1fr;
     }

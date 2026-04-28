@@ -703,3 +703,34 @@ It is not:
 - fully validated day-to-day operational tenant rollout.
 
 Future First-Tenant Operational Validation still requires real tenant / first adopter / real usage loop.
+
+## Current Scope Note — Operational Workspace UX v2
+
+A new canonical scope exists:
+
+**Operational Workspace UX v2 / Release UI Layout & Navigation Cutline**
+
+Canonical scope doc:
+
+`/Documentation/06-delivery/operational-workspace-ux-v2-release-layout-navigation-cutline.md`
+
+Current interpretation:
+
+`Operational Workspace UX v2` is approved as a frontend-only layout, navigation and readability refinement over existing accepted operational UI surfaces.
+
+It is not:
+- implementation packet;
+- Codex task;
+- backend/API expansion;
+- BFF / UI backend;
+- auth/IAM expansion;
+- new bounded context;
+- new Wave 2 surface;
+- release-ready claim;
+- First-Tenant Operational Validation claim.
+
+Current baseline remains:
+
+**internally validated backend + minimal pilot UI/access baseline with Productized Tenant-Facing Operational UX v1 implemented, plus Operational Workspace UX v2 approved as scope only.**
+
+Implementation remains not approved until a separate implementation planning packet is prepared and accepted.
