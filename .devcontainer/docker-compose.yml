@@ -1,0 +1,53 @@
+services:
+  app:
+    image: mcr.microsoft.com/devcontainers/java:1-17-bookworm
+    command: sleep infinity
+    volumes:
+      - ..:/workspaces/inventarizaciya:cached
+    environment:
+      USER_SERVICE_DB_URL: jdbc:postgresql://postgres:5432/user_service
+      USER_SERVICE_DB_USERNAME: postgres
+      USER_SERVICE_DB_PASSWORD: postgres
+      ASSET_SERVICE_DB_URL: jdbc:postgresql://postgres:5432/asset_service
+      ASSET_SERVICE_DB_USERNAME: postgres
+      ASSET_SERVICE_DB_PASSWORD: postgres
+      INVENTORY_SERVICE_DB_URL: jdbc:postgresql://postgres:5432/inventory_service
+      INVENTORY_SERVICE_DB_USERNAME: postgres
+      INVENTORY_SERVICE_DB_PASSWORD: postgres
+      MAINTENANCE_SERVICE_DB_URL: jdbc:postgresql://postgres:5432/maintenance_service
+      MAINTENANCE_SERVICE_DB_USERNAME: postgres
+      MAINTENANCE_SERVICE_DB_PASSWORD: postgres
+      SOFTWARE_SERVICE_DB_URL: jdbc:postgresql://postgres:5432/software_service
+      SOFTWARE_SERVICE_DB_USERNAME: postgres
+      SOFTWARE_SERVICE_DB_PASSWORD: postgres
+      TICKET_SERVICE_DB_URL: jdbc:postgresql://postgres:5432/ticket_service
+      TICKET_SERVICE_DB_USERNAME: postgres
+      TICKET_SERVICE_DB_PASSWORD: postgres
+      USER_SERVICE_BASE_URL: http://localhost:8080
+      ASSET_SERVICE_BASE_URL: http://localhost:8081
+      INVENTORY_SERVICE_BASE_URL: http://localhost:8082
+      MAINTENANCE_SERVICE_BASE_URL: http://localhost:8083
+      SOFTWARE_SERVICE_BASE_URL: http://localhost:8084
+      TICKET_SERVICE_BASE_URL: http://localhost:8085
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./postgres-init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+volumes:
+  postgres-data:

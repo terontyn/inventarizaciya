@@ -1,0 +1,56 @@
+{
+  "name": "ITAM SaaS Codespace",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "app",
+  "workspaceFolder": "/workspaces/inventarizaciya",
+  "remoteUser": "vscode",
+  "forwardPorts": [
+    8080,
+    8081,
+    8082,
+    8083,
+    8084,
+    8085,
+    8086,
+    5432
+  ],
+  "portsAttributes": {
+    "8080": {
+      "label": "user-service"
+    },
+    "8081": {
+      "label": "asset-service UI",
+      "onAutoForward": "openBrowser"
+    },
+    "8082": {
+      "label": "inventory-service"
+    },
+    "8083": {
+      "label": "maintenance-service"
+    },
+    "8084": {
+      "label": "software-service"
+    },
+    "8085": {
+      "label": "ticket-service"
+    },
+    "8086": {
+      "label": "reporting-service"
+    },
+    "5432": {
+      "label": "postgres"
+    }
+  },
+  "postCreateCommand": "chmod +x gradlew .devcontainer/scripts/*.sh && ./gradlew testClasses",
+  "postStartCommand": "echo 'PostgreSQL is available as postgres:5432. Run .devcontainer/scripts/start-core-services.sh to start the pilot UI services.'",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "vscjava.vscode-java-pack",
+        "vscjava.vscode-gradle",
+        "vmware.vscode-spring-boot",
+        "redhat.vscode-yaml"
+      ]
+    }
+  }
+}
