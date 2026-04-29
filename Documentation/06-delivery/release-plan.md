@@ -987,10 +987,10 @@ This is not:
 Current project baseline remains internally validated only.
 Real tenant validation and real day-to-day operational validation are still not proven.
 
-## Operational Workspace UX v2 — Delivery Pointer
+## Operational Workspace UX v2 Closeout Clarification
 
 `Operational Workspace UX v2 / Release UI Layout & Navigation Cutline`
-is approved as a canonical docs-first scope.
+is accepted as implemented.
 
 Canonical scope doc:
 
@@ -998,34 +998,79 @@ Canonical scope doc:
 
 ### Delivery interpretation
 
-This scope is a frontend-only layout, navigation and readability refinement
-over existing accepted operational UI surfaces.
+The implementation is accepted as:
 
-It may guide a future implementation planning packet,
-but it does not itself authorize implementation or Codex work.
+**frontend-only refine-in-place layout, navigation and readability refinement over existing accepted operational UI surfaces.**
 
-### Non-claim rule
+The delivery changed the existing static UI and test-only smoke coverage.
 
-This scope does not change the current validation ceiling.
+It did not change production backend/API behavior.
 
-It does not prove:
-- release-ready tenant-facing product state;
-- real tenant validation;
-- real day-to-day operational validation;
-- First-Tenant Operational Validation exit.
+### Implementation closeout facts
+
+Codex implementation and correction pass were completed for the approved UX v2 scope.
+
+Accepted implementation facts:
+
+- existing static UI was refined in place;
+- workspace layout and navigation hierarchy were improved;
+- readability and section separation were improved;
+- RU-facing copy and technical wording were cleaned up;
+- assign / transfer / return remained dedicated responsibility flows;
+- generic edit remained master-record-only;
+- docs were not changed by Codex;
+- focused smoke passed;
+- full service test suite passed before correction pass;
+- focused UI smoke passed after correction pass;
+- Browser visual smoke could not run due Node OS access denied;
+- video review accepted the UX result after correction pass.
+
+Changed implementation files were reported as:
+
+- `app.js`;
+- `index.html`;
+- `app.css`;
+- `MinimalPilotUiSmokeTest.java`.
+
+Correction pass changed:
+
+- `app.js`;
+- `index.html`;
+- `MinimalPilotUiSmokeTest.java`.
 
 ### Boundary rule
 
-This scope does not open:
+This closeout does not open:
+
 - backend/API changes;
 - new endpoints;
 - DTO / read-model expansion;
 - BFF / UI backend;
 - auth/IAM expansion;
+- new frontend framework / router / microfrontend / UI service;
 - new bounded context;
 - new Wave 2 surface;
 - dashboard / BI / analytics;
-- Asset 360 cross-context implementation;
-- global search;
-- saved views;
+- Asset 360;
+- global search / Elasticsearch;
+- saved views / persistent preferences;
 - bulk actions.
+
+### Non-claim rule
+
+This closeout does not change the current validation ceiling.
+
+It does not prove:
+
+- release-ready tenant-facing product state;
+- production tenant readiness;
+- real tenant validation;
+- real day-to-day operational validation;
+- First-Tenant Operational Validation exit.
+
+The project remains in:
+
+**Project Stabilization / First-Adopter-Gated Hold**
+
+First-Tenant Operational Validation still requires real tenant / first adopter / real usage loop.
+

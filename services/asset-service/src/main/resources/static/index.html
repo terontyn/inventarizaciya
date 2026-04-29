@@ -21,8 +21,8 @@
                 <h1>Операционное рабочее место</h1>
                 <p class="header-text">
                     Единый вход в уже существующие рабочие поверхности: реестр и карточка актива,
-                    master-record create/update, отдельные assign / transfer / return, review history / audit
-                    и setup для справочников tenant.
+                    создание и редактирование данных актива, отдельные assign / transfer / return, историю и аудит
+                    и настройку справочников tenant.
                 </p>
             </div>
 
@@ -36,28 +36,28 @@
                 </div>
 
                 <p class="helper-copy">
-                    Укажите текущий tenant, пользователя и адрес user-service. Интерфейс использует только
-                    уже существующие сервисные контракты и не расширяет модель доступа.
+                    Укажите текущий tenant, пользователя и адрес сервиса пользователей. Интерфейс использует только
+                    уже доступные рабочие пути и не расширяет модель доступа.
                 </p>
 
                 <div class="field-grid">
                     <label class="field">
-                        <span>Tenant ID</span>
+                        <span>Tenant</span>
                         <input id="tenant-id" name="tenant_id" type="text" autocomplete="off" placeholder="UUID тенанта" required>
                     </label>
 
                     <label class="field">
-                        <span>User ID</span>
+                        <span>Пользователь</span>
                         <input id="user-id" name="user_id" type="text" autocomplete="off" placeholder="UUID пользователя" required>
                     </label>
 
                     <label class="field">
-                        <span>Actor</span>
+                        <span>Действующее лицо</span>
                         <input id="actor" name="actor" type="text" autocomplete="off" placeholder="pilot-ui" required>
                     </label>
 
                     <label class="field">
-                        <span>User-service URL</span>
+                        <span>Адрес сервиса пользователей</span>
                         <input
                             id="user-service-base-url"
                             name="user_service_base_url"
@@ -76,7 +76,7 @@
                 </div>
 
                 <div class="inline-meta">
-                    <span><strong>Asset-service:</strong> <code id="asset-service-origin">same origin</code></span>
+                    <span><strong>Сервис активов:</strong> <code id="asset-service-origin">same origin</code></span>
                     <span><strong>Текущий экран:</strong> <code id="active-screen-label">assets</code></span>
                 </div>
             </form>
@@ -97,12 +97,12 @@
                         <p class="section-kicker">Активы</p>
                         <h2>Реестр, карточка и действия</h2>
                         <p class="screen-copy">
-                            Реестр открывает карточку актива. Create/update остаются master-record-only,
+                            Реестр открывает карточку актива. Создание и редактирование меняют только данные карточки,
                             а ответственность меняется только через отдельные assign / transfer / return.
                         </p>
                     </div>
                     <span class="boundary-chip">
-                        Generic edit: только master record
+                        Только данные актива
                     </span>
                 </div>
 
@@ -136,8 +136,8 @@
                         </div>
                     </form>
                     <p class="muted-note">
-                        Начальная ответственность не задаётся через generic create. После создания используйте
-                        отдельные entry points assign / transfer / return и вернитесь в карточку актива.
+                        При создании не назначается ответственный. После создания используйте
+                        отдельные действия assign / transfer / return и вернитесь в карточку актива.
                     </p>
                 </div>
 
@@ -178,7 +178,7 @@
                             <div class="empty-state">
                                 <p class="empty-kicker">Карточка</p>
                                 <h3>Карточка ещё не выбрана</h3>
-                                <p>Выберите актив из реестра, чтобы открыть карточку, историю, аудит и доступные operational actions.</p>
+                                <p>Выберите актив из реестра, чтобы открыть карточку, историю, аудит и доступные действия.</p>
                             </div>
                         </div>
                     </section>
@@ -188,46 +188,46 @@
             <section id="review-screen" class="screen" hidden>
                 <div class="screen-header">
                     <div>
-                        <p class="section-kicker">Review</p>
+                        <p class="section-kicker">История и аудит</p>
                         <h2>История и аудит</h2>
                         <p class="screen-copy">
-                            Read-only review выбранного актива поверх уже загруженных history / audit данных.
-                            Раздел не создаёт отдельную витрину данных или новый read model.
+                            Раздел показывает уже загруженные историю и аудит выбранного актива.
+                            Он не создаёт отдельную витрину данных или новую модель чтения.
                         </p>
                     </div>
-                    <span class="boundary-chip">Read-only</span>
+                    <span class="boundary-chip">Только просмотр</span>
                 </div>
 
-                <nav id="review-section-nav" class="admin-nav" aria-label="Review sections"></nav>
+                <nav id="review-section-nav" class="admin-nav" aria-label="Разделы истории и аудита"></nav>
                 <section id="review-detail-panel" class="panel panel-tight" aria-live="polite"></section>
             </section>
 
             <section id="admin-screen" class="screen" hidden>
                 <div class="screen-header">
                     <div>
-                        <p class="section-kicker">Setup</p>
+                        <p class="section-kicker">Настройка</p>
                         <h2>Настройка tenant</h2>
                         <p class="screen-copy">
-                            Tenant Admin работает с уже существующими справочниками user-service:
-                            roles, users, departments, branches, locations и role assignment.
+                            Tenant Admin работает с уже существующими справочниками:
+                            роли, пользователи, подразделения, филиалы, локации и назначение ролей.
                         </p>
                     </div>
                     <span class="boundary-chip">Только Tenant Admin</span>
                 </div>
 
                 <div class="setup-order">
-                    Порядок первой настройки: <strong>roles -> users -> branches -> locations -> departments</strong>
+                    Порядок первой настройки: <strong>роли -> пользователи -> филиалы -> локации -> подразделения</strong>
                 </div>
 
                 <section id="setup-overview" class="workspace-overview panel panel-tight" aria-live="polite"></section>
 
-                <nav id="admin-resource-nav" class="admin-nav" aria-label="Reference data sections"></nav>
+                <nav id="admin-resource-nav" class="admin-nav" aria-label="Разделы настройки"></nav>
 
                 <div class="admin-grid">
                     <section class="panel">
                         <div class="panel-heading">
                             <div>
-                                <p class="section-kicker">Current Resource</p>
+                                <p class="section-kicker">Текущий раздел</p>
                                 <h3 id="admin-resource-title">Роли</h3>
                             </div>
                             <button class="button button-secondary" id="refresh-admin-resource" type="button">Обновить список</button>
@@ -238,7 +238,7 @@
                                 <thead id="admin-table-head"></thead>
                                 <tbody id="admin-table-body">
                                     <tr>
-                                        <td class="empty-cell">Раздел станет доступен после загрузки reference-data и проверки роли.</td>
+                                        <td class="empty-cell">Раздел станет доступен после загрузки справочников и проверки роли.</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -248,9 +248,9 @@
                     <section class="panel">
                         <div id="admin-editor-panel" class="detail-host">
                             <div class="empty-state">
-                                <p class="empty-kicker">Admin Editor</p>
+                                <p class="empty-kicker">Редактор</p>
                                 <h3>Выберите ресурс</h3>
-                                <p>Tenant Admin получает create/update и role binding только через уже доступный user-service.</p>
+                                <p>Tenant Admin может создавать, редактировать и назначать роли только через уже доступные действия настройки.</p>
                             </div>
                         </div>
                     </section>

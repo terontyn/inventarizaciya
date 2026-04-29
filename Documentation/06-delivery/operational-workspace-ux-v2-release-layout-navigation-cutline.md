@@ -2,7 +2,7 @@
 
 Operational Workspace UX v2 scope doc: accepted
 Canonical doc: approved
-Implementation: not approved
+Implementation: implemented and accepted as frontend-only refine-in-place UI implementation
 
 ## 1. Purpose
 
@@ -663,3 +663,84 @@ It is not:
 - saved views;
 - bulk actions;
 - implementation packet.
+
+
+
+## 18. Implementation Closeout
+
+Operational Workspace UX v2 has been implemented and accepted.
+
+The implementation is accepted as:
+
+**frontend-only refine-in-place layout, navigation and readability refinement over existing accepted operational UI surfaces.**
+
+### Closeout facts
+
+The implementation refined the existing static UI in place.
+
+It improved:
+
+- workspace layout;
+- navigation hierarchy;
+- section separation;
+- registry / card / action / review / setup continuity;
+- history / audit readability;
+- RU-facing copy consistency;
+- technical wording cleanup.
+
+Codex-reported changed files:
+
+- `app.js`;
+- `index.html`;
+- `app.css`;
+- `MinimalPilotUiSmokeTest.java`.
+
+Correction pass changed:
+
+- `app.js`;
+- `index.html`;
+- `MinimalPilotUiSmokeTest.java`.
+
+Verification notes:
+
+- focused smoke passed;
+- full service test suite passed before correction pass;
+- focused UI smoke passed after correction pass;
+- Browser visual smoke could not run due Node OS access denied;
+- video review accepted UX result after correction pass.
+
+### Boundary preservation
+
+Implementation did not introduce:
+
+- backend/API changes;
+- new endpoints;
+- DTO / read-model changes;
+- BFF / UI backend;
+- auth/IAM expansion;
+- new frontend framework / router / microfrontend / UI service;
+- new bounded context;
+- new Wave 2 surface;
+- dashboard / BI / analytics;
+- Asset 360;
+- global search / Elasticsearch;
+- saved views / persistent preferences;
+- bulk actions.
+
+Assign / transfer / return remain dedicated responsibility flows.
+
+Generic edit remains master-record-only.
+
+### Non-claim rule
+
+This implementation closeout does not create:
+
+- release-ready claim;
+- production tenant readiness claim;
+- First-Tenant Operational Validation claim;
+- real tenant validation claim;
+- real day-to-day operational validation claim.
+
+The project remains under the existing validation ceiling:
+
+**Project Stabilization / First-Adopter-Gated Hold**

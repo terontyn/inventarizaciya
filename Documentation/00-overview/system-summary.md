@@ -704,33 +704,84 @@ It is not:
 
 Future First-Tenant Operational Validation still requires real tenant / first adopter / real usage loop.
 
-## Current Scope Note — Operational Workspace UX v2
+## Current Baseline Update — Operational Workspace UX v2 Closeout
 
-A new canonical scope exists:
+`Operational Workspace UX v2 / Release UI Layout & Navigation Cutline`
+has now been implemented and accepted.
 
-**Operational Workspace UX v2 / Release UI Layout & Navigation Cutline**
+The implementation is accepted as:
 
-Canonical scope doc:
+**frontend-only layout, navigation and readability refinement of the existing static operational UI.**
 
-`/Documentation/06-delivery/operational-workspace-ux-v2-release-layout-navigation-cutline.md`
+This update supersedes the earlier interpretation
+that Operational Workspace UX v2 was approved as scope only
+with implementation not yet approved.
 
-Current interpretation:
+### Implementation closeout precision
 
-`Operational Workspace UX v2` is approved as a frontend-only layout, navigation and readability refinement over existing accepted operational UI surfaces.
+Operational Workspace UX v2 was implemented as refine-in-place UI work over already accepted operational surfaces.
 
-It is not:
-- implementation packet;
-- Codex task;
+It changed the release-facing workspace structure, navigation clarity, readability and user-facing wording,
+without changing production backend/API behavior.
+
+Implementation closeout facts:
+
+- existing static UI was refined in place;
+- layout / navigation / readability were improved;
+- RU-facing copy and technical wording were cleaned up;
+- test-only smoke coverage was updated through `MinimalPilotUiSmokeTest.java`;
+- no production backend/API changes were made;
+- no new backend endpoint was introduced;
+- no DTO or read model was changed;
+- no BFF or UI backend was introduced;
+- no auth/IAM expansion was introduced;
+- no new frontend framework, router, microfrontend or UI service was introduced;
+- no new bounded context was opened;
+- no new Wave 2 surface was opened.
+
+### Boundary preservation
+
+Operational Workspace UX v2 did not open:
+
+- dashboard / BI / analytics;
+- Asset 360;
+- global search / Elasticsearch;
+- saved views / persistent preferences;
+- bulk actions;
 - backend/API expansion;
 - BFF / UI backend;
 - auth/IAM expansion;
 - new bounded context;
-- new Wave 2 surface;
-- release-ready claim;
-- First-Tenant Operational Validation claim.
+- new Wave 2 surface.
 
-Current baseline remains:
+Responsibility-changing operations remain dedicated flows:
 
-**internally validated backend + minimal pilot UI/access baseline with Productized Tenant-Facing Operational UX v1 implemented, plus Operational Workspace UX v2 approved as scope only.**
+- assign;
+- transfer;
+- return.
 
-Implementation remains not approved until a separate implementation planning packet is prepared and accepted.
+Generic asset edit remains limited to master-record changes
+and does not replace responsibility-changing flows.
+
+### Current baseline after closeout
+
+The current project baseline should now be interpreted as:
+
+**internally validated backend + minimal pilot UI/access baseline with Productized Tenant-Facing Operational UX v1 implemented, plus Operational Workspace UX v2 implemented and accepted as frontend-only refine-in-place layout/navigation/readability refinement.**
+
+This baseline remains internally validated only.
+
+It is not:
+
+- release-ready tenant-facing product;
+- First-Tenant Operational Validation exit;
+- production tenant readiness proof;
+- fully proven real tenant usage;
+- fully validated day-to-day operational tenant rollout.
+
+Future First-Tenant Operational Validation still requires:
+
+- real tenant / first adopter;
+- real tenant actors;
+- real usage loop;
+- observed operational actions beyond scripted internal walkthrough.

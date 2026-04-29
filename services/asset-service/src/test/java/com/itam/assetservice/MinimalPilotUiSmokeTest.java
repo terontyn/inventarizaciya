@@ -78,9 +78,15 @@ class MinimalPilotUiSmokeTest {
             .andExpect(content().string(not(containsString("/api/v1/software/"))))
             .andExpect(content().string(not(containsString("/api/v1/tickets/"))))
             .andExpect(content().string(not(containsString("/api/v1/reporting/"))))
+            .andExpect(content().string(not(containsString("Generic PATCH only"))))
+            .andExpect(content().string(not(containsString("Mutate path"))))
+            .andExpect(content().string(not(containsString("Master data"))))
+            .andExpect(content().string(not(containsString("History / Audit"))))
             .andExpect(content().string(not(containsString("saved views"))))
             .andExpect(content().string(not(containsString("bulk actions"))))
             .andExpect(content().string(not(containsString("dashboard"))))
+            .andExpect(content().string(not(containsString("search"))))
+            .andExpect(content().string(not(containsString("Asset 360"))))
             .andExpect(content().string(not(containsString("Elasticsearch"))));
     }
 }
