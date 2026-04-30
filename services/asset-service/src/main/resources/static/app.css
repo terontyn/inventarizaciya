@@ -29,6 +29,8 @@
 
 html {
     font-size: 16px;
+    scroll-behavior: smooth;
+    scroll-padding-top: 5.75rem;
 }
 
 body {
@@ -203,6 +205,11 @@ code {
     font-weight: 600;
 }
 
+.field small {
+    font-size: 0.82rem;
+    line-height: 1.4;
+}
+
 .field input,
 .field select,
 .field textarea {
@@ -255,6 +262,25 @@ code {
     opacity: 0.55;
     transform: none;
     box-shadow: none;
+}
+
+.button.is-loading {
+    position: relative;
+    padding-right: 2.25rem;
+}
+
+.button.is-loading::after {
+    content: "";
+    position: absolute;
+    right: 0.9rem;
+    top: 50%;
+    width: 0.72rem;
+    height: 0.72rem;
+    margin-top: -0.36rem;
+    border: 2px solid currentColor;
+    border-right-color: transparent;
+    border-radius: 999px;
+    animation: spin 0.7s linear infinite;
 }
 
 .button-primary {
@@ -324,6 +350,15 @@ code {
 
 .screen-nav {
     margin: 1.35rem 0 1rem;
+    position: sticky;
+    top: 0.5rem;
+    z-index: 10;
+    padding: 0.5rem;
+    border: 1px solid rgba(22, 32, 42, 0.08);
+    border-radius: var(--radius-lg);
+    background: rgba(245, 247, 248, 0.9);
+    backdrop-filter: blur(12px);
+    box-shadow: 0 12px 24px rgba(29, 32, 37, 0.07);
 }
 
 .nav-chip {
@@ -354,6 +389,7 @@ code {
 .screen {
     display: grid;
     gap: 1rem;
+    scroll-margin-top: 5.75rem;
 }
 
 .screen-header {
@@ -361,6 +397,10 @@ code {
     justify-content: space-between;
     gap: 1rem;
     align-items: flex-start;
+    padding: 1.15rem 1.25rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    background: rgba(255, 255, 255, 0.74);
 }
 
 .screen-header h2 {
@@ -419,17 +459,20 @@ code {
     color: var(--muted);
 }
 
-.data-table tbody tr {
+.data-table tbody tr[data-asset-id],
+.data-table tbody tr[data-admin-id] {
     cursor: pointer;
     transition: background 0.16s ease;
 }
 
-.data-table tbody tr:hover {
+.data-table tbody tr[data-asset-id]:hover,
+.data-table tbody tr[data-admin-id]:hover {
     background: rgba(15, 118, 110, 0.05);
 }
 
 .data-table tbody tr.is-active {
     background: rgba(15, 118, 110, 0.11);
+    box-shadow: inset 3px 0 0 var(--accent);
 }
 
 .empty-cell {
@@ -447,6 +490,20 @@ code {
     place-items: start;
     min-height: 260px;
     align-content: center;
+}
+
+.inline-empty-state {
+    display: grid;
+    gap: 0.35rem;
+    padding: 1rem;
+    border: 1px dashed rgba(22, 32, 42, 0.16);
+    border-radius: var(--radius-md);
+    background: rgba(255, 255, 255, 0.62);
+}
+
+.inline-empty-state strong,
+.inline-empty-state p {
+    margin: 0;
 }
 
 .detail-grid {
@@ -666,6 +723,77 @@ code {
     color: var(--warning);
 }
 
+.technical-preview,
+.technical-value,
+.context-summary {
+    color: var(--muted);
+}
+
+.technical-preview {
+    display: block;
+    overflow-wrap: anywhere;
+}
+
+.technical-value {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    max-width: 100%;
+    vertical-align: middle;
+}
+
+.technical-value code,
+.context-summary code {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.copy-button {
+    min-height: 1.75rem;
+    padding: 0.2rem 0.55rem;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.78);
+    color: var(--accent-ink);
+    cursor: pointer;
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+.copy-button:hover {
+    background: var(--accent-soft);
+}
+
+.asset-card-header {
+    display: grid;
+    gap: 0.5rem;
+}
+
+.asset-card-title {
+    display: flex;
+    gap: 0.65rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.asset-card-title h3 {
+    font-size: 1.75rem;
+}
+
+.asset-card-meta {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.audit-summary,
+.history-summary {
+    display: grid;
+    gap: 0.25rem;
+}
+
 .audit-detail-stack {
     display: grid;
     gap: 0.75rem;
@@ -708,6 +836,12 @@ code {
     font-family: "Cascadia Code", "Consolas", monospace;
     font-size: 0.85rem;
     line-height: 1.55;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 .compact-list {

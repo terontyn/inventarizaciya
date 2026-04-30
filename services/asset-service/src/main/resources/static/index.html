@@ -66,11 +66,12 @@
                             placeholder="http://localhost:8080"
                             required
                         >
+                        <small id="user-service-url-preview" class="technical-preview"></small>
                     </label>
                 </div>
 
                 <div class="button-row">
-                    <button class="button button-primary" type="submit">Подключить</button>
+                    <button class="button button-primary" id="connect-session" type="submit">Подключить</button>
                     <button class="button button-secondary" id="refresh-all" type="button">Обновить</button>
                     <button class="button button-ghost" id="clear-session" type="button">Сбросить</button>
                 </div>
@@ -78,6 +79,7 @@
                 <div class="inline-meta">
                     <span><strong>Сервис активов:</strong> <code id="asset-service-origin">same origin</code></span>
                     <span><strong>Текущий экран:</strong> <code id="active-screen-label">assets</code></span>
+                    <span id="context-technical-summary"></span>
                 </div>
             </form>
         </header>

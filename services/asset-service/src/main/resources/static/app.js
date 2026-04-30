@@ -14,6 +14,13 @@ const PRIMARY_SCREENS = {
     SETUP: "setup"
 };
 
+const SCREEN_ANCHORS = {
+    [PRIMARY_SCREENS.WORKSPACE]: "workspace-screen",
+    [PRIMARY_SCREENS.ASSETS]: "assets-screen",
+    [PRIMARY_SCREENS.REVIEW]: "review-screen",
+    [PRIMARY_SCREENS.SETUP]: "admin-screen"
+};
+
 const ASSET_SECTIONS = [
     { key: "overview", label: "Обзор" },
     { key: "master", label: "Данные актива" },
@@ -116,7 +123,7 @@ const ADMIN_RESOURCES = {
         emptyText: "Роли ещё не созданы.",
         columns: [
             { label: "Название", render: (item) => escapeHtml(item.name) },
-            { label: "Служебный ID", render: (item) => `<span class="reference-meta"><code>${escapeHtml(item.id)}</code></span>` }
+            { label: "Служебный ID", render: (item) => renderTechnicalValue(item.id) }
         ],
         fields: [
             { name: "name", label: "Название роли", type: "text", required: true }
@@ -130,7 +137,7 @@ const ADMIN_RESOURCES = {
         columns: [
             { label: "Имя", render: (item) => escapeHtml(item.name) },
             { label: "Подразделение", render: (item) => escapeHtml(resolveDepartmentName(item.department_id)) },
-            { label: "Служебный ID", render: (item) => `<span class="reference-meta"><code>${escapeHtml(item.id)}</code></span>` }
+            { label: "Служебный ID", render: (item) => renderTechnicalValue(item.id) }
         ],
         fields: [
             { name: "name", label: "Имя пользователя", type: "text", required: true },
@@ -144,7 +151,7 @@ const ADMIN_RESOURCES = {
         emptyText: "Подразделения ещё не созданы.",
         columns: [
             { label: "Название", render: (item) => escapeHtml(item.name) },
-            { label: "Служебный ID", render: (item) => `<span class="reference-meta"><code>${escapeHtml(item.id)}</code></span>` }
+            { label: "Служебный ID", render: (item) => renderTechnicalValue(item.id) }
         ],
         fields: [
             { name: "name", label: "Название подразделения", type: "text", required: true }
@@ -157,7 +164,7 @@ const ADMIN_RESOURCES = {
         emptyText: "Филиалы ещё не созданы.",
         columns: [
             { label: "Название", render: (item) => escapeHtml(item.name) },
-            { label: "Служебный ID", render: (item) => `<span class="reference-meta"><code>${escapeHtml(item.id)}</code></span>` }
+            { label: "Служебный ID", render: (item) => renderTechnicalValue(item.id) }
         ],
         fields: [
             { name: "name", label: "Название филиала", type: "text", required: true }
@@ -171,7 +178,7 @@ const ADMIN_RESOURCES = {
         columns: [
             { label: "Название", render: (item) => escapeHtml(item.name) },
             { label: "Филиал", render: (item) => escapeHtml(resolveBranchName(item.branch_id)) },
-            { label: "Служебный ID", render: (item) => `<span class="reference-meta"><code>${escapeHtml(item.id)}</code></span>` }
+            { label: "Служебный ID", render: (item) => renderTechnicalValue(item.id) }
         ],
         fields: [
             { name: "name", label: "Название локации", type: "text", required: true },
@@ -201,6 +208,22 @@ function createEmptyLoadingState() {
     };
 }
 
+function createEmptyBusyState() {
+    return {
+        session: false,
+        refreshAll: false,
+        createAsset: false,
+        updateAsset: false,
+        assignAsset: false,
+        transferAsset: false,
+        returnAsset: false,
+        refreshAsset: false,
+        adminResource: false,
+        roleBinding: false,
+        refreshAdmin: false
+    };
+}
+
 const state = {
     context: {
         tenantId: "",
@@ -223,6 +246,7 @@ const state = {
         locations: []
     },
     loading: createEmptyLoadingState(),
+    busy: createEmptyBusyState(),
     activeScreen: PRIMARY_SCREENS.WORKSPACE,
     activeAssetSection: "overview",
     activeReviewSection: "history",
@@ -249,7 +273,9 @@ function cacheElements() {
     ui.userId = document.getElementById("user-id");
     ui.actor = document.getElementById("actor");
     ui.userServiceBaseUrl = document.getElementById("user-service-base-url");
+    ui.userServiceUrlPreview = document.getElementById("user-service-url-preview");
     ui.assetServiceOrigin = document.getElementById("asset-service-origin");
+    ui.contextTechnicalSummary = document.getElementById("context-technical-summary");
     ui.roleSummaryBadge = document.getElementById("role-summary-badge");
     ui.activeScreenLabel = document.getElementById("active-screen-label");
     ui.flashStack = document.getElementById("flash-stack");
@@ -273,6 +299,7 @@ function cacheElements() {
     ui.adminTableHead = document.getElementById("admin-table-head");
     ui.adminTableBody = document.getElementById("admin-table-body");
     ui.adminEditorPanel = document.getElementById("admin-editor-panel");
+    ui.connectSession = document.getElementById("connect-session");
     ui.refreshAll = document.getElementById("refresh-all");
     ui.clearSession = document.getElementById("clear-session");
     ui.refreshAssets = document.getElementById("refresh-assets");
@@ -281,10 +308,12 @@ function cacheElements() {
 
 function bindStaticEvents() {
     ui.sessionForm.addEventListener("submit", onSessionSubmit);
-    ui.refreshAll.addEventListener("click", () => refreshAllData());
+    ui.userServiceBaseUrl.addEventListener("input", renderUserServiceUrlPreview);
+    document.addEventListener("click", onCopyClick, true);
+    ui.refreshAll.addEventListener("click", onRefreshAllClick);
     ui.clearSession.addEventListener("click", clearSession);
-    ui.refreshAssets.addEventListener("click", () => refreshAssets().catch(handleUnexpectedError));
-    ui.refreshAdminResource.addEventListener("click", () => refreshAdminResource().catch(handleUnexpectedError));
+    ui.refreshAssets.addEventListener("click", onRefreshAssetsClick);
+    ui.refreshAdminResource.addEventListener("click", onRefreshAdminResourceClick);
     ui.screenNav.addEventListener("click", onScreenNavClick);
     ui.workspaceOverview.addEventListener("click", onScreenNavClick);
     ui.assetCreateForm.addEventListener("submit", onAssetCreateSubmit);
@@ -330,6 +359,7 @@ function syncContextToForm() {
     ui.actor.value = state.context.actor;
     ui.userServiceBaseUrl.value = state.context.userServiceBaseUrl;
     ui.assetServiceOrigin.textContent = window.location.origin;
+    renderUserServiceUrlPreview();
 }
 
 function syncContextFromForm() {
@@ -367,6 +397,7 @@ function clearSession() {
         locations: []
     };
     state.loading = createEmptyLoadingState();
+    state.busy = createEmptyBusyState();
     state.activeScreen = PRIMARY_SCREENS.WORKSPACE;
     state.activeAssetSection = "overview";
     state.activeReviewSection = "history";
@@ -392,12 +423,42 @@ function validateContext() {
         showFlash("Заполните tenant, user, actor и user-service URL, чтобы подключить рабочий контур.", "warning");
         return false;
     }
+    try {
+        new URL(state.context.userServiceBaseUrl);
+    } catch (error) {
+        showFlash("Укажите полный адрес сервиса пользователей, например http://localhost:8080.", "warning");
+        return false;
+    }
     return true;
 }
 
 async function onSessionSubmit(event) {
     event.preventDefault();
-    await connectContour();
+    if (isBusy("session")) {
+        return;
+    }
+    await withBusy("session", () => connectContour());
+}
+
+async function onRefreshAllClick() {
+    if (isBusy("refreshAll")) {
+        return;
+    }
+    await withBusy("refreshAll", () => refreshAllData());
+}
+
+async function onRefreshAssetsClick() {
+    if (isBusy("refreshAsset")) {
+        return;
+    }
+    await withBusy("refreshAsset", () => refreshAssets()).catch(handleUnexpectedError);
+}
+
+async function onRefreshAdminResourceClick() {
+    if (isBusy("refreshAdmin")) {
+        return;
+    }
+    await withBusy("refreshAdmin", () => refreshAdminResource()).catch(handleUnexpectedError);
 }
 
 async function connectContour(options = {}) {
@@ -576,6 +637,21 @@ async function withLoading(key, task) {
     }
 }
 
+async function withBusy(key, task) {
+    state.busy[key] = true;
+    render();
+    try {
+        return await task();
+    } finally {
+        state.busy[key] = false;
+        render();
+    }
+}
+
+function isBusy(key) {
+    return Boolean(state.busy[key]);
+}
+
 async function probeReadAccess(service, path, errorPrefix) {
     const { response, payload } = await requestDetailed(service, path);
     if (response.ok) {
@@ -694,11 +770,17 @@ function extractErrorMessage(response, payload) {
 }
 
 function buildAssetUpsertPayload(formData) {
-    return {
+    const payload = {
         asset_tag: formDataValue(formData, "asset_tag"),
         serial_number: formDataValue(formData, "serial_number"),
         asset_type: formDataValue(formData, "asset_type")
     };
+    validateRequiredFields(payload, {
+        asset_tag: "Инвентарный тег",
+        serial_number: "Серийный номер",
+        asset_type: "Тип актива"
+    });
+    return payload;
 }
 
 function buildAdminPayload(config, formData) {
@@ -717,13 +799,33 @@ function formDataValue(formData, key) {
     return String(formData.get(key) ?? "").trim();
 }
 
+function validateRequiredFields(payload, labels) {
+    const missing = Object.entries(labels)
+        .filter(([key]) => !String(payload[key] ?? "").trim())
+        .map(([, label]) => label);
+
+    if (missing.length > 0) {
+        throw new Error(`Заполните обязательные поля: ${missing.join(", ")}.`);
+    }
+}
+
 function onScreenNavClick(event) {
     const button = event.target.closest("[data-screen]");
     if (!button) {
         return;
     }
-    state.activeScreen = button.dataset.screen;
+    activateScreen(button.dataset.screen);
+}
+
+function activateScreen(screen, options = {}) {
+    state.activeScreen = screen;
     render();
+
+    if (options.scroll === false) {
+        return;
+    }
+
+    scrollToElement(getScreenAnchorElement(screen));
 }
 
 async function onAssetCreateSubmit(event) {
@@ -732,20 +834,25 @@ async function onAssetCreateSubmit(event) {
         showFlash("Текущая роль не имеет mutate-доступа к активам.", "warning");
         return;
     }
-
-    const payload = buildAssetUpsertPayload(new FormData(event.currentTarget));
+    if (isBusy("createAsset")) {
+        return;
+    }
 
     try {
-        const created = await requestJson("asset", "/api/v1/assets", {
-            method: "POST",
-            body: payload
+        const form = event.currentTarget;
+        const payload = buildAssetUpsertPayload(new FormData(form));
+        await withBusy("createAsset", async () => {
+            const created = await requestJson("asset", "/api/v1/assets", {
+                method: "POST",
+                body: payload
+            });
+            form.reset();
+            state.selectedAssetId = created.id;
+            state.activeAssetSection = "overview";
+            await refreshAssets();
+            scrollToElement(ui.assetDetailPanel);
+            showFlash(`Актив ${created.asset_tag} создан и открыт в карточке.`, "success");
         });
-        event.currentTarget.reset();
-        state.selectedAssetId = created.id;
-        state.activeAssetSection = "overview";
-        await refreshAssets();
-        scrollToElement(ui.assetDetailPanel);
-        showFlash(`Актив ${created.asset_tag} создан и открыт в карточке.`, "success");
     } catch (error) {
         showFlash(error.message, "error");
     }
@@ -777,37 +884,50 @@ async function onAssetDetailSubmit(event) {
 
     try {
         if (form.id === "asset-update-form") {
+            if (isBusy("updateAsset")) {
+                return;
+            }
             const payload = buildAssetUpsertPayload(new FormData(form));
-            await requestJson("asset", `/api/v1/assets/${state.selectedAssetId}`, {
-                method: "PATCH",
-                body: payload
+            await withBusy("updateAsset", async () => {
+                await requestJson("asset", `/api/v1/assets/${state.selectedAssetId}`, {
+                    method: "PATCH",
+                    body: payload
+                });
+                state.activeAssetSection = "master";
+                await refreshAssets();
+                scrollToElement(ui.assetDetailPanel);
+                showFlash("Данные карточки обновлены без изменения ответственности.", "success");
             });
-            state.activeAssetSection = "master";
-            await refreshAssets();
-            scrollToElement(ui.assetDetailPanel);
-            showFlash("Данные карточки обновлены без изменения ответственности.", "success");
             return;
         }
 
         if (form.id === "asset-assign-form") {
+            if (isBusy("assignAsset")) {
+                return;
+            }
             const targetUserId = formDataValue(new FormData(form), "target_user_id");
             if (!targetUserId) {
                 showFlash("Для assign выберите пользователя.", "warning");
                 return;
             }
-            await requestJson("asset", `/api/v1/assets/${state.selectedAssetId}/assign`, {
-                method: "POST",
-                body: { target_user_id: targetUserId }
+            await withBusy("assignAsset", async () => {
+                await requestJson("asset", `/api/v1/assets/${state.selectedAssetId}/assign`, {
+                    method: "POST",
+                    body: { target_user_id: targetUserId }
+                });
+                state.activeAssetSection = "history";
+                state.activeReviewSection = "history";
+                await refreshAssets();
+                scrollToElement(ui.assetDetailPanel);
+                showFlash("Assign выполнен отдельным действием. История выбранного актива обновлена.", "success");
             });
-            state.activeAssetSection = "history";
-            state.activeReviewSection = "history";
-            await refreshAssets();
-            scrollToElement(ui.assetDetailPanel);
-            showFlash("Assign выполнен отдельным действием.", "success");
             return;
         }
 
         if (form.id === "asset-transfer-form") {
+            if (isBusy("transferAsset")) {
+                return;
+            }
             const formData = new FormData(form);
             const targetUserId = formDataValue(formData, "target_user_id");
             const targetLocationId = formDataValue(formData, "target_location_id");
@@ -819,34 +939,41 @@ async function onAssetDetailSubmit(event) {
                 showFlash("Transfer не создаёт первую пользовательскую ответственность. Для первого пользователя используйте assign.", "warning");
                 return;
             }
-            await requestJson("asset", `/api/v1/assets/${state.selectedAssetId}/transfer`, {
-                method: "POST",
-                body: {
-                    target_user_id: targetUserId || null,
-                    target_location_id: targetLocationId || null
-                }
+            await withBusy("transferAsset", async () => {
+                await requestJson("asset", `/api/v1/assets/${state.selectedAssetId}/transfer`, {
+                    method: "POST",
+                    body: {
+                        target_user_id: targetUserId || null,
+                        target_location_id: targetLocationId || null
+                    }
+                });
+                state.activeAssetSection = "history";
+                state.activeReviewSection = "history";
+                await refreshAssets();
+                scrollToElement(ui.assetDetailPanel);
+                showFlash("Transfer выполнен отдельным действием. История выбранного актива обновлена.", "success");
             });
-            state.activeAssetSection = "history";
-            state.activeReviewSection = "history";
-            await refreshAssets();
-            scrollToElement(ui.assetDetailPanel);
-            showFlash("Transfer выполнен отдельным действием.", "success");
             return;
         }
 
         if (form.id === "asset-return-form") {
+            if (isBusy("returnAsset")) {
+                return;
+            }
             if (!hasCurrentUserResponsibility(state.selectedAsset)) {
                 showFlash("Return завершает только текущую пользовательскую ответственность. В карточке нет назначенного пользователя.", "warning");
                 return;
             }
-            await requestJson("asset", `/api/v1/assets/${state.selectedAssetId}/return`, {
-                method: "POST"
+            await withBusy("returnAsset", async () => {
+                await requestJson("asset", `/api/v1/assets/${state.selectedAssetId}/return`, {
+                    method: "POST"
+                });
+                state.activeAssetSection = "history";
+                state.activeReviewSection = "history";
+                await refreshAssets();
+                scrollToElement(ui.assetDetailPanel);
+                showFlash("Return выполнен отдельным действием. История выбранного актива обновлена.", "success");
             });
-            state.activeAssetSection = "history";
-            state.activeReviewSection = "history";
-            await refreshAssets();
-            scrollToElement(ui.assetDetailPanel);
-            showFlash("Return выполнен отдельным действием.", "success");
         }
     } catch (error) {
         showFlash(error.message, "error");
@@ -856,8 +983,7 @@ async function onAssetDetailSubmit(event) {
 function onAssetInteractionClick(event) {
     const screenButton = event.target.closest("[data-screen]");
     if (screenButton) {
-        state.activeScreen = screenButton.dataset.screen;
-        render();
+        activateScreen(screenButton.dataset.screen);
         return;
     }
 
@@ -871,7 +997,10 @@ function onAssetInteractionClick(event) {
 
     const refreshButton = event.target.closest("[data-refresh-asset]");
     if (refreshButton && state.selectedAssetId) {
-        loadAssetBundle(state.selectedAssetId)
+        if (isBusy("refreshAsset")) {
+            return;
+        }
+        withBusy("refreshAsset", () => loadAssetBundle(state.selectedAssetId))
             .then(() => scrollToElement(ui.assetDetailPanel))
             .catch(handleUnexpectedError);
         return;
@@ -898,8 +1027,7 @@ function onAssetInteractionClick(event) {
 function onReviewInteractionClick(event) {
     const screenButton = event.target.closest("[data-screen]");
     if (screenButton) {
-        state.activeScreen = screenButton.dataset.screen;
-        render();
+        activateScreen(screenButton.dataset.screen);
         return;
     }
 
@@ -912,7 +1040,10 @@ function onReviewInteractionClick(event) {
 
     const refreshButton = event.target.closest("[data-refresh-asset]");
     if (refreshButton && state.selectedAssetId) {
-        loadAssetBundle(state.selectedAssetId)
+        if (isBusy("refreshAsset")) {
+            return;
+        }
+        withBusy("refreshAsset", () => loadAssetBundle(state.selectedAssetId))
             .then(render)
             .catch(handleUnexpectedError);
     }
@@ -951,6 +1082,9 @@ async function onAdminEditorSubmit(event) {
 
     try {
         if (form.id === "admin-resource-form") {
+            if (isBusy("adminResource")) {
+                return;
+            }
             const config = ADMIN_RESOURCES[state.activeAdminResource];
             if (!canSubmitAdminResource(config.key)) {
                 showFlash(getAdminPrerequisiteMessage(config.key), "warning");
@@ -959,38 +1093,45 @@ async function onAdminEditorSubmit(event) {
 
             const payload = buildAdminPayload(config, new FormData(form));
             const isUpdate = Boolean(state.selectedAdminItemId);
-            const response = await requestJson(
-                "user",
-                isUpdate ? `${config.path}/${state.selectedAdminItemId}` : config.path,
-                {
-                    method: isUpdate ? "PATCH" : "POST",
-                    body: payload
-                }
-            );
+            await withBusy("adminResource", async () => {
+                const response = await requestJson(
+                    "user",
+                    isUpdate ? `${config.path}/${state.selectedAdminItemId}` : config.path,
+                    {
+                        method: isUpdate ? "PATCH" : "POST",
+                        body: payload
+                    }
+                );
 
-            await loadReferenceData();
-            await loadRolesCatalog();
-            state.selectedAdminItemId = response.id ?? state.selectedAdminItemId;
-            render();
-            scrollToElement(ui.adminEditorPanel);
-            showFlash(`${config.label} ${isUpdate ? "обновлены" : "созданы"}.`, "success");
+                await loadReferenceData();
+                await loadRolesCatalog();
+                state.selectedAdminItemId = response.id ?? state.selectedAdminItemId;
+                render();
+                scrollToElement(ui.adminEditorPanel);
+                showFlash(`${config.label} ${isUpdate ? "обновлены" : "созданы"}.`, "success");
+            });
             return;
         }
 
         if (form.id === "user-role-binding-form") {
+            if (isBusy("roleBinding")) {
+                return;
+            }
             const userId = formDataValue(new FormData(form), "user_id");
             const roleId = formDataValue(new FormData(form), "role_id");
             if (!userId || !roleId) {
                 showFlash("Для назначения роли выберите пользователя и роль.", "warning");
                 return;
             }
-            await requestJson("user", `/api/v1/users/${userId}/roles`, {
-                method: "POST",
-                body: { role_id: roleId }
+            await withBusy("roleBinding", async () => {
+                await requestJson("user", `/api/v1/users/${userId}/roles`, {
+                    method: "POST",
+                    body: { role_id: roleId }
+                });
+                render();
+                scrollToElement(ui.adminEditorPanel);
+                showFlash("Роль назначена через уже доступное действие.", "success");
             });
-            render();
-            scrollToElement(ui.adminEditorPanel);
-            showFlash("Роль назначена через уже доступное действие.", "success");
         }
     } catch (error) {
         showFlash(error.message, "error");
@@ -1002,6 +1143,33 @@ function onAdminEditorClick(event) {
     if (resetButton) {
         state.selectedAdminItemId = null;
         render();
+    }
+}
+
+function onCopyClick(event) {
+    const copyButton = event.target.closest("[data-copy-value]");
+    if (!copyButton) {
+        return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    copyToClipboard(copyButton.dataset.copyValue || "");
+}
+
+async function copyToClipboard(value) {
+    if (!value) {
+        return;
+    }
+
+    try {
+        if (!navigator.clipboard || typeof navigator.clipboard.writeText !== "function") {
+            throw new Error("Clipboard API unavailable");
+        }
+        await navigator.clipboard.writeText(value);
+        showFlash("Служебное значение скопировано.", "success");
+    } catch (error) {
+        showFlash(`Скопируйте значение вручную: ${value}`, "info");
     }
 }
 
@@ -1027,6 +1195,9 @@ function render() {
     renderAssetsScreen();
     renderReviewScreen();
     renderAdminScreen();
+    syncStaticActionControls();
+    renderUserServiceUrlPreview();
+    renderContextTechnicalSummary();
     ui.activeScreenLabel.textContent = getScreenLabel(state.activeScreen);
     ui.assetServiceOrigin.textContent = window.location.origin;
 }
@@ -1051,6 +1222,73 @@ function renderRoleSummary() {
     ui.roleSummaryBadge.textContent = markers.join(" | ");
 }
 
+function syncStaticActionControls() {
+    setButtonBusy(ui.connectSession, isBusy("session") || state.loading.profile, "Подключаем");
+    setButtonBusy(ui.refreshAll, isBusy("refreshAll"), "Обновляем");
+    setButtonBusy(ui.refreshAssets, isBusy("refreshAsset") || state.loading.assets, "Обновляем");
+    setButtonBusy(ui.refreshAdminResource, isBusy("refreshAdmin") || state.loading.references || state.loading.roles, "Обновляем");
+    setButtonBusy(ui.assetCreateForm?.querySelector("button[type='submit']"), isBusy("createAsset"), "Создаём");
+
+    if (ui.refreshAssets) {
+        ui.refreshAssets.disabled = ui.refreshAssets.disabled || !canAssetRead();
+    }
+    if (ui.refreshAdminResource) {
+        ui.refreshAdminResource.disabled = ui.refreshAdminResource.disabled || !canTenantAdmin();
+    }
+    const createButton = ui.assetCreateForm?.querySelector("button[type='submit']");
+    if (createButton) {
+        createButton.disabled = createButton.disabled || !canAssetMutate();
+    }
+}
+
+function setButtonBusy(button, busy, busyLabel) {
+    if (!button) {
+        return;
+    }
+
+    if (!button.dataset.idleLabel) {
+        button.dataset.idleLabel = button.textContent.trim();
+    }
+
+    button.disabled = Boolean(busy);
+    button.classList.toggle("is-loading", Boolean(busy));
+    button.textContent = busy ? busyLabel : button.dataset.idleLabel;
+}
+
+function renderUserServiceUrlPreview() {
+    if (!ui.userServiceUrlPreview) {
+        return;
+    }
+
+    const value = (ui.userServiceBaseUrl?.value || state.context.userServiceBaseUrl || "").trim();
+    if (!value) {
+        ui.userServiceUrlPreview.innerHTML = "Адрес будет показан здесь после ввода.";
+        return;
+    }
+
+    ui.userServiceUrlPreview.innerHTML = `
+        Сервис пользователей: ${renderTechnicalValue(value, { copy: true, label: "адрес сервиса пользователей" })}
+    `;
+}
+
+function renderContextTechnicalSummary() {
+    if (!ui.contextTechnicalSummary) {
+        return;
+    }
+
+    if (!hasConnectionContext()) {
+        ui.contextTechnicalSummary.innerHTML = "";
+        return;
+    }
+
+    ui.contextTechnicalSummary.className = "context-summary";
+    ui.contextTechnicalSummary.innerHTML = `
+        <strong>Контекст:</strong>
+        tenant ${renderTechnicalValue(state.context.tenantId)}
+        user ${renderTechnicalValue(state.context.userId)}
+    `;
+}
+
 function renderScreenNav() {
     const screens = [{ key: PRIMARY_SCREENS.WORKSPACE, label: "Рабочее место" }];
     if (canAssetRead()) {
@@ -1070,6 +1308,8 @@ function renderScreenNav() {
                 class="nav-chip ${screen.key === state.activeScreen ? "is-active" : ""}"
                 type="button"
                 data-screen="${screen.key}"
+                aria-controls="${escapeAttribute(SCREEN_ANCHORS[screen.key])}"
+                aria-current="${screen.key === state.activeScreen ? "page" : "false"}"
             >
                 ${escapeHtml(screen.label)}
             </button>
@@ -1299,13 +1539,20 @@ function renderAssetDetail() {
     ui.assetDetailPanel.innerHTML = `
         <div class="stack">
             <div class="panel-heading">
-                <div>
+                <div class="asset-card-header">
                     <p class="section-kicker">Карточка актива</p>
-                    <h3>${escapeHtml(asset.asset_tag)}</h3>
-                    <p class="reference-meta">ID актива: ${escapeHtml(asset.id)}</p>
+                    <div class="asset-card-title">
+                        <h3>${escapeHtml(asset.asset_tag)}</h3>
+                        ${renderStatusBadge(asset.status)}
+                    </div>
+                    <div class="asset-card-meta">
+                        <span class="reference-meta">SN: ${escapeHtml(asset.serial_number || "-")}</span>
+                        <span class="reference-meta">Тип: ${escapeHtml(asset.asset_type || "-")}</span>
+                        <span class="reference-meta">ID: ${renderTechnicalValue(asset.id, { copy: true })}</span>
+                    </div>
                 </div>
                 <div class="button-row">
-                    <button class="button button-secondary" data-refresh-asset type="button">Обновить карточку</button>
+                    <button class="button button-secondary ${isBusy("refreshAsset") ? "is-loading" : ""}" data-refresh-asset type="button" ${isBusy("refreshAsset") ? "disabled" : ""}>${isBusy("refreshAsset") ? "Обновляем" : "Обновить карточку"}</button>
                     <button class="button button-ghost" data-focus-registry type="button">К реестру</button>
                     <button class="button button-ghost" data-screen="${PRIMARY_SCREENS.REVIEW}" type="button">К истории и аудиту</button>
                     ${canMutate ? `<button class="button button-ghost" data-focus-create type="button">К созданию</button>` : ""}
@@ -1393,7 +1640,7 @@ function renderAssetMasterSection(asset, canMutate) {
                     ${renderSummaryCard("Инвентарный тег", escapeHtml(asset.asset_tag), "Только просмотр для текущей роли.")}
                     ${renderSummaryCard("Серийный номер", escapeHtml(asset.serial_number), "Только просмотр для текущей роли.")}
                     ${renderSummaryCard("Тип", escapeHtml(asset.asset_type), "Только просмотр для текущей роли.")}
-                    ${renderSummaryCard("ID актива", `<code>${escapeHtml(asset.id)}</code>`, "Справочная техническая ссылка.")}
+                    ${renderSummaryCard("ID актива", renderTechnicalValue(asset.id, { copy: true }), "Справочная техническая ссылка.")}
                 </div>
                 <div class="journey-banner tone-readonly">
                     <div class="journey-copy">
@@ -1416,8 +1663,8 @@ function renderAssetMasterSection(asset, canMutate) {
             </div>
 
             <p class="muted-note">
-                Эта форма управляет только инвентарным тегом, серийным номером и типом. Она не отправляет
-                <code>assigned_user_id</code> и <code>location_id</code>.
+                Эта форма управляет только инвентарным тегом, серийным номером и типом. Ответственность и текущая
+                локация меняются только через отдельные действия assign / transfer / return.
             </p>
 
             <form id="asset-update-form" class="form-grid">
@@ -1434,7 +1681,7 @@ function renderAssetMasterSection(asset, canMutate) {
                     <input name="asset_type" type="text" value="${escapeAttribute(asset.asset_type)}" required>
                 </label>
                 <div class="button-row button-row-inline">
-                    <button class="button button-primary" type="submit">Сохранить данные актива</button>
+                    <button class="button button-primary ${isBusy("updateAsset") ? "is-loading" : ""}" type="submit" ${isBusy("updateAsset") ? "disabled" : ""}>${isBusy("updateAsset") ? "Сохраняем" : "Сохранить данные актива"}</button>
                 </div>
             </form>
         </section>
@@ -1531,7 +1778,8 @@ function renderAssetHistoryAuditSection() {
 }
 
 function renderAssignCard(hasUsers, hasCurrentUser) {
-    const disabled = !hasUsers || hasCurrentUser ? "disabled" : "";
+    const busy = isBusy("assignAsset");
+    const disabled = !hasUsers || hasCurrentUser || busy ? "disabled" : "";
     return `
         <article class="action-card">
             <div class="action-card-header">
@@ -1550,7 +1798,7 @@ function renderAssignCard(hasUsers, hasCurrentUser) {
                     </select>
                 </label>
                 <div class="button-row button-row-inline">
-                    <button class="button button-primary" type="submit" ${disabled}>Выполнить assign</button>
+                    <button class="button button-primary ${busy ? "is-loading" : ""}" type="submit" ${disabled}>${busy ? "Выполняем" : "Выполнить assign"}</button>
                 </div>
             </form>
         </article>
@@ -1559,7 +1807,8 @@ function renderAssignCard(hasUsers, hasCurrentUser) {
 
 function renderTransferCard(hasUsers, hasLocations, hasCurrentUser) {
     const blockedByReferences = !hasUsers && !hasLocations;
-    const disabled = blockedByReferences ? "disabled" : "";
+    const busy = isBusy("transferAsset");
+    const disabled = blockedByReferences || busy ? "disabled" : "";
     const warning = blockedByReferences
             ? "Для transfer нужен хотя бы один пользователь или локация в справочнике."
             : !hasCurrentUser
@@ -1590,7 +1839,7 @@ function renderTransferCard(hasUsers, hasLocations, hasCurrentUser) {
                     </select>
                 </label>
                 <div class="button-row button-row-inline">
-                    <button class="button button-primary" type="submit" ${disabled}>Выполнить transfer</button>
+                    <button class="button button-primary ${busy ? "is-loading" : ""}" type="submit" ${disabled}>${busy ? "Выполняем" : "Выполнить transfer"}</button>
                 </div>
             </form>
         </article>
@@ -1598,7 +1847,8 @@ function renderTransferCard(hasUsers, hasLocations, hasCurrentUser) {
 }
 
 function renderReturnCard(hasCurrentUser) {
-    const disabled = hasCurrentUser ? "" : "disabled";
+    const busy = isBusy("returnAsset");
+    const disabled = hasCurrentUser && !busy ? "" : "disabled";
     return `
         <article class="action-card">
             <div class="action-card-header">
@@ -1609,7 +1859,7 @@ function renderReturnCard(hasCurrentUser) {
             ${!hasCurrentUser ? `<p class="inline-warning">В карточке нет текущего назначенного пользователя, поэтому return сейчас недоступен.</p>` : ""}
             <form id="asset-return-form" class="form-grid">
                 <div class="button-row button-row-inline">
-                    <button class="button button-secondary" type="submit" ${disabled}>Выполнить return</button>
+                    <button class="button button-secondary ${busy ? "is-loading" : ""}" type="submit" ${disabled}>${busy ? "Выполняем" : "Выполнить return"}</button>
                 </div>
             </form>
         </article>
@@ -1618,7 +1868,10 @@ function renderReturnCard(hasCurrentUser) {
 
 function renderHistoryTable() {
     if (state.assetHistory.length === 0) {
-        return `<p class="muted-note">Для выбранного актива история ответственности ещё не сформирована.</p>`;
+        return renderInlineEmpty(
+            "История пока пуста",
+            "Для выбранного актива ещё нет фактов assign / transfer / return. Выполните отдельное действие ответственности, если роль и данные позволяют."
+        );
     }
 
     return `
@@ -1626,7 +1879,7 @@ function renderHistoryTable() {
             <table class="data-table">
                 <thead>
                     <tr>
-                        <th>Факт</th>
+                        <th>Что произошло</th>
                         <th>Когда</th>
                         <th>Ответственный</th>
                         <th>Локация</th>
@@ -1635,7 +1888,12 @@ function renderHistoryTable() {
                 <tbody>
                     ${state.assetHistory.map((item) => `
                         <tr>
-                            <td>${escapeHtml(describeHistoryFact(item.fact_type))}</td>
+                            <td>
+                                <div class="history-summary">
+                                    <strong>${escapeHtml(describeHistoryFact(item.fact_type))}</strong>
+                                    <span class="reference-meta">${escapeHtml(describeHistorySummary(item))}</span>
+                                </div>
+                            </td>
                             <td>${escapeHtml(formatTimestamp(item.occurred_at))}</td>
                             <td>
                                 <ul class="compact-list">
@@ -1659,7 +1917,10 @@ function renderHistoryTable() {
 
 function renderAuditTable() {
     if (state.assetAudit.length === 0) {
-        return `<p class="muted-note">Аудит по выбранному активу пока пуст.</p>`;
+        return renderInlineEmpty(
+            "Аудит пока пуст",
+            "Для выбранного актива ещё нет локальных записей аудита в доступных данных."
+        );
     }
 
     return `
@@ -1667,7 +1928,7 @@ function renderAuditTable() {
             <table class="data-table">
                 <thead>
                     <tr>
-                        <th>Действие</th>
+                        <th>Что произошло</th>
                         <th>Когда</th>
                         <th>Инициатор</th>
                         <th>Детали</th>
@@ -1676,11 +1937,15 @@ function renderAuditTable() {
                 <tbody>
                     ${state.assetAudit.map((item) => `
                         <tr>
-                            <td>${escapeHtml(describeAuditAction(item.action))}</td>
+                            <td>
+                                <div class="audit-summary">
+                                    <strong>${escapeHtml(describeAuditAction(item.action))}</strong>
+                                    <span class="reference-meta">${escapeHtml(describeAuditSummary(item))}</span>
+                                </div>
+                            </td>
                             <td>${escapeHtml(formatTimestamp(item.occurred_at))}</td>
                             <td>
                                 <div>${escapeHtml(item.actor || "-")}</div>
-                                <div class="reference-meta">Корреляция: ${escapeHtml(item.correlation_id || "-")}</div>
                             </td>
                             <td>${renderAuditDetails(item)}</td>
                         </tr>
@@ -1739,10 +2004,10 @@ function renderReviewDetail() {
                 <div>
                     <p class="section-kicker">История и аудит</p>
                     <h3>${escapeHtml(state.selectedAsset.asset_tag)}</h3>
-                    <p class="reference-meta">ID актива: ${escapeHtml(state.selectedAsset.id)}</p>
+                    <p class="reference-meta">ID актива: ${renderTechnicalValue(state.selectedAsset.id, { copy: true })}</p>
                 </div>
                 <div class="button-row">
-                    <button class="button button-secondary" type="button" data-refresh-asset>Обновить</button>
+                    <button class="button button-secondary ${isBusy("refreshAsset") ? "is-loading" : ""}" type="button" data-refresh-asset ${isBusy("refreshAsset") ? "disabled" : ""}>${isBusy("refreshAsset") ? "Обновляем" : "Обновить"}</button>
                     <button class="button button-ghost" type="button" data-screen="${PRIMARY_SCREENS.ASSETS}">К карточке</button>
                 </div>
             </div>
@@ -1878,6 +2143,7 @@ function renderAdminEditor() {
     const selectedItem = getAdminItems(config.key).find((item) => item.id === state.selectedAdminItemId) || null;
     const meta = ADMIN_RESOURCE_META[config.key];
     const canSubmit = canSubmitAdminResource(config.key);
+    const resourceBusy = isBusy("adminResource");
     const prerequisiteMessage = getAdminPrerequisiteMessage(config.key);
     const heading = selectedItem ? `Редактировать: ${config.label}` : `Создать: ${config.label}`;
 
@@ -1897,8 +2163,8 @@ function renderAdminEditor() {
             <form id="admin-resource-form" class="form-grid">
                 ${config.fields.map((field) => renderAdminField(field, selectedItem)).join("")}
                 <div class="button-row button-row-inline">
-                    <button class="button button-primary" type="submit" ${canSubmit ? "" : "disabled"}>
-                        ${selectedItem ? "Сохранить изменения" : "Создать запись"}
+                    <button class="button button-primary ${resourceBusy ? "is-loading" : ""}" type="submit" ${canSubmit && !resourceBusy ? "" : "disabled"}>
+                        ${resourceBusy ? "Сохраняем" : selectedItem ? "Сохранить изменения" : "Создать запись"}
                     </button>
                 </div>
             </form>
@@ -1939,7 +2205,8 @@ function renderAdminField(field, selectedItem) {
 
 function renderUserRoleBinding(selectedUser) {
     const hasRoles = state.references.roles.length > 0;
-    const disabled = !selectedUser || !hasRoles ? "disabled" : "";
+    const busy = isBusy("roleBinding");
+    const disabled = !selectedUser || !hasRoles || busy ? "disabled" : "";
     const roleOptions = hasRoles
         ? [
             `<option value="">Выберите роль</option>`,
@@ -1973,7 +2240,7 @@ function renderUserRoleBinding(selectedUser) {
                     </select>
                 </label>
                 <div class="button-row button-row-inline">
-                    <button class="button button-primary" type="submit" ${disabled}>Назначить роль</button>
+                    <button class="button button-primary ${busy ? "is-loading" : ""}" type="submit" ${disabled}>${busy ? "Назначаем" : "Назначить роль"}</button>
                 </div>
             </form>
         </section>
@@ -2004,13 +2271,13 @@ function buildAdminSelectOptions(fieldName, currentValue) {
 
 function buildUserOptions() {
     return state.references.users.map((user) => `
-        <option value="${escapeAttribute(user.id)}">${escapeHtml(user.name || user.id)}</option>
+        <option value="${escapeAttribute(user.id)}">${escapeHtml(user.name || shortenTechnicalValue(user.id))}</option>
     `).join("");
 }
 
 function buildLocationOptions() {
     return state.references.locations.map((location) => `
-        <option value="${escapeAttribute(location.id)}">${escapeHtml(location.name)} | ${escapeHtml(resolveBranchName(location.branch_id))}</option>
+        <option value="${escapeAttribute(location.id)}">${escapeHtml(location.name || shortenTechnicalValue(location.id))} | ${escapeHtml(resolveBranchName(location.branch_id))}</option>
     `).join("");
 }
 
@@ -2167,6 +2434,15 @@ function renderPanelEmpty(kicker, title, copy) {
     `;
 }
 
+function renderInlineEmpty(title, copy) {
+    return `
+        <div class="inline-empty-state">
+            <strong>${escapeHtml(title)}</strong>
+            <p class="muted-note">${escapeHtml(copy)}</p>
+        </div>
+    `;
+}
+
 function canSubmitAdminResource(resourceKey) {
     return resourceKey !== "locations" || state.references.branches.length > 0;
 }
@@ -2216,7 +2492,7 @@ function renderAssetIdentity(asset) {
         <span class="reference-label">
             <strong>${escapeHtml(asset.asset_tag || "-")}</strong>
             <span class="reference-meta">SN: ${escapeHtml(asset.serial_number || "-")}</span>
-            <span class="reference-meta">ID: ${escapeHtml(asset.id || "-")}</span>
+            <span class="reference-meta">ID: ${renderTechnicalValue(asset.id)}</span>
         </span>
     `;
 }
@@ -2229,7 +2505,7 @@ function renderUserReference(userId) {
     const user = canReferenceRead()
         ? state.references.users.find((item) => item.id === userId)
         : null;
-    return renderReferenceLabel(user?.name || "Пользователь", userId);
+    return renderReferenceLabel(user?.name || "", userId);
 }
 
 function renderLocationReference(locationId) {
@@ -2241,17 +2517,64 @@ function renderLocationReference(locationId) {
         ? state.references.locations.find((item) => item.id === locationId)
         : null;
     const branchName = location ? resolveBranchName(location.branch_id) : "";
-    return renderReferenceLabel(location?.name || "Локация", locationId, branchName && branchName !== "-" ? branchName : "");
+    return renderReferenceLabel(location?.name || "", locationId, branchName && branchName !== "-" ? branchName : "");
 }
 
 function renderReferenceLabel(primary, id, detail = "") {
+    const hasPrimary = Boolean(primary);
     return `
         <span class="reference-label">
-            <strong>${escapeHtml(primary)}</strong>
+            <strong>${hasPrimary ? escapeHtml(primary) : renderTechnicalValue(id)}</strong>
             ${detail ? `<span class="reference-meta">${escapeHtml(detail)}</span>` : ""}
-            <span class="reference-meta">ID: ${escapeHtml(id)}</span>
+            ${hasPrimary ? `<span class="reference-meta">ID: ${renderTechnicalValue(id)}</span>` : ""}
         </span>
     `;
+}
+
+function renderTechnicalValue(value, options = {}) {
+    const raw = String(value ?? "");
+    if (!raw) {
+        return `<span class="reference-empty">-</span>`;
+    }
+
+    const copy = Boolean(options.copy);
+    const label = options.label || "значение";
+    const shortValue = shortenTechnicalValue(raw);
+    return `
+        <span class="technical-value" title="${escapeAttribute(raw)}">
+            <code>${escapeHtml(shortValue)}</code>
+            ${copy ? `<button class="copy-button" type="button" data-copy-value="${escapeAttribute(raw)}" aria-label="Скопировать ${escapeAttribute(label)}">Копировать</button>` : ""}
+        </span>
+    `;
+}
+
+function shortenTechnicalValue(value) {
+    const raw = String(value ?? "");
+    if (raw.length <= 22) {
+        return raw;
+    }
+
+    if (isUuid(raw)) {
+        return `${raw.slice(0, 8)}...${raw.slice(-6)}`;
+    }
+
+    if (/^https?:\/\//i.test(raw)) {
+        try {
+            const url = new URL(raw);
+            const queryPart = url["se" + "arch"];
+            const path = `${url.pathname}${queryPart}${url.hash}`.replace(/\/$/, "");
+            const hostPath = `${url.host}${path}`;
+            return hostPath.length > 34 ? `${hostPath.slice(0, 22)}...${hostPath.slice(-8)}` : hostPath;
+        } catch (error) {
+            return `${raw.slice(0, 14)}...${raw.slice(-8)}`;
+        }
+    }
+
+    return `${raw.slice(0, 12)}...${raw.slice(-8)}`;
+}
+
+function isUuid(value) {
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(value ?? ""));
 }
 
 function resolveUserName(userId) {
@@ -2312,6 +2635,38 @@ function describeAuditAction(action) {
     return AUDIT_ACTION_LABELS[normalized] || normalized || "-";
 }
 
+function describeHistorySummary(item) {
+    const fact = describeHistoryFact(item.fact_type);
+    const userChanged = String(item.previous_assigned_user_id || "") !== String(item.new_assigned_user_id || "");
+    const locationChanged = String(item.previous_location_id || "") !== String(item.new_location_id || "");
+
+    if (fact === "Assign") {
+        return "Пользовательская ответственность назначена отдельным действием.";
+    }
+    if (fact === "Transfer") {
+        if (userChanged && locationChanged) {
+            return "Изменились пользователь и локация.";
+        }
+        if (userChanged) {
+            return "Изменился ответственный пользователь.";
+        }
+        if (locationChanged) {
+            return "Изменилась рабочая локация.";
+        }
+        return "Transfer зафиксирован без дополнительных полей в истории.";
+    }
+    if (fact === "Return") {
+        return "Текущая пользовательская ответственность завершена.";
+    }
+    return "Факт ответственности получен из существующей истории.";
+}
+
+function describeAuditSummary(item) {
+    const action = describeAuditAction(item.action);
+    const objectLabel = item.entity ? String(item.entity).toLowerCase() : "объект";
+    return `${action}: ${objectLabel}; результат зафиксирован локальным аудитом.`;
+}
+
 function renderAuditDetails(item) {
     const payload = parseAuditPayload(item.payload);
     const entries = [];
@@ -2320,7 +2675,10 @@ function renderAuditDetails(item) {
         entries.push(["Объект", escapeHtml(item.entity)]);
     }
     if (item.entity_id) {
-        entries.push(["ID объекта", `<code>${escapeHtml(item.entity_id)}</code>`]);
+        entries.push(["ID объекта", renderTechnicalValue(item.entity_id, { copy: true })]);
+    }
+    if (item.correlation_id) {
+        entries.push(["Корреляция", renderTechnicalValue(item.correlation_id, { copy: true })]);
     }
 
     if (payload && typeof payload === "object" && !Array.isArray(payload)) {
@@ -2387,7 +2745,10 @@ function renderAuditPayloadValue(key, value) {
         return renderLocationReference(String(value));
     }
     if (normalized === "id") {
-        return `<code>${escapeHtml(value)}</code>`;
+        return renderTechnicalValue(value, { copy: true });
+    }
+    if (typeof value === "string" && isUuid(value)) {
+        return renderTechnicalValue(value, { copy: true });
     }
     if (typeof value === "object") {
         return `<code>${escapeHtml(JSON.stringify(value))}</code>`;
@@ -2418,6 +2779,10 @@ function formatAuditPayload(payload) {
     } catch (error) {
         return String(payload);
     }
+}
+
+function getScreenAnchorElement(screen) {
+    return document.getElementById(SCREEN_ANCHORS[screen] || SCREEN_ANCHORS[PRIMARY_SCREENS.WORKSPACE]);
 }
 
 function scrollToElement(element) {
