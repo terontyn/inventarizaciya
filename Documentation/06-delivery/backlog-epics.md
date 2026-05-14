@@ -2,7 +2,7 @@
 
 Status: approved
 Owner: product
-Last Updated: 2026-04-02
+Last Updated: 2026-04-30
 
 ## Wave 1 Epics
 
@@ -65,3 +65,31 @@ Non-goals:
 - expanded integrations;
 - custom workflows;
 - retirement как обязательный pilot gate.
+
+### Deferred UX hardening candidates after Operational Workspace UX Stabilization v3
+
+Status: candidate-only / non-blocking
+
+Post-v3 controlled synthetic re-review passed with minor friction.
+
+Deferred frontend-only UX hardening candidates:
+
+- explicit success/error notifications after mutating actions;
+- clearer role assignment confirmation;
+- further reduction of residual audit wording / technical correlation details;
+- minor navigation polish near already-visible target sections;
+- continued improvement of context value readability.
+
+These items do not block the accepted v3 closeout.
+
+They do not authorize:
+
+- backend/API changes;
+- new endpoints;
+- DTO/read-model changes;
+- BFF / UI backend;
+- auth/IAM expansion;
+- product expansion;
+- Hardware Inspector parity;
+- release-ready claim;
+- FTOV start or exit claim.

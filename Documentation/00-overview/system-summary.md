@@ -2,13 +2,27 @@
 
 Status: approved
 Owner: project
-Last Updated: 2026-03-27
+Last Updated: 2026-04-30
 
 ## Purpose
 IT Asset Management SaaS для учета активов, оргструктуры, ответственности за технику и истории критических изменений.
 
 ## Current Project Stage
-Проект находится на этапе Foundation Slice и MVP.
+
+Foundation Slice and MVP baseline are already defined and internally implemented for the current project contour.
+
+Current operating mode:
+
+**Project Stabilization / First-Adopter-Gated Hold**
+
+This means the current baseline is internally validated only and still does not prove:
+
+- release-ready tenant-facing product state;
+- First-Tenant Operational Validation start;
+- First-Tenant Operational Validation exit;
+- production tenant readiness;
+- real tenant validation;
+- real day-to-day operational validation.
 
 ## Foundation Slice
 Foundation Slice = Tenant + User/Org + Asset + Audit.
@@ -774,6 +788,86 @@ This baseline remains internally validated only.
 It is not:
 
 - release-ready tenant-facing product;
+- First-Tenant Operational Validation exit;
+- production tenant readiness proof;
+- fully proven real tenant usage;
+- fully validated day-to-day operational tenant rollout.
+
+Future First-Tenant Operational Validation still requires:
+
+- real tenant / first adopter;
+- real tenant actors;
+- real usage loop;
+- observed operational actions beyond scripted internal walkthrough.
+
+## Current Baseline Update — Operational Workspace UX Stabilization v3 Closeout
+
+Operational Workspace UX Stabilization v3 has been implemented and accepted as a targeted frontend-only refine-in-place gap closure over the existing Operational Workspace UI.
+
+The stabilization addressed controlled synthetic review findings around:
+
+- navigation / anchors / long-scroll orientation;
+- action feedback and loading states;
+- empty states and prerequisite guidance;
+- UUID / technical value readability;
+- asset registry and asset card hierarchy;
+- setup table / tab affordance;
+- assign / transfer / return clarity;
+- generic edit guardrail preservation;
+- history / audit readability;
+- role affordance within existing role context.
+
+Post-v3 controlled synthetic re-review status:
+
+**Passed with minor friction.**
+
+The post-v3 re-review confirmed that the v3 stabilization improved:
+
+- sticky / anchored navigation;
+- active section indication;
+- loading states and double-submit prevention;
+- UUID / technical value readability;
+- asset registry and asset card hierarchy;
+- tenant setup guidance and editor context;
+- assign / transfer / return separation;
+- generic edit guardrail preservation;
+- history / audit readability;
+- role and scope affordance labels.
+
+Remaining minor UX friction is limited to:
+
+- explicit success/error notifications after mutating actions;
+- clearer role assignment confirmation;
+- residual audit wording / technical correlation details;
+- minor navigation subtlety near already-visible target sections;
+- continued truncation of context values, mitigated by copy/tooltip affordances.
+
+These are minor frontend UX hardening candidates only.
+
+They do not change the validation ceiling and do not reopen product scope.
+
+Implementation closeout precision:
+
+- only existing static UI files were changed:
+  - `index.html`
+  - `app.css`
+  - `app.js`
+- no production backend/API behavior was changed;
+- no new backend endpoint was introduced;
+- no DTO or read model was changed;
+- no database migration was changed;
+- no BFF or UI backend was introduced;
+- no auth/IAM expansion was introduced;
+- no new bounded context was opened;
+- no new Wave 2 surface was opened;
+- no product parity scope was opened.
+
+This baseline remains internally validated only.
+
+It is not:
+
+- release-ready tenant-facing product;
+- First-Tenant Operational Validation start;
 - First-Tenant Operational Validation exit;
 - production tenant readiness proof;
 - fully proven real tenant usage;

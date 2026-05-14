@@ -2,6 +2,7 @@
 
 Status: candidate
 Owner: product
+Last Updated: 2026-04-30
 
 ## Purpose
 
@@ -306,6 +307,18 @@ Confirmed current facts:
 - No bulk actions were opened.
 - Assign / transfer / return remain dedicated responsibility flows.
 - Generic edit remains master-record-only.
+- `Operational Workspace UX Stabilization v3` is implemented, documented and accepted as a targeted frontend-only refine-in-place UX gap closure over the existing Operational Workspace UI.
+- Post-v3 controlled synthetic UI re-review completed with verdict: **Passed with minor friction**.
+- UX Stabilization v3 improved sticky / anchored navigation, loading states, UUID / technical value readability, asset registry/card hierarchy, setup affordance, dedicated assign / transfer / return clarity, generic edit guardrail preservation and history/audit readability.
+- UX Stabilization v3 changed only existing static UI files under `asset-service`: `index.html`, `app.css`, `app.js`.
+- No production backend/API behavior was changed by UX Stabilization v3.
+- No new endpoint was introduced by UX Stabilization v3.
+- No DTO/read-model change was introduced by UX Stabilization v3.
+- No database/migration change was introduced by UX Stabilization v3.
+- No BFF / UI backend was introduced by UX Stabilization v3.
+- No auth/IAM expansion was introduced by UX Stabilization v3.
+- No new bounded context or Wave 2 surface was opened by UX Stabilization v3.
+- Remaining post-v3 minor UX friction is classified as frontend UX hardening candidate only and does not block acceptance of v3.
 - Current baseline does not prove release-ready tenant-facing product state.
 - Current baseline does not prove real tenant validation.
 - Current baseline does not prove real day-to-day operational validation.
@@ -371,6 +384,19 @@ This guidance creates no claim that:
 - production tenant readiness has been proven;
 - internal walkthrough evidence is sufficient;
 - screenshots, video review or synthetic tests can substitute real tenant evidence.
+
+Operational Workspace UX Stabilization v3 post-implementation synthetic re-review is classified as controlled synthetic review evidence only.
+
+It may be used as preparation context and implementation acceptance evidence.
+
+It must not be used as evidence of:
+
+- FTOV start;
+- FTOV exit;
+- release readiness;
+- production readiness;
+- real tenant validation;
+- real day-to-day operational validation.
 
 All future evidence must be clearly labelled by type:
 

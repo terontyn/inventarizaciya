@@ -2,7 +2,7 @@
 
 Status: approved
 Owner: product
-Last Updated: 2026-04-07
+Last Updated: 2026-04-30
 
 ## MVP Timeline
 Срок MVP: 6–8 недель
@@ -1074,3 +1074,154 @@ The project remains in:
 
 First-Tenant Operational Validation still requires real tenant / first adopter / real usage loop.
 
+## Operational Workspace UX Stabilization v3 Closeout Clarification
+
+Operational Workspace UX Stabilization v3 is accepted as implemented.
+
+This was a targeted frontend-only gap closure inside the existing Operational Workspace UX surface, opened from controlled synthetic review findings.
+
+### Delivery interpretation
+
+The implementation is accepted as:
+
+**frontend-only refine-in-place UX stabilization over existing accepted Operational Workspace UI surfaces.**
+
+The delivery changed only existing static UI files under `asset-service`:
+
+- `index.html`
+- `app.css`
+- `app.js`
+
+It did not change production backend/API behavior.
+
+### Implementation closeout facts
+
+Accepted implementation facts:
+
+- sticky / anchored navigation was added or improved;
+- in-flight button states and double-submit prevention were added;
+- create/update/assign/transfer/return/setup feedback was improved;
+- empty states and prerequisite guidance were improved;
+- UUID / long technical value readability was improved;
+- asset card hierarchy was strengthened around asset tag, serial number, type, status and responsibility;
+- assign / transfer / return remained dedicated responsibility flows;
+- generic edit remained master-record-only;
+- history/audit readability was improved with raw technical details collapsed and still available;
+- role affordance was improved only within existing role context.
+
+Checks reported:
+
+- `:services:asset-service:test --tests com.itam.assetservice.MinimalPilotUiSmokeTest` passed;
+- `:services:asset-service:test` passed;
+- `git diff --check` passed with only Git LF-to-CRLF warnings;
+- changed files were limited to existing static UI files.
+
+### Post-v3 controlled synthetic re-review
+
+Post-v3 controlled synthetic UI re-review has been completed.
+
+Accepted re-review verdict:
+
+**Passed with minor friction.**
+
+Confirmed improvements:
+
+- the UI opened and connected to the provided tenant context;
+- the UI could reach `user-service`;
+- no CORS/network issue was observed during the re-review;
+- sticky / anchored top navigation worked and highlighted the active section;
+- loading states and double-submit prevention were visible on key actions;
+- UUIDs and technical identifiers were visually de-emphasized and copyable where needed;
+- asset registry and asset card hierarchy were clearer;
+- selected asset context was clearer;
+- tenant setup tabs and editor states were clearer;
+- assign / transfer / return remained dedicated responsibility flows;
+- generic edit remained master-record-only;
+- history/audit became more human-readable;
+- raw technical details remained available but were less dominant;
+- role/scope affordance labels were visible.
+
+Remaining minor friction:
+
+- explicit success/error notifications after mutating actions are still limited;
+- role assignment confirmation can be clearer;
+- context values remain truncated, though copy/tooltip affordances reduce the issue;
+- some audit wording and correlation details remain technical;
+- some navigation behavior near already-visible target sections may still feel subtle;
+- further manual verification of setup selected-row affordance may be useful.
+
+Current interpretation:
+
+These remaining issues are minor frontend UX hardening candidates.
+
+They do not block acceptance of UX Stabilization v3 as implemented and post-v3 synthetic re-reviewed.
+
+They do not justify:
+
+- backend/API changes;
+- BFF / UI backend;
+- auth/IAM expansion;
+- Hardware Inspector parity;
+- product expansion;
+- release-ready claim;
+- FTOV start or FTOV exit claim.
+
+### Boundary rule
+
+This closeout does not open:
+
+- backend/API changes;
+- new endpoints;
+- DTO / read-model expansion;
+- database / migration changes;
+- BFF / UI backend;
+- auth/IAM expansion;
+- new role model;
+- new bounded context;
+- new Wave 2 surface;
+- dashboard / BI / analytics;
+- Asset 360;
+- global search / Elasticsearch;
+- saved views / persistent preferences;
+- bulk actions;
+- barcode / QR / scanning / printer integration;
+- import/export engine;
+- self-service onboarding;
+- Hardware Inspector parity.
+
+### Remaining validation limitation
+
+The post-v3 controlled synthetic re-review had enough synthetic data to verify the updated UI behavior and core reviewed flows.
+
+However, this remains controlled synthetic review evidence only.
+
+It does not replace real tenant validation.
+
+Future First-Tenant Operational Validation still requires:
+
+- a real tenant / first adopter;
+- real tenant-scoped actors;
+- real reference-data setup path;
+- real operational usage loop;
+- observed day-to-day actions beyond scripted internal walkthrough.
+
+Any further seed/setup work should be treated as preparation for better synthetic or managed demonstration evidence, not as FTOV evidence.
+
+### Non-claim rule
+
+This closeout does not change the current validation ceiling.
+
+It does not prove:
+
+- release-ready tenant-facing product state;
+- production tenant readiness;
+- real tenant validation;
+- real day-to-day operational validation;
+- First-Tenant Operational Validation start;
+- First-Tenant Operational Validation exit.
+
+The project remains in:
+
+**Project Stabilization / First-Adopter-Gated Hold**
+
+First-Tenant Operational Validation still requires real tenant / first adopter / real usage loop.

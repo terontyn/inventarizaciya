@@ -2,7 +2,7 @@
 
 Status: approved
 Owner: product
-Last Updated: 2026-04-24
+Last Updated: 2026-04-30
 
 ## Purpose
 
@@ -477,3 +477,58 @@ This closeout does not prove:
 Synthetic tests and internal/video review evidence remain internal implementation acceptance evidence only.
 They do not substitute for real tenant validation.
 
+## Operational Workspace UX Stabilization v3 — Targeted Gap Closure Closeout
+
+Operational Workspace UX Stabilization v3 has been implemented and accepted as a targeted frontend-only gap closure inside the existing Operational Workspace UI surface.
+
+This does not open a new roadmap direction.
+
+It is classified as:
+
+- concrete observed in-scope UX gap closure;
+- frontend-only refine-in-place stabilization;
+- preservation of existing Operational Workspace boundaries.
+
+It does not change the current project mode:
+
+**Project Stabilization / First-Adopter-Gated Hold**
+
+It does not prove release readiness, FTOV start, FTOV exit, production readiness or real tenant validation.
+
+Further work after this closeout should be either:
+
+- controlled synthetic re-review using prepared seed/setup data;
+- docs alignment;
+- real FTOV only when real tenant / first adopter entry conditions exist;
+- separate product expansion only by explicit decision.
+
+### Post-v3 re-review outcome
+
+Post-v3 controlled synthetic UI re-review completed with verdict:
+
+**Passed with minor friction.**
+
+This confirms that the targeted UX gap closure addressed the main observed issues around:
+
+- sticky / anchored navigation;
+- long-scroll orientation;
+- loading states and double-submit prevention;
+- UUID / technical value readability;
+- asset card hierarchy;
+- dedicated assign / transfer / return clarity;
+- generic edit guardrail preservation;
+- history / audit readability.
+
+Remaining minor friction may be handled only as future targeted frontend UX hardening if explicitly chosen.
+
+It does not create a default next implementation workstream.
+
+It does not open:
+
+- product expansion;
+- Hardware Inspector parity;
+- backend/API changes;
+- BFF / UI backend;
+- auth/IAM expansion;
+- release-ready claim;
+- FTOV start or exit claim.
