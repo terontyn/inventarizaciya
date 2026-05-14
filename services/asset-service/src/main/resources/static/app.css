@@ -467,10 +467,11 @@ code {
 
 .data-table tbody tr[data-asset-id]:hover,
 .data-table tbody tr[data-admin-id]:hover {
-    background: rgba(15, 118, 110, 0.05);
+    background: rgba(15, 118, 110, 0.07);
 }
 
-.data-table tbody tr.is-active {
+.data-table tbody tr.is-active,
+.data-table tbody tr[aria-selected="true"] {
     background: rgba(15, 118, 110, 0.11);
     box-shadow: inset 3px 0 0 var(--accent);
 }
@@ -478,6 +479,12 @@ code {
 .empty-cell {
     text-align: center;
     color: var(--muted);
+}
+
+.table-helper {
+    margin: -0.35rem 0 0.85rem;
+    color: var(--muted);
+    font-size: 0.88rem;
 }
 
 .detail-host {
@@ -518,6 +525,21 @@ code {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.9rem;
+}
+
+.current-state-strip {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.85rem;
+    padding: 0.85rem;
+    border: 1px solid rgba(15, 118, 110, 0.16);
+    border-radius: var(--radius-md);
+    background: rgba(215, 239, 235, 0.52);
+}
+
+.current-state-strip article {
+    display: grid;
+    gap: 0.25rem;
 }
 
 .summary-card,
@@ -635,6 +657,20 @@ code {
     color: var(--warning);
 }
 
+.role-confirmation {
+    display: grid;
+    gap: 0.25rem;
+    padding: 0.8rem 0.9rem;
+    border-radius: var(--radius-sm);
+    background: var(--success-soft);
+    color: var(--success);
+}
+
+.role-confirmation span {
+    color: var(--accent-ink);
+    font-size: 0.9rem;
+}
+
 .setup-order {
     padding: 0.95rem 1rem;
     border-radius: var(--radius-md);
@@ -742,6 +778,23 @@ code {
     vertical-align: middle;
 }
 
+.technical-disclosure {
+    color: var(--muted);
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.technical-disclosure summary {
+    width: fit-content;
+    cursor: pointer;
+    color: var(--muted);
+}
+
+.technical-disclosure[open] {
+    display: grid;
+    gap: 0.35rem;
+}
+
 .technical-value code,
 .context-summary code {
     max-width: 100%;
@@ -821,6 +874,10 @@ code {
     margin: 0;
 }
 
+.service-detail-list {
+    margin: 0.7rem 0;
+}
+
 .audit-raw summary {
     color: var(--muted);
     cursor: pointer;
@@ -878,6 +935,7 @@ code {
     .assets-grid,
     .admin-grid,
     .detail-grid,
+    .current-state-strip,
     .asset-summary-grid {
         grid-template-columns: 1fr;
     }

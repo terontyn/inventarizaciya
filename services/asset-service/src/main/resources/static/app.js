@@ -91,28 +91,39 @@ const ADMIN_RESOURCE_META = {
 };
 
 const HISTORY_FACT_LABELS = {
-    ASSIGN: "Assign",
-    ASSIGNED: "Assign",
-    TRANSFER: "Transfer",
-    TRANSFERRED: "Transfer",
-    RETURN: "Return",
-    RETURNED: "Return",
-    RETIRE: "Retire",
-    RETIRED: "Retire"
+    ASSIGN: "Выдача пользователю",
+    ASSIGNED: "Выдача пользователю",
+    TRANSFER: "Перемещение",
+    TRANSFERRED: "Перемещение",
+    RETURN: "Возврат",
+    RETURNED: "Возврат",
+    RETIRE: "Списание",
+    RETIRED: "Списание"
 };
 
 const AUDIT_ACTION_LABELS = {
     CREATE: "Создание актива",
     CREATE_ASSET: "Создание актива",
-    UPDATE: "Обновление данных актива",
-    UPDATE_ASSET: "Обновление данных актива",
-    ASSIGN: "Assign",
-    ASSIGN_ASSET: "Assign",
-    TRANSFER: "Transfer",
-    TRANSFER_ASSET: "Transfer",
-    RETURN: "Return",
-    RETURN_ASSET: "Return",
-    RETIRE: "Retire"
+    UPDATE: "Изменение данных актива",
+    UPDATE_ASSET: "Изменение данных актива",
+    ASSIGN: "Выдача пользователю",
+    ASSIGN_ASSET: "Выдача пользователю",
+    TRANSFER: "Перемещение",
+    TRANSFER_ASSET: "Перемещение",
+    RETURN: "Возврат",
+    RETURN_ASSET: "Возврат",
+    RETIRE: "Списание"
+};
+
+const ACTION_MESSAGES = {
+    assetCreated: "Актив создан. Карточка обновлена.",
+    assetUpdated: "Изменения сохранены.",
+    assetAssigned: "Актив выдан пользователю.",
+    assetTransferred: "Актив перемещён.",
+    assetReturned: "Актив возвращён.",
+    setupSaved: "Запись справочника сохранена.",
+    roleAssigned: "Роль пользователя обновлена.",
+    actionFailed: "Не удалось выполнить действие. Проверьте данные и повторите попытку."
 };
 
 const ADMIN_RESOURCES = {
@@ -251,7 +262,8 @@ const state = {
     activeAssetSection: "overview",
     activeReviewSection: "history",
     activeAdminResource: "roles",
-    selectedAdminItemId: null
+    selectedAdminItemId: null,
+    lastRoleAssignment: null
 };
 
 document.addEventListener("DOMContentLoaded", initialize);
@@ -403,6 +415,7 @@ function clearSession() {
     state.activeReviewSection = "history";
     state.activeAdminResource = "roles";
     state.selectedAdminItemId = null;
+    state.lastRoleAssignment = null;
 
     window.localStorage.removeItem(STORAGE_KEY);
     syncContextToForm();
@@ -851,10 +864,10 @@ async function onAssetCreateSubmit(event) {
             state.activeAssetSection = "overview";
             await refreshAssets();
             scrollToElement(ui.assetDetailPanel);
-            showFlash(`Актив ${created.asset_tag} создан и открыт в карточке.`, "success");
+            showActionSuccess("assetCreated");
         });
     } catch (error) {
-        showFlash(error.message, "error");
+        showActionError(error);
     }
 }
 
@@ -896,7 +909,7 @@ async function onAssetDetailSubmit(event) {
                 state.activeAssetSection = "master";
                 await refreshAssets();
                 scrollToElement(ui.assetDetailPanel);
-                showFlash("Данные карточки обновлены без изменения ответственности.", "success");
+                showActionSuccess("assetUpdated");
             });
             return;
         }
@@ -919,7 +932,7 @@ async function onAssetDetailSubmit(event) {
                 state.activeReviewSection = "history";
                 await refreshAssets();
                 scrollToElement(ui.assetDetailPanel);
-                showFlash("Assign выполнен отдельным действием. История выбранного актива обновлена.", "success");
+                showActionSuccess("assetAssigned");
             });
             return;
         }
@@ -951,7 +964,7 @@ async function onAssetDetailSubmit(event) {
                 state.activeReviewSection = "history";
                 await refreshAssets();
                 scrollToElement(ui.assetDetailPanel);
-                showFlash("Transfer выполнен отдельным действием. История выбранного актива обновлена.", "success");
+                showActionSuccess("assetTransferred");
             });
             return;
         }
@@ -972,11 +985,11 @@ async function onAssetDetailSubmit(event) {
                 state.activeReviewSection = "history";
                 await refreshAssets();
                 scrollToElement(ui.assetDetailPanel);
-                showFlash("Return выполнен отдельным действием. История выбранного актива обновлена.", "success");
+                showActionSuccess("assetReturned");
             });
         }
     } catch (error) {
-        showFlash(error.message, "error");
+        showActionError(error);
     }
 }
 
@@ -1108,7 +1121,7 @@ async function onAdminEditorSubmit(event) {
                 state.selectedAdminItemId = response.id ?? state.selectedAdminItemId;
                 render();
                 scrollToElement(ui.adminEditorPanel);
-                showFlash(`${config.label} ${isUpdate ? "обновлены" : "созданы"}.`, "success");
+                showActionSuccess("setupSaved");
             });
             return;
         }
@@ -1128,13 +1141,20 @@ async function onAdminEditorSubmit(event) {
                     method: "POST",
                     body: { role_id: roleId }
                 });
+                const role = state.references.roles.find((item) => item.id === roleId);
+                state.lastRoleAssignment = {
+                    userId,
+                    roleId,
+                    roleName: role?.name || "",
+                    assignedAt: new Date().toISOString()
+                };
                 render();
                 scrollToElement(ui.adminEditorPanel);
-                showFlash("Роль назначена через уже доступное действие.", "success");
+                showActionSuccess("roleAssigned");
             });
         }
     } catch (error) {
-        showFlash(error.message, "error");
+        showActionError(error);
     }
 }
 
@@ -1432,7 +1452,7 @@ function renderAssetRegistryOverview() {
     const retired = state.assets.filter((asset) => String(asset.status || "").toUpperCase() === "RETIRED").length;
     const selectedLabel = state.selectedAsset ? state.selectedAsset.asset_tag : "Актив не выбран";
     const selectedState = state.selectedAsset
-        ? "Ответственность и локация доступны в карточке."
+        ? getSelectedAssetRegistrySummary(state.selectedAsset)
         : "Откройте карточку из реестра";
 
     ui.assetRegistryOverview.innerHTML = `
@@ -1548,7 +1568,7 @@ function renderAssetDetail() {
                     <div class="asset-card-meta">
                         <span class="reference-meta">SN: ${escapeHtml(asset.serial_number || "-")}</span>
                         <span class="reference-meta">Тип: ${escapeHtml(asset.asset_type || "-")}</span>
-                        <span class="reference-meta">ID: ${renderTechnicalValue(asset.id, { copy: true })}</span>
+                        ${renderTechnicalDisclosure("ID актива", asset.id, { label: "ID актива" })}
                     </div>
                 </div>
                 <div class="button-row">
@@ -1613,6 +1633,8 @@ function renderAssetOverviewSection(asset, canMutate) {
                     <p>ACTIVE / RETIRED — это статус актива. Ответственный пользователь и рабочая локация показаны отдельно и меняются отдельными действиями.</p>
                 </div>
             </div>
+
+            ${renderCurrentStateStrip(asset)}
 
             <div class="asset-summary-grid">
                 ${renderSummaryCard("Инвентарный тег", escapeHtml(asset.asset_tag), "Главный пользовательский идентификатор в реестре.")}
@@ -2004,7 +2026,7 @@ function renderReviewDetail() {
                 <div>
                     <p class="section-kicker">История и аудит</p>
                     <h3>${escapeHtml(state.selectedAsset.asset_tag)}</h3>
-                    <p class="reference-meta">ID актива: ${renderTechnicalValue(state.selectedAsset.id, { copy: true })}</p>
+                    ${renderTechnicalDisclosure("ID актива", state.selectedAsset.id, { label: "ID актива" })}
                 </div>
                 <div class="button-row">
                     <button class="button button-secondary ${isBusy("refreshAsset") ? "is-loading" : ""}" type="button" data-refresh-asset ${isBusy("refreshAsset") ? "disabled" : ""}>${isBusy("refreshAsset") ? "Обновляем" : "Обновить"}</button>
@@ -2132,7 +2154,12 @@ function renderAdminTable() {
     }
 
     ui.adminTableBody.innerHTML = items.map((item) => `
-        <tr class="${item.id === state.selectedAdminItemId ? "is-active" : ""}" data-admin-id="${escapeHtml(item.id)}">
+        <tr
+            class="${item.id === state.selectedAdminItemId ? "is-active" : ""}"
+            data-admin-id="${escapeHtml(item.id)}"
+            aria-selected="${item.id === state.selectedAdminItemId ? "true" : "false"}"
+            title="Нажмите, чтобы открыть запись в редакторе"
+        >
             ${config.columns.map((column) => `<td>${column.render(item)}</td>`).join("")}
         </tr>
     `).join("");
@@ -2146,6 +2173,7 @@ function renderAdminEditor() {
     const resourceBusy = isBusy("adminResource");
     const prerequisiteMessage = getAdminPrerequisiteMessage(config.key);
     const heading = selectedItem ? `Редактировать: ${config.label}` : `Создать: ${config.label}`;
+    const resetLabel = selectedItem ? "Новая запись" : "Очистить форму";
 
     ui.adminEditorPanel.innerHTML = `
         <div class="stack">
@@ -2154,7 +2182,7 @@ function renderAdminEditor() {
                     <p class="section-kicker">Редактор</p>
                     <h3>${escapeHtml(heading)}</h3>
                 </div>
-                <button class="button button-ghost" type="button" data-admin-reset>Новая запись</button>
+                <button class="button button-ghost" type="button" data-admin-reset>${escapeHtml(resetLabel)}</button>
             </div>
 
             <p class="muted-note">${escapeHtml(meta.helper)}</p>
@@ -2207,6 +2235,7 @@ function renderUserRoleBinding(selectedUser) {
     const hasRoles = state.references.roles.length > 0;
     const busy = isBusy("roleBinding");
     const disabled = !selectedUser || !hasRoles || busy ? "disabled" : "";
+    const lastAssignment = selectedUser ? getLastRoleAssignment(selectedUser.id) : null;
     const roleOptions = hasRoles
         ? [
             `<option value="">Выберите роль</option>`,
@@ -2230,6 +2259,12 @@ function renderUserRoleBinding(selectedUser) {
 
             ${!selectedUser ? `<p class="inline-warning">Сначала выберите пользователя в таблице.</p>` : ""}
             ${selectedUser && !hasRoles ? `<p class="inline-warning">Сначала создайте роли, затем вернитесь к назначению роли.</p>` : ""}
+            ${lastAssignment ? `
+                <div class="role-confirmation">
+                    <strong>Последнее назначение в этой сессии подтверждено</strong>
+                    <span>${escapeHtml(formatRoleAssignmentConfirmation(lastAssignment))}</span>
+                </div>
+            ` : ""}
 
             <form id="user-role-binding-form" class="form-grid">
                 <input type="hidden" name="user_id" value="${escapeAttribute(selectedUser?.id || "")}">
@@ -2245,6 +2280,18 @@ function renderUserRoleBinding(selectedUser) {
             </form>
         </section>
     `;
+}
+
+function getLastRoleAssignment(userId) {
+    if (!state.lastRoleAssignment || state.lastRoleAssignment.userId !== userId) {
+        return null;
+    }
+    return state.lastRoleAssignment;
+}
+
+function formatRoleAssignmentConfirmation(assignment) {
+    const roleName = assignment.roleName || shortenTechnicalValue(assignment.roleId);
+    return `Роль: ${roleName}. Время: ${formatTimestamp(assignment.assignedAt)}.`;
 }
 
 function buildAdminSelectOptions(fieldName, currentValue) {
@@ -2412,6 +2459,43 @@ function renderSummaryCard(label, valueHtml, copy) {
     `;
 }
 
+function renderCurrentStateStrip(asset) {
+    return `
+        <div class="current-state-strip" aria-label="Текущее состояние ответственности и локации">
+            <article>
+                <p class="metric-label">Ответственный</p>
+                <div class="summary-value">${renderUserReference(asset.assigned_user_id)}</div>
+            </article>
+            <article>
+                <p class="metric-label">Рабочая локация</p>
+                <div class="summary-value">${renderLocationReference(asset.location_id)}</div>
+            </article>
+        </div>
+    `;
+}
+
+function getSelectedAssetRegistrySummary(asset) {
+    if (!asset) {
+        return "Откройте карточку из реестра";
+    }
+    return `${getReadableLocationCopy(asset.location_id)} Ответственность открывается в карточке.`;
+}
+
+function getReadableLocationCopy(locationId) {
+    if (!locationId) {
+        return "Локация не указана.";
+    }
+    if (!canReferenceRead()) {
+        return "Локация есть только как служебное значение.";
+    }
+    const location = state.references.locations.find((item) => item.id === locationId);
+    if (!location) {
+        return "Локация есть только как служебное значение.";
+    }
+    const branchName = resolveBranchName(location.branch_id);
+    return `Локация: ${location.name}${branchName && branchName !== "-" ? `, ${branchName}` : ""}.`;
+}
+
 function renderJourneyBanner(toneClass, title, copy, actionsHtml) {
     return `
         <div class="journey-banner ${toneClass}">
@@ -2489,11 +2573,11 @@ function canReferenceRead() {
 
 function renderAssetIdentity(asset) {
     return `
-        <span class="reference-label">
+        <div class="reference-label">
             <strong>${escapeHtml(asset.asset_tag || "-")}</strong>
             <span class="reference-meta">SN: ${escapeHtml(asset.serial_number || "-")}</span>
-            <span class="reference-meta">ID: ${renderTechnicalValue(asset.id)}</span>
-        </span>
+            ${renderTechnicalDisclosure("Служебный ID", asset.id, { label: "ID актива" })}
+        </div>
     `;
 }
 
@@ -2523,11 +2607,25 @@ function renderLocationReference(locationId) {
 function renderReferenceLabel(primary, id, detail = "") {
     const hasPrimary = Boolean(primary);
     return `
-        <span class="reference-label">
-            <strong>${hasPrimary ? escapeHtml(primary) : renderTechnicalValue(id)}</strong>
+        <div class="reference-label">
+            <strong>${hasPrimary ? escapeHtml(primary) : renderTechnicalValue(id, { copy: true, label: "служебный ID" })}</strong>
             ${detail ? `<span class="reference-meta">${escapeHtml(detail)}</span>` : ""}
-            ${hasPrimary ? `<span class="reference-meta">ID: ${renderTechnicalValue(id)}</span>` : ""}
-        </span>
+            ${hasPrimary ? renderTechnicalDisclosure("Служебный ID", id, { label: "служебный ID" }) : ""}
+        </div>
+    `;
+}
+
+function renderTechnicalDisclosure(summary, value, options = {}) {
+    const raw = String(value ?? "");
+    if (!raw) {
+        return "";
+    }
+
+    return `
+        <details class="technical-disclosure">
+            <summary>${escapeHtml(summary)}</summary>
+            ${renderTechnicalValue(raw, { copy: true, label: options.label || summary })}
+        </details>
     `;
 }
 
@@ -2626,24 +2724,24 @@ function renderStatusBadge(status) {
 }
 
 function describeHistoryFact(factType) {
-    const normalized = String(factType || "").toUpperCase();
+    const normalized = normalizeEventKey(factType);
     return HISTORY_FACT_LABELS[normalized] || normalized || "-";
 }
 
 function describeAuditAction(action) {
-    const normalized = String(action || "").toUpperCase();
+    const normalized = normalizeEventKey(action);
     return AUDIT_ACTION_LABELS[normalized] || normalized || "-";
 }
 
 function describeHistorySummary(item) {
-    const fact = describeHistoryFact(item.fact_type);
+    const fact = normalizeEventKey(item.fact_type);
     const userChanged = String(item.previous_assigned_user_id || "") !== String(item.new_assigned_user_id || "");
     const locationChanged = String(item.previous_location_id || "") !== String(item.new_location_id || "");
 
-    if (fact === "Assign") {
-        return "Пользовательская ответственность назначена отдельным действием.";
+    if (["ASSIGN", "ASSIGNED"].includes(fact)) {
+        return "Ответственный пользователь назначен отдельным действием.";
     }
-    if (fact === "Transfer") {
+    if (["TRANSFER", "TRANSFERRED"].includes(fact)) {
         if (userChanged && locationChanged) {
             return "Изменились пользователь и локация.";
         }
@@ -2653,9 +2751,9 @@ function describeHistorySummary(item) {
         if (locationChanged) {
             return "Изменилась рабочая локация.";
         }
-        return "Transfer зафиксирован без дополнительных полей в истории.";
+        return "Перемещение зафиксировано без дополнительных полей в истории.";
     }
-    if (fact === "Return") {
+    if (["RETURN", "RETURNED"].includes(fact)) {
         return "Текущая пользовательская ответственность завершена.";
     }
     return "Факт ответственности получен из существующей истории.";
@@ -2663,27 +2761,29 @@ function describeHistorySummary(item) {
 
 function describeAuditSummary(item) {
     const action = describeAuditAction(item.action);
-    const objectLabel = item.entity ? String(item.entity).toLowerCase() : "объект";
-    return `${action}: ${objectLabel}; результат зафиксирован локальным аудитом.`;
+    const objectLabel = describeAuditEntity(item.entity);
+    return `${action}. Объект: ${objectLabel}. ${describeAuditResult(item)}`;
 }
 
 function renderAuditDetails(item) {
     const payload = parseAuditPayload(item.payload);
     const entries = [];
+    const serviceEntries = [];
 
     if (item.entity) {
         entries.push(["Объект", escapeHtml(item.entity)]);
     }
     if (item.entity_id) {
-        entries.push(["ID объекта", renderTechnicalValue(item.entity_id, { copy: true })]);
+        serviceEntries.push(["ID объекта", renderTechnicalValue(item.entity_id, { copy: true })]);
     }
     if (item.correlation_id) {
-        entries.push(["Корреляция", renderTechnicalValue(item.correlation_id, { copy: true })]);
+        serviceEntries.push(["Корреляция", renderTechnicalValue(item.correlation_id, { copy: true })]);
     }
 
     if (payload && typeof payload === "object" && !Array.isArray(payload)) {
         Object.entries(payload).forEach(([key, value]) => {
-            entries.push([describeAuditPayloadKey(key), renderAuditPayloadValue(key, value)]);
+            const targetEntries = isServiceAuditPayloadKey(key) ? serviceEntries : entries;
+            targetEntries.push([describeAuditPayloadKey(key), renderAuditPayloadValue(key, value)]);
         });
     }
 
@@ -2695,16 +2795,77 @@ function renderAuditDetails(item) {
             </div>
         `).join("")}</dl>`
         : `<span class="reference-empty">Нет структурированных деталей.</span>`;
+    const serviceRows = serviceEntries.length > 0
+        ? `<dl class="audit-detail-list service-detail-list">${serviceEntries.map(([label, value]) => `
+            <div>
+                <dt>${escapeHtml(label)}</dt>
+                <dd>${value}</dd>
+            </div>
+        `).join("")}</dl>`
+        : "";
 
     return `
         <div class="audit-detail-stack">
             ${readableRows}
             <details class="audit-raw">
                 <summary>Служебные данные</summary>
+                ${serviceRows}
                 <pre class="json-block">${escapeHtml(formatAuditPayload(item.payload))}</pre>
             </details>
         </div>
     `;
+}
+
+function normalizeEventKey(value) {
+    return String(value || "").toUpperCase();
+}
+
+function describeAuditEntity(entity) {
+    const normalized = normalizeEventKey(entity);
+    const labels = {
+        ASSET: "актив",
+        ASSETS: "актив",
+        USER: "пользователь",
+        USERS: "пользователь",
+        ROLE: "роль",
+        ROLES: "роль",
+        LOCATION: "локация",
+        LOCATIONS: "локация",
+        DEPARTMENT: "подразделение",
+        DEPARTMENTS: "подразделение",
+        BRANCH: "филиал",
+        BRANCHES: "филиал"
+    };
+    return labels[normalized] || (entity ? String(entity).toLowerCase() : "объект");
+}
+
+function describeAuditResult(item) {
+    const payload = parseAuditPayload(item.payload);
+    if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+        return "Результат зафиксирован локальным аудитом.";
+    }
+
+    const labels = Object.keys(payload)
+        .filter((key) => !isServiceAuditPayloadKey(key))
+        .map(describeAuditPayloadKey);
+
+    if (labels.length === 0) {
+        return "Служебные детали доступны отдельно.";
+    }
+
+    const visible = labels.slice(0, 3).join(", ");
+    return `Изменённые данные: ${visible}${labels.length > 3 ? "..." : ""}.`;
+}
+
+function isServiceAuditPayloadKey(key) {
+    const normalized = String(key || "")
+        .replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`)
+        .toLowerCase();
+    return normalized === "id"
+        || normalized === "entity_id"
+        || normalized.includes("correlation")
+        || normalized.includes("request")
+        || normalized.includes("trace");
 }
 
 function parseAuditPayload(payload) {
@@ -2800,8 +2961,17 @@ function showFlash(message, tone) {
     window.setTimeout(() => node.remove(), 7000);
 }
 
+function showActionSuccess(messageKey) {
+    showFlash(ACTION_MESSAGES[messageKey] || ACTION_MESSAGES.assetUpdated, "success");
+}
+
+function showActionError(error) {
+    const detail = error?.message ? ` ${error.message}` : "";
+    showFlash(`${ACTION_MESSAGES.actionFailed}${detail}`, "error");
+}
+
 function handleUnexpectedError(error) {
-    showFlash(error.message, "error");
+    showActionError(error);
 }
 
 function escapeHtml(value) {
