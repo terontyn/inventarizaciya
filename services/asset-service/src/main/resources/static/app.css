@@ -311,34 +311,54 @@ code {
 .flash-stack {
     display: grid;
     gap: 0.65rem;
-    margin: 1.25rem 0 0;
+    margin: 1rem 0 0;
+    position: sticky;
+    top: 0.65rem;
+    z-index: 80;
 }
 
 .flash {
     border-radius: var(--radius-md);
-    padding: 0.95rem 1rem;
-    border: 1px solid transparent;
-    box-shadow: 0 16px 30px rgba(29, 32, 37, 0.08);
+    padding: 1rem 1.1rem;
+    border: 2px solid transparent;
+    box-shadow: 0 18px 42px rgba(15, 23, 42, 0.18);
+    display: grid;
+    gap: 0.25rem;
+    outline: none;
+}
+
+.flash:focus-visible {
+    box-shadow: 0 0 0 4px rgba(15, 118, 110, 0.2), 0 18px 42px rgba(15, 23, 42, 0.18);
+}
+
+.flash-title {
+    font-weight: 800;
+    color: var(--ink);
+}
+
+.flash-message {
+    color: var(--ink);
+    line-height: 1.45;
 }
 
 .flash-info {
-    background: rgba(255, 255, 255, 0.72);
-    border-color: rgba(22, 32, 42, 0.1);
+    background: rgba(255, 255, 255, 0.96);
+    border-color: rgba(22, 32, 42, 0.24);
 }
 
 .flash-success {
-    background: var(--success-soft);
-    border-color: rgba(22, 101, 52, 0.18);
+    background: #dcfce7;
+    border-color: #16a34a;
 }
 
 .flash-warning {
-    background: var(--warning-soft);
-    border-color: rgba(154, 52, 18, 0.18);
+    background: #ffedd5;
+    border-color: #ea580c;
 }
 
 .flash-error {
-    background: var(--danger-soft);
-    border-color: rgba(180, 35, 24, 0.18);
+    background: #fee2e2;
+    border-color: #dc2626;
 }
 
 .screen-nav,

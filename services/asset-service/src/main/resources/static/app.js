@@ -116,13 +116,13 @@ const AUDIT_ACTION_LABELS = {
 };
 
 const ACTION_MESSAGES = {
-    assetCreated: "Актив создан. Карточка обновлена.",
-    assetUpdated: "Изменения сохранены.",
-    assetAssigned: "Актив выдан пользователю.",
-    assetTransferred: "Актив перемещён.",
-    assetReturned: "Актив возвращён.",
-    setupSaved: "Запись справочника сохранена.",
-    roleAssigned: "Роль пользователя обновлена.",
+    assetCreated: "Актив создан. Карточка открыта и обновлена.",
+    assetUpdated: "Данные актива сохранены. Ответственность не менялась.",
+    assetAssigned: "Assign выполнен. Актив выдан выбранному пользователю.",
+    assetTransferred: "Transfer выполнен. Изменение ответственности зафиксировано.",
+    assetReturned: "Return выполнен. Текущая пользовательская ответственность завершена.",
+    setupSaved: "Запись настройки сохранена.",
+    roleAssigned: "Роль назначена пользователю. Изменение сохранено.",
     actionFailed: "Не удалось выполнить действие. Проверьте данные и повторите попытку."
 };
 
@@ -2954,11 +2954,30 @@ function scrollToElement(element) {
 }
 
 function showFlash(message, tone) {
+    const titleByTone = {
+        success: "Готово",
+        error: "Ошибка",
+        warning: "Проверьте действие",
+        info: "Информация"
+    };
+    const durationByTone = {
+        success: 18000,
+        error: 26000,
+        warning: 22000,
+        info: 14000
+    };
     const node = document.createElement("div");
     node.className = `flash flash-${tone}`;
-    node.textContent = message;
+    node.setAttribute("role", tone === "error" || tone === "warning" ? "alert" : "status");
+    node.setAttribute("aria-live", tone === "error" || tone === "warning" ? "assertive" : "polite");
+    node.setAttribute("tabindex", "-1");
+    node.innerHTML = `
+        <strong class="flash-title">${escapeHtml(titleByTone[tone] || titleByTone.info)}</strong>
+        <span class="flash-message">${escapeHtml(message)}</span>
+    `;
     ui.flashStack.prepend(node);
-    window.setTimeout(() => node.remove(), 7000);
+    node.focus({ preventScroll: true });
+    window.setTimeout(() => node.remove(), durationByTone[tone] || durationByTone.info);
 }
 
 function showActionSuccess(messageKey) {
