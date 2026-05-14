@@ -66,30 +66,124 @@ Non-goals:
 - custom workflows;
 - retirement как обязательный pilot gate.
 
-### Deferred UX hardening candidates after Operational Workspace UX Stabilization v3
+### Deferred owner + AI product usability review candidates after Operational Workspace UX Stabilization v3
 
-Status: candidate-only / non-blocking
+Status: candidate-only / non-blocking  
+Evidence type: controlled synthetic / internal owner-style review evidence only  
+FTOV status: not started / not executable  
+Release-ready claim: no  
 
-Post-v3 controlled synthetic re-review passed with minor friction.
+Owner + AI product usability review confirms that the current Operational Workspace UI is usable for controlled internal/synthetic review, but still has meaningful daily-use friction.
 
-Deferred frontend-only UX hardening candidates:
+The review does not invalidate the accepted UX Stabilization v3 closeout.
 
-- explicit success/error notifications after mutating actions;
-- clearer role assignment confirmation;
-- further reduction of residual audit wording / technical correlation details;
-- minor navigation polish near already-visible target sections;
-- continued improvement of context value readability.
+The review does not create a default implementation workstream.
 
-These items do not block the accepted v3 closeout.
+## A. Minor frontend UX hardening candidates
 
-They do not authorize:
+These items are candidate-only frontend refinements and may be handled later without changing product scope:
 
+- add explicit success/error notifications after mutating actions:
+  - create asset;
+  - edit asset master data;
+  - assign;
+  - transfer;
+  - return;
+  - setup create/update;
+  - role assignment.
+- improve role assignment confirmation:
+  - show clear success state after assignment;
+  - make assigned roles easier to see in the user/setup area if already available from existing data.
+- further reduce UUID / technical ID visual noise:
+  - keep technical values copyable;
+  - avoid showing secondary UUID lines where they do not help daily operation.
+- reduce residual audit wording / correlation details:
+  - keep raw service details inside technical disclosure;
+  - make first-level audit text more user-facing.
+- improve setup table row affordance:
+  - hover;
+  - pointer cursor;
+  - selected-row highlight;
+  - clearer “click to edit” cue.
+- minor navigation polish:
+  - reduce subtle scroll overshoot near already-visible sections;
+  - reduce confusion when auto-scroll lands in history/audit instead of the asset card.
+- improve context value readability:
+  - keep copy/tooltip affordances;
+  - add clearer copy around where Tenant ID / User ID values come from in controlled environments.
+
+## B. Product usability gaps
+
+These items make daily use weaker or less confident, but do not automatically require a new product module:
+
+- users may not always understand that an action succeeded because feedback is implicit;
+- asset location is less visible than responsibility and may be missed if the user does not open the asset card / responsibility tab;
+- assign / transfer / return are separated correctly, but the difference still requires reading explanatory copy;
+- long vertical layout can slow daily operation even after anchor navigation improvements;
+- role assignment status is not visible enough for Tenant Admin confidence.
+
+These items may justify a future narrow frontend-only usability hardening pass if explicitly approved.
+
+Any future pass must remain:
+
+- frontend-only;
+- refine-in-place;
+- based on existing UI files and existing API contracts;
+- limited to already approved Operational Workspace surfaces.
+
+If resolution requires backend/API, new endpoint, DTO/read-model change, BFF/UI backend, auth/IAM expansion or new product surface, stop and escalate to separate product decision.
+
+## C. Product expansion / parity gaps
+
+These items explain why the current product feels weaker than Hardware Inspector-like mature ITAM tools.
+
+They require separate product decision and must not be treated as immediate UX defects:
+
+- barcode / QR code scanning and label workflows;
+- bulk import/export of assets and users;
+- advanced search, filtering and sorting;
+- dashboards, reports and analytics;
+- detailed asset catalogue / asset model enrichment;
+- attachments, documents, photos or acts;
+- printable labels beyond already approved minimal label discussion;
+- Asset 360-style cross-context view;
+- inventory / warehouse expansion;
+- maintenance / repair expansion;
+- full Hardware Inspector feature parity.
+
+These items are not authorized by this backlog note.
+
+## Non-authorization rule
+
+This section does not authorize:
+
+- implementation work;
+- Codex work;
 - backend/API changes;
 - new endpoints;
 - DTO/read-model changes;
+- database/migration changes;
 - BFF / UI backend;
 - auth/IAM expansion;
-- product expansion;
-- Hardware Inspector parity;
+- new role model;
+- new bounded context;
+- new Wave 2 surface;
+- dashboard / BI / analytics implementation;
+- Asset 360;
+- global search / Elasticsearch;
+- saved views / persistent preferences;
+- bulk actions;
+- barcode / QR / scanning / printer integration;
+- import/export engine;
+- Hardware Inspector parity implementation;
 - release-ready claim;
-- FTOV start or exit claim.
+- FTOV start claim;
+- FTOV exit claim.
+
+## Current interpretation
+
+The current UI remains accepted for controlled internal/synthetic review with minor-to-moderate usability friction.
+
+The strongest narrow future candidate is frontend-only usability hardening around action feedback, role assignment confirmation, setup row affordance, location visibility and technical-noise reduction.
+
+The strongest future product-expansion candidates are search/filtering, import/export, barcode/QR, reporting/dashboard and asset catalogue enrichment, but only after separate explicit product decision.
