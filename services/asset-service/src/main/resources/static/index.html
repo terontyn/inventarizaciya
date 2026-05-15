@@ -10,8 +10,10 @@
 <body>
     <div
         class="app-shell"
-        data-ui-surface="operational-workspace-ux-v2"
+        data-ui-surface="operational-workspace-tree-detail"
         data-existing-surface="minimal-pilot-ui"
+        data-navigation-model="revised-tree-and-detail"
+        data-tree-derivation="client-side-only"
         data-edit-boundary="asset-master-record-only"
         data-responsibility-flows="assign,transfer,return"
     >
@@ -86,177 +88,26 @@
 
         <div id="flash-stack" class="flash-stack" aria-live="polite"></div>
 
-        <nav id="screen-nav" class="screen-nav" aria-label="Основные разделы"></nav>
-
-        <main class="workspace">
-            <section id="workspace-screen" class="screen">
-                <section id="workspace-overview" class="workspace-overview panel panel-tight" aria-live="polite"></section>
-            </section>
-
-            <section id="assets-screen" class="screen">
-                <div class="screen-header">
+        <main class="workspace tree-workspace" data-tree-detail-shell="true">
+            <aside id="workspace-tree" class="tree-pane panel" aria-label="Иерархическая навигация рабочего места">
+                <div class="panel-heading">
                     <div>
-                        <p class="section-kicker">Активы</p>
-                        <h2>Реестр, карточка и действия</h2>
-                        <p class="screen-copy">
-                            Реестр открывает карточку актива. Создание и редактирование меняют только данные карточки,
-                            а ответственность меняется только через отдельные assign / transfer / return.
-                        </p>
+                        <p class="section-kicker">Навигация</p>
+                        <h2>Дерево рабочего места</h2>
                     </div>
-                    <span class="boundary-chip">
-                        Только данные актива
-                    </span>
+                    <button class="button button-secondary" id="refresh-assets" type="button">Обновить данные</button>
                 </div>
+                <p class="muted-note">
+                    Группы строятся только из уже загруженных данных. Счётчики помогают ориентироваться и не являются отчётами.
+                </p>
+                <div id="workspace-tree-body" class="tree-body" aria-live="polite"></div>
+            </aside>
 
-                <div id="asset-journey-banner" class="journey-banner" aria-live="polite"></div>
-
-                <div id="asset-create-panel" class="panel panel-tight" hidden>
-                    <div class="panel-heading">
-                        <div>
-                            <p class="section-kicker">Create</p>
-                            <h3>Создать актив</h3>
-                        </div>
-                    </div>
-                    <form id="asset-create-form" class="form-grid">
-                        <label class="field">
-                            <span>Инвентарный тег</span>
-                            <input name="asset_tag" type="text" autocomplete="off" required>
-                        </label>
-
-                        <label class="field">
-                            <span>Серийный номер</span>
-                            <input name="serial_number" type="text" autocomplete="off" required>
-                        </label>
-
-                        <label class="field">
-                            <span>Тип актива</span>
-                            <input name="asset_type" type="text" autocomplete="off" required>
-                        </label>
-
-                        <div class="button-row button-row-inline">
-                            <button class="button button-primary" type="submit">Создать актив</button>
-                        </div>
-                    </form>
-                    <p class="muted-note">
-                        При создании не назначается ответственный. После создания используйте
-                        отдельные действия assign / transfer / return и вернитесь в карточку актива.
-                    </p>
-                </div>
-
-                <section id="asset-registry-overview" class="workspace-overview panel panel-tight" aria-live="polite"></section>
-
-                <div class="assets-grid">
-                    <section class="panel">
-                        <div class="panel-heading">
-                            <div>
-                                <p class="section-kicker">Реестр</p>
-                                <h3>Реестр активов</h3>
-                            </div>
-                            <button class="button button-secondary" id="refresh-assets" type="button">Обновить реестр</button>
-                        </div>
-
-                        <div class="table-wrap">
-                            <table class="data-table">
-                                <thead>
-                                    <tr>
-                                        <th>Актив</th>
-                                        <th>Тип</th>
-                                        <th>Статус</th>
-                                        <th>Ответственный</th>
-                                        <th>Локация</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="asset-registry-body">
-                                    <tr>
-                                        <td colspan="5" class="empty-cell">Подключите рабочий контур, чтобы загрузить активы.</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </section>
-
-                    <section class="panel">
-                        <div id="asset-detail-panel" class="detail-host">
-                            <div class="empty-state">
-                                <p class="empty-kicker">Карточка</p>
-                                <h3>Карточка ещё не выбрана</h3>
-                                <p>Выберите актив из реестра, чтобы открыть карточку, историю, аудит и доступные действия.</p>
-                            </div>
-                        </div>
-                    </section>
-                </div>
-            </section>
-
-            <section id="review-screen" class="screen" hidden>
-                <div class="screen-header">
-                    <div>
-                        <p class="section-kicker">История и аудит</p>
-                        <h2>История и аудит</h2>
-                        <p class="screen-copy">
-                            Раздел показывает уже загруженные историю и аудит выбранного актива.
-                            Он не создаёт отдельную витрину данных или новую модель чтения.
-                        </p>
-                    </div>
-                    <span class="boundary-chip">Только просмотр</span>
-                </div>
-
-                <nav id="review-section-nav" class="admin-nav" aria-label="Разделы истории и аудита"></nav>
-                <section id="review-detail-panel" class="panel panel-tight" aria-live="polite"></section>
-            </section>
-
-            <section id="admin-screen" class="screen" hidden>
-                <div class="screen-header">
-                    <div>
-                        <p class="section-kicker">Настройка</p>
-                        <h2>Настройка tenant</h2>
-                        <p class="screen-copy">
-                            Tenant Admin работает с уже существующими справочниками:
-                            роли, пользователи, подразделения, филиалы, локации и назначение ролей.
-                        </p>
-                    </div>
-                    <span class="boundary-chip">Только Tenant Admin</span>
-                </div>
-
-                <div class="setup-order">
-                    Порядок первой настройки: <strong>роли -> пользователи -> филиалы -> локации -> подразделения</strong>
-                </div>
-
-                <section id="setup-overview" class="workspace-overview panel panel-tight" aria-live="polite"></section>
-
-                <nav id="admin-resource-nav" class="admin-nav" aria-label="Разделы настройки"></nav>
-
-                <div class="admin-grid">
-                    <section class="panel">
-                        <div class="panel-heading">
-                            <div>
-                                <p class="section-kicker">Текущий раздел</p>
-                                <h3 id="admin-resource-title">Роли</h3>
-                            </div>
-                            <button class="button button-secondary" id="refresh-admin-resource" type="button">Обновить список</button>
-                        </div>
-                        <p class="table-helper">Нажмите строку, чтобы открыть редактирование. Выбранная запись остаётся подсвеченной.</p>
-
-                        <div class="table-wrap">
-                            <table class="data-table">
-                                <thead id="admin-table-head"></thead>
-                                <tbody id="admin-table-body">
-                                    <tr>
-                                        <td class="empty-cell">Раздел станет доступен после загрузки справочников и проверки роли.</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </section>
-
-                    <section class="panel">
-                        <div id="admin-editor-panel" class="detail-host">
-                            <div class="empty-state">
-                                <p class="empty-kicker">Редактор</p>
-                                <h3>Выберите ресурс</h3>
-                                <p>Tenant Admin может создавать, редактировать и назначать роли только через уже доступные действия настройки.</p>
-                            </div>
-                        </div>
-                    </section>
+            <section id="workspace-detail" class="detail-pane panel" aria-live="polite">
+                <div class="empty-state">
+                    <p class="empty-kicker">Рабочее место</p>
+                    <h3>Подключите контекст доступа</h3>
+                    <p>После подключения здесь появится выбранный узел дерева, карточка актива или настройка tenant.</p>
                 </div>
             </section>
         </main>

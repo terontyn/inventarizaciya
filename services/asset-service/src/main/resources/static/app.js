@@ -22,17 +22,45 @@ const SCREEN_ANCHORS = {
 };
 
 const ASSET_SECTIONS = [
-    { key: "overview", label: "Обзор" },
-    { key: "master", label: "Данные актива" },
-    { key: "responsibility", label: "Ответственность" },
-    { key: "actions", label: "Действия" },
-    { key: "history", label: "История и аудит" }
+    { key: "overview", label: "Overview" },
+    { key: "responsibility", label: "Responsibility" },
+    { key: "actions", label: "Actions" },
+    { key: "history", label: "History / Audit" },
+    { key: "technical", label: "Technical details" }
 ];
 
 const REVIEW_SECTIONS = [
     { key: "history", label: "История" },
     { key: "audit", label: "Аудит" }
 ];
+
+const TREE_GROUPS = {
+    WORKSPACE: "workspace",
+    ORG: "org",
+    LOCATIONS: "locations",
+    ALL_ASSETS: "all-assets",
+    SETUP: "setup"
+};
+
+const TREE_NODE_TYPES = {
+    WORKSPACE: "workspace",
+    DEPARTMENT: "department",
+    USER: "user",
+    BRANCH: "branch",
+    LOCATION: "location",
+    ASSET: "asset",
+    ASSET_GROUP: "assetGroup",
+    SETUP: "setup"
+};
+
+const FALLBACK_DEPARTMENT_ID = "__no_department__";
+const FALLBACK_BRANCH_ID = "__no_branch__";
+
+const ASSET_GROUPS = {
+    ASSIGNED: "assigned",
+    UNASSIGNED: "unassigned",
+    RETIRED: "retired"
+};
 
 const SETUP_SEQUENCE = [
     {
@@ -263,6 +291,8 @@ const state = {
     activeReviewSection: "history",
     activeAdminResource: "roles",
     selectedAdminItemId: null,
+    selectedTreeNode: { type: TREE_NODE_TYPES.WORKSPACE },
+    expandedTreeNodes: new Set(),
     lastRoleAssignment: null
 };
 
@@ -291,6 +321,9 @@ function cacheElements() {
     ui.roleSummaryBadge = document.getElementById("role-summary-badge");
     ui.activeScreenLabel = document.getElementById("active-screen-label");
     ui.flashStack = document.getElementById("flash-stack");
+    ui.workspaceTree = document.getElementById("workspace-tree");
+    ui.workspaceTreeBody = document.getElementById("workspace-tree-body");
+    ui.workspaceDetail = document.getElementById("workspace-detail");
     ui.screenNav = document.getElementById("screen-nav");
     ui.workspaceScreen = document.getElementById("workspace-screen");
     ui.workspaceOverview = document.getElementById("workspace-overview");
@@ -324,23 +357,26 @@ function bindStaticEvents() {
     document.addEventListener("click", onCopyClick, true);
     ui.refreshAll.addEventListener("click", onRefreshAllClick);
     ui.clearSession.addEventListener("click", clearSession);
-    ui.refreshAssets.addEventListener("click", onRefreshAssetsClick);
-    ui.refreshAdminResource.addEventListener("click", onRefreshAdminResourceClick);
-    ui.screenNav.addEventListener("click", onScreenNavClick);
-    ui.workspaceOverview.addEventListener("click", onScreenNavClick);
-    ui.assetCreateForm.addEventListener("submit", onAssetCreateSubmit);
-    ui.assetJourneyBanner.addEventListener("click", onAssetInteractionClick);
-    ui.assetRegistryOverview.addEventListener("click", onAssetInteractionClick);
-    ui.assetRegistryBody.addEventListener("click", onAssetRegistryClick);
-    ui.assetDetailPanel.addEventListener("submit", onAssetDetailSubmit);
-    ui.assetDetailPanel.addEventListener("click", onAssetInteractionClick);
-    ui.reviewSectionNav.addEventListener("click", onReviewInteractionClick);
-    ui.reviewDetailPanel.addEventListener("click", onReviewInteractionClick);
-    ui.adminResourceNav.addEventListener("click", onAdminResourceClick);
-    ui.setupOverview.addEventListener("click", onAdminResourceClick);
-    ui.adminTableBody.addEventListener("click", onAdminTableClick);
-    ui.adminEditorPanel.addEventListener("submit", onAdminEditorSubmit);
-    ui.adminEditorPanel.addEventListener("click", onAdminEditorClick);
+    ui.refreshAssets?.addEventListener("click", onRefreshAssetsClick);
+    ui.refreshAdminResource?.addEventListener("click", onRefreshAdminResourceClick);
+    ui.workspaceTreeBody?.addEventListener("click", onTreeClick);
+    ui.workspaceDetail?.addEventListener("click", onWorkspaceDetailClick);
+    ui.workspaceDetail?.addEventListener("submit", onWorkspaceDetailSubmit);
+    ui.screenNav?.addEventListener("click", onScreenNavClick);
+    ui.workspaceOverview?.addEventListener("click", onScreenNavClick);
+    ui.assetCreateForm?.addEventListener("submit", onAssetCreateSubmit);
+    ui.assetJourneyBanner?.addEventListener("click", onAssetInteractionClick);
+    ui.assetRegistryOverview?.addEventListener("click", onAssetInteractionClick);
+    ui.assetRegistryBody?.addEventListener("click", onAssetRegistryClick);
+    ui.assetDetailPanel?.addEventListener("submit", onAssetDetailSubmit);
+    ui.assetDetailPanel?.addEventListener("click", onAssetInteractionClick);
+    ui.reviewSectionNav?.addEventListener("click", onReviewInteractionClick);
+    ui.reviewDetailPanel?.addEventListener("click", onReviewInteractionClick);
+    ui.adminResourceNav?.addEventListener("click", onAdminResourceClick);
+    ui.setupOverview?.addEventListener("click", onAdminResourceClick);
+    ui.adminTableBody?.addEventListener("click", onAdminTableClick);
+    ui.adminEditorPanel?.addEventListener("submit", onAdminEditorSubmit);
+    ui.adminEditorPanel?.addEventListener("click", onAdminEditorClick);
 }
 
 function restoreContext() {
@@ -415,6 +451,8 @@ function clearSession() {
     state.activeReviewSection = "history";
     state.activeAdminResource = "roles";
     state.selectedAdminItemId = null;
+    state.selectedTreeNode = { type: TREE_NODE_TYPES.WORKSPACE };
+    state.expandedTreeNodes = new Set();
     state.lastRoleAssignment = null;
 
     window.localStorage.removeItem(STORAGE_KEY);
@@ -464,7 +502,7 @@ async function onRefreshAssetsClick() {
     if (isBusy("refreshAsset")) {
         return;
     }
-    await withBusy("refreshAsset", () => refreshAssets()).catch(handleUnexpectedError);
+    await withBusy("refreshAsset", () => refreshAllData()).catch(handleUnexpectedError);
 }
 
 async function onRefreshAdminResourceClick() {
@@ -852,7 +890,7 @@ async function onAssetCreateSubmit(event) {
     }
 
     try {
-        const form = event.currentTarget;
+        const form = event.target.closest("form") || event.currentTarget;
         const payload = buildAssetUpsertPayload(new FormData(form));
         await withBusy("createAsset", async () => {
             const created = await requestJson("asset", "/api/v1/assets", {
@@ -862,8 +900,9 @@ async function onAssetCreateSubmit(event) {
             form.reset();
             state.selectedAssetId = created.id;
             state.activeAssetSection = "overview";
+            state.selectedTreeNode = { type: TREE_NODE_TYPES.ASSET, id: created.id, source: "all", group: ASSET_GROUPS.UNASSIGNED };
             await refreshAssets();
-            scrollToElement(ui.assetDetailPanel);
+            scrollToElement(ui.workspaceDetail || ui.assetDetailPanel);
             showActionSuccess("assetCreated");
         });
     } catch (error) {
@@ -906,9 +945,9 @@ async function onAssetDetailSubmit(event) {
                     method: "PATCH",
                     body: payload
                 });
-                state.activeAssetSection = "master";
+                state.activeAssetSection = "overview";
                 await refreshAssets();
-                scrollToElement(ui.assetDetailPanel);
+                scrollToElement(ui.workspaceDetail || ui.assetDetailPanel);
                 showActionSuccess("assetUpdated");
             });
             return;
@@ -931,7 +970,7 @@ async function onAssetDetailSubmit(event) {
                 state.activeAssetSection = "history";
                 state.activeReviewSection = "history";
                 await refreshAssets();
-                scrollToElement(ui.assetDetailPanel);
+                scrollToElement(ui.workspaceDetail || ui.assetDetailPanel);
                 showActionSuccess("assetAssigned");
             });
             return;
@@ -963,7 +1002,7 @@ async function onAssetDetailSubmit(event) {
                 state.activeAssetSection = "history";
                 state.activeReviewSection = "history";
                 await refreshAssets();
-                scrollToElement(ui.assetDetailPanel);
+                scrollToElement(ui.workspaceDetail || ui.assetDetailPanel);
                 showActionSuccess("assetTransferred");
             });
             return;
@@ -984,7 +1023,7 @@ async function onAssetDetailSubmit(event) {
                 state.activeAssetSection = "history";
                 state.activeReviewSection = "history";
                 await refreshAssets();
-                scrollToElement(ui.assetDetailPanel);
+                scrollToElement(ui.workspaceDetail || ui.assetDetailPanel);
                 showActionSuccess("assetReturned");
             });
         }
@@ -1119,8 +1158,9 @@ async function onAdminEditorSubmit(event) {
                 await loadReferenceData();
                 await loadRolesCatalog();
                 state.selectedAdminItemId = response.id ?? state.selectedAdminItemId;
+                state.selectedTreeNode = { type: TREE_NODE_TYPES.SETUP, resource: config.key };
                 render();
-                scrollToElement(ui.adminEditorPanel);
+                scrollToElement(ui.workspaceDetail || ui.adminEditorPanel);
                 showActionSuccess("setupSaved");
             });
             return;
@@ -1149,7 +1189,7 @@ async function onAdminEditorSubmit(event) {
                     assignedAt: new Date().toISOString()
                 };
                 render();
-                scrollToElement(ui.adminEditorPanel);
+                scrollToElement(ui.workspaceDetail || ui.adminEditorPanel);
                 showActionSuccess("roleAssigned");
             });
         }
@@ -1163,6 +1203,174 @@ function onAdminEditorClick(event) {
     if (resetButton) {
         state.selectedAdminItemId = null;
         render();
+    }
+}
+
+function onTreeClick(event) {
+    const toggle = event.target.closest("[data-tree-toggle]");
+    if (toggle) {
+        toggleTreeExpansion(toggle.dataset.treeToggle);
+        return;
+    }
+
+    const node = event.target.closest("[data-node-type]");
+    if (!node) {
+        return;
+    }
+
+    selectTreeNodeFromElement(node);
+}
+
+function onWorkspaceDetailClick(event) {
+    const toggle = event.target.closest("[data-tree-toggle]");
+    if (toggle) {
+        toggleTreeExpansion(toggle.dataset.treeToggle);
+        return;
+    }
+
+    const node = event.target.closest("[data-node-type]");
+    if (node) {
+        selectTreeNodeFromElement(node);
+        return;
+    }
+
+    const sectionButton = event.target.closest("[data-asset-section]");
+    if (sectionButton) {
+        state.activeAssetSection = sectionButton.dataset.assetSection;
+        render();
+        return;
+    }
+
+    const refreshButton = event.target.closest("[data-refresh-asset]");
+    if (refreshButton && state.selectedAssetId) {
+        if (isBusy("refreshAsset")) {
+            return;
+        }
+        withBusy("refreshAsset", () => loadAssetBundle(state.selectedAssetId))
+            .catch(handleUnexpectedError);
+        return;
+    }
+
+    const resourceButton = event.target.closest("[data-resource-key]");
+    if (resourceButton) {
+        state.activeAdminResource = resourceButton.dataset.resourceKey;
+        state.selectedAdminItemId = null;
+        state.selectedTreeNode = { type: TREE_NODE_TYPES.SETUP, resource: state.activeAdminResource };
+        render();
+        return;
+    }
+
+    const adminRefreshButton = event.target.closest("#refresh-admin-resource");
+    if (adminRefreshButton) {
+        if (isBusy("refreshAdmin")) {
+            return;
+        }
+        withBusy("refreshAdmin", () => refreshAdminResource()).catch(handleUnexpectedError);
+        return;
+    }
+
+    const adminRow = event.target.closest("[data-admin-id]");
+    if (adminRow) {
+        state.selectedAdminItemId = adminRow.dataset.adminId;
+        render();
+        return;
+    }
+
+    const resetButton = event.target.closest("[data-admin-reset]");
+    if (resetButton) {
+        state.selectedAdminItemId = null;
+        render();
+    }
+}
+
+function onWorkspaceDetailSubmit(event) {
+    const form = event.target.closest("form");
+    if (!form) {
+        return;
+    }
+
+    if (form.id === "asset-create-form") {
+        onAssetCreateSubmit(event);
+        return;
+    }
+
+    if (["asset-update-form", "asset-assign-form", "asset-transfer-form", "asset-return-form"].includes(form.id)) {
+        onAssetDetailSubmit(event);
+        return;
+    }
+
+    if (["admin-resource-form", "user-role-binding-form"].includes(form.id)) {
+        onAdminEditorSubmit(event);
+    }
+}
+
+function toggleTreeExpansion(key) {
+    if (!key) {
+        return;
+    }
+    if (state.expandedTreeNodes.has(key)) {
+        state.expandedTreeNodes.delete(key);
+    } else {
+        state.expandedTreeNodes.add(key);
+    }
+    render();
+}
+
+function selectTreeNodeFromElement(element) {
+    const type = element.dataset.nodeType;
+
+    if (type === TREE_NODE_TYPES.ASSET) {
+        selectAssetNode(element.dataset.assetId, {
+            source: element.dataset.source || "",
+            parentId: element.dataset.parentId || "",
+            group: element.dataset.group || ""
+        });
+        return;
+    }
+
+    if (type === TREE_NODE_TYPES.DEPARTMENT) {
+        state.selectedTreeNode = { type, id: element.dataset.departmentId || FALLBACK_DEPARTMENT_ID };
+    } else if (type === TREE_NODE_TYPES.USER) {
+        state.selectedTreeNode = { type, id: element.dataset.userId || "" };
+    } else if (type === TREE_NODE_TYPES.BRANCH) {
+        state.selectedTreeNode = { type, id: element.dataset.branchId || FALLBACK_BRANCH_ID };
+    } else if (type === TREE_NODE_TYPES.LOCATION) {
+        state.selectedTreeNode = { type, id: element.dataset.locationId || "" };
+    } else if (type === TREE_NODE_TYPES.ASSET_GROUP) {
+        state.selectedTreeNode = { type, group: element.dataset.group || ASSET_GROUPS.ASSIGNED };
+    } else if (type === TREE_NODE_TYPES.SETUP) {
+        state.activeAdminResource = element.dataset.resource || "roles";
+        state.selectedAdminItemId = null;
+        state.selectedTreeNode = { type, resource: state.activeAdminResource };
+    } else {
+        state.selectedTreeNode = { type: TREE_NODE_TYPES.WORKSPACE };
+    }
+
+    render();
+    scrollToElement(ui.workspaceDetail);
+}
+
+async function selectAssetNode(assetId, context = {}) {
+    if (!assetId) {
+        return;
+    }
+    if (isBusy("refreshAsset")) {
+        return;
+    }
+
+    try {
+        state.selectedTreeNode = {
+            type: TREE_NODE_TYPES.ASSET,
+            id: assetId,
+            source: context.source || "",
+            parentId: context.parentId || "",
+            group: context.group || ""
+        };
+        state.activeAssetSection = "overview";
+        await withBusy("refreshAsset", () => loadAssetBundle(assetId));
+        scrollToElement(ui.workspaceDetail);
+    } catch (error) {
+        handleUnexpectedError(error);
     }
 }
 
@@ -1210,15 +1418,11 @@ async function refreshAdminResource() {
 
 function render() {
     renderRoleSummary();
-    renderScreenNav();
-    renderWorkspaceScreen();
-    renderAssetsScreen();
-    renderReviewScreen();
-    renderAdminScreen();
+    renderTreeWorkspace();
     syncStaticActionControls();
     renderUserServiceUrlPreview();
     renderContextTechnicalSummary();
-    ui.activeScreenLabel.textContent = getScreenLabel(state.activeScreen);
+    ui.activeScreenLabel.textContent = getSelectedTreeNodeLabel();
     ui.assetServiceOrigin.textContent = window.location.origin;
 }
 
@@ -1273,6 +1477,1086 @@ function setButtonBusy(button, busy, busyLabel) {
     button.disabled = Boolean(busy);
     button.classList.toggle("is-loading", Boolean(busy));
     button.textContent = busy ? busyLabel : button.dataset.idleLabel;
+}
+
+function renderTreeWorkspace() {
+    if (!ui.workspaceTreeBody || !ui.workspaceDetail) {
+        return;
+    }
+
+    renderTreeNavigation();
+    renderTreeDetail();
+}
+
+function renderTreeNavigation() {
+    const selectedPath = getSelectedTreePath();
+    ui.workspaceTreeBody.innerHTML = [
+        renderWorkspaceTreeGroup(selectedPath),
+        renderOrgTreeGroup(selectedPath),
+        renderLocationsTreeGroup(selectedPath),
+        renderAllAssetsTreeGroup(selectedPath),
+        renderSetupTreeGroup(selectedPath)
+    ].join("");
+}
+
+function renderWorkspaceTreeGroup(selectedPath) {
+    return renderTreeGroup({
+        key: TREE_GROUPS.WORKSPACE,
+        label: "Рабочее место",
+        count: "обзор",
+        selectedPath,
+        body: `
+            ${renderTreeNode({
+                type: TREE_NODE_TYPES.WORKSPACE,
+                label: "Обзор / что делать первым",
+                meta: hasConnectionContext() ? (state.profileLabel || "контекст подключён") : "подключите контекст",
+                selected: state.selectedTreeNode.type === TREE_NODE_TYPES.WORKSPACE
+            })}
+        `
+    });
+}
+
+function renderOrgTreeGroup(selectedPath) {
+    const departments = getDepartmentTreeNodes();
+    const userCount = state.references.users.length;
+    const assignedAssets = state.assets.filter((asset) => Boolean(asset.assigned_user_id)).length;
+    const body = departments.length > 0
+        ? departments.map((department) => renderDepartmentTreeNode(department, selectedPath)).join("")
+        : renderTreeEmpty("Загрузите справочники, чтобы увидеть подразделения и пользователей.");
+
+    return renderTreeGroup({
+        key: TREE_GROUPS.ORG,
+        label: "Оргструктура",
+        count: `${userCount} users / ${assignedAssets} assets`,
+        selectedPath,
+        body
+    });
+}
+
+function renderDepartmentTreeNode(department, selectedPath) {
+    const key = getDepartmentTreeKey(department.id);
+    const users = getUsersForDepartment(department.id);
+    const assets = getAssetsForDepartment(department.id);
+    const expanded = isTreeExpanded(key, selectedPath);
+    const selected = state.selectedTreeNode.type === TREE_NODE_TYPES.DEPARTMENT
+        && state.selectedTreeNode.id === department.id;
+    const body = expanded
+        ? users.length > 0
+            ? `<div class="tree-children">${users.map((user) => renderUserTreeNode(user, selectedPath)).join("")}</div>`
+            : `<div class="tree-children">${renderTreeEmpty("В этом подразделении нет пользователей.")}</div>`
+        : "";
+
+    return `
+        <div class="tree-branch">
+            <div class="tree-line">
+                ${renderTreeToggle(key, expanded, `${users.length} users / ${assets.length} assets`)}
+                ${renderTreeNode({
+                    type: TREE_NODE_TYPES.DEPARTMENT,
+                    label: department.name,
+                    meta: `${users.length} users / ${assets.length} assets`,
+                    selected,
+                    attributes: `data-department-id="${escapeAttribute(department.id)}"`
+                })}
+            </div>
+            ${body}
+        </div>
+    `;
+}
+
+function renderUserTreeNode(user, selectedPath) {
+    const key = getUserTreeKey(user.id);
+    const assets = getAssetsForUser(user.id);
+    const expanded = isTreeExpanded(key, selectedPath);
+    const selected = state.selectedTreeNode.type === TREE_NODE_TYPES.USER
+        && state.selectedTreeNode.id === user.id;
+    const body = expanded
+        ? assets.length > 0
+            ? `<div class="tree-children">${assets.map((asset) => renderAssetTreeNode(asset, {
+                source: "user",
+                parentId: user.id
+            })).join("")}</div>`
+            : `<div class="tree-children">${renderTreeEmpty("Нет назначенных активов.")}</div>`
+        : "";
+
+    return `
+        <div class="tree-branch">
+            <div class="tree-line">
+                ${renderTreeToggle(key, expanded, `${assets.length} assets`)}
+                ${renderTreeNode({
+                    type: TREE_NODE_TYPES.USER,
+                    label: user.name || shortenTechnicalValue(user.id),
+                    meta: `${assets.length} assets`,
+                    selected,
+                    attributes: `data-user-id="${escapeAttribute(user.id)}"`
+                })}
+            </div>
+            ${body}
+        </div>
+    `;
+}
+
+function renderLocationsTreeGroup(selectedPath) {
+    const branches = getBranchTreeNodes();
+    const locationCount = state.references.locations.length;
+    const locatedAssetCount = state.assets.filter((asset) => Boolean(asset.location_id)).length;
+    const body = branches.length > 0
+        ? branches.map((branch) => renderBranchTreeNode(branch, selectedPath)).join("")
+        : renderTreeEmpty("Загрузите филиалы и локации, чтобы увидеть физическое дерево.");
+
+    return renderTreeGroup({
+        key: TREE_GROUPS.LOCATIONS,
+        label: "Локации",
+        count: `${locationCount} locations / ${locatedAssetCount} assets`,
+        selectedPath,
+        body
+    });
+}
+
+function renderBranchTreeNode(branch, selectedPath) {
+    const key = getBranchTreeKey(branch.id);
+    const locations = getLocationsForBranch(branch.id);
+    const assets = getAssetsForBranch(branch.id);
+    const expanded = isTreeExpanded(key, selectedPath);
+    const selected = state.selectedTreeNode.type === TREE_NODE_TYPES.BRANCH
+        && state.selectedTreeNode.id === branch.id;
+    const body = expanded
+        ? locations.length > 0
+            ? `<div class="tree-children">${locations.map((location) => renderLocationTreeNode(location, selectedPath)).join("")}</div>`
+            : `<div class="tree-children">${renderTreeEmpty("В этом филиале нет локаций.")}</div>`
+        : "";
+
+    return `
+        <div class="tree-branch">
+            <div class="tree-line">
+                ${renderTreeToggle(key, expanded, `${locations.length} locations / ${assets.length} assets`)}
+                ${renderTreeNode({
+                    type: TREE_NODE_TYPES.BRANCH,
+                    label: branch.name,
+                    meta: `${locations.length} locations / ${assets.length} assets`,
+                    selected,
+                    attributes: `data-branch-id="${escapeAttribute(branch.id)}"`
+                })}
+            </div>
+            ${body}
+        </div>
+    `;
+}
+
+function renderLocationTreeNode(location, selectedPath) {
+    const key = getLocationTreeKey(location.id);
+    const assets = getAssetsForLocation(location.id);
+    const expanded = isTreeExpanded(key, selectedPath);
+    const selected = state.selectedTreeNode.type === TREE_NODE_TYPES.LOCATION
+        && state.selectedTreeNode.id === location.id;
+    const body = expanded
+        ? assets.length > 0
+            ? `<div class="tree-children">${assets.map((asset) => renderAssetTreeNode(asset, {
+                source: "location",
+                parentId: location.id
+            })).join("")}</div>`
+            : `<div class="tree-children">${renderTreeEmpty("В этой локации нет активов из загруженного реестра.")}</div>`
+        : "";
+
+    return `
+        <div class="tree-branch">
+            <div class="tree-line">
+                ${renderTreeToggle(key, expanded, `${assets.length} assets`)}
+                ${renderTreeNode({
+                    type: TREE_NODE_TYPES.LOCATION,
+                    label: location.name || shortenTechnicalValue(location.id),
+                    meta: `${assets.length} assets`,
+                    selected,
+                    attributes: `data-location-id="${escapeAttribute(location.id)}"`
+                })}
+            </div>
+            ${body}
+        </div>
+    `;
+}
+
+function renderAllAssetsTreeGroup(selectedPath) {
+    const groups = getAllAssetGroups();
+    const body = groups.map((group) => renderAssetGroupTreeNode(group)).join("");
+
+    return renderTreeGroup({
+        key: TREE_GROUPS.ALL_ASSETS,
+        label: "Все активы",
+        count: `${state.assets.length} assets`,
+        selectedPath,
+        body
+    });
+}
+
+function renderAssetGroupTreeNode(group) {
+    const selected = state.selectedTreeNode.type === TREE_NODE_TYPES.ASSET_GROUP
+        && state.selectedTreeNode.group === group.key;
+    return renderTreeNode({
+        type: TREE_NODE_TYPES.ASSET_GROUP,
+        label: group.label,
+        meta: `${group.assets.length} assets`,
+        selected,
+        attributes: `data-group="${escapeAttribute(group.key)}"`
+    });
+}
+
+function renderSetupTreeGroup(selectedPath) {
+    const body = Object.values(ADMIN_RESOURCES)
+        .map((resource) => renderTreeNode({
+            type: TREE_NODE_TYPES.SETUP,
+            label: resource.label,
+            meta: `${getAdminItems(resource.key).length} записей`,
+            selected: state.selectedTreeNode.type === TREE_NODE_TYPES.SETUP
+                && state.selectedTreeNode.resource === resource.key,
+            attributes: `data-resource="${escapeAttribute(resource.key)}"`
+        }))
+        .join("");
+
+    return renderTreeGroup({
+        key: TREE_GROUPS.SETUP,
+        label: "Настройка",
+        count: canTenantAdmin() ? "Tenant Admin" : "скрыто/просмотр",
+        selectedPath,
+        body
+    });
+}
+
+function renderTreeGroup({ key, label, count, selectedPath, body }) {
+    const expanded = isTreeExpanded(key, selectedPath);
+    return `
+        <section class="tree-group">
+            <button class="tree-group-header" type="button" data-tree-toggle="${escapeAttribute(key)}" aria-expanded="${expanded ? "true" : "false"}">
+                <span class="tree-caret">${expanded ? "▾" : "▸"}</span>
+                <span>${escapeHtml(label)}</span>
+                <span class="tree-count">${escapeHtml(count)}</span>
+            </button>
+            ${expanded ? `<div class="tree-group-body">${body}</div>` : ""}
+        </section>
+    `;
+}
+
+function renderTreeToggle(key, expanded, label) {
+    return `
+        <button class="tree-toggle" type="button" data-tree-toggle="${escapeAttribute(key)}" aria-expanded="${expanded ? "true" : "false"}" aria-label="${escapeAttribute(label)}">
+            ${expanded ? "▾" : "▸"}
+        </button>
+    `;
+}
+
+function renderTreeNode({ type, label, meta = "", selected = false, attributes = "" }) {
+    return `
+        <button class="tree-node ${selected ? "is-selected" : ""}" type="button" data-node-type="${escapeAttribute(type)}" ${attributes}>
+            <span class="tree-node-label">${escapeHtml(label || "-")}</span>
+            ${meta ? `<span class="tree-node-meta">${escapeHtml(meta)}</span>` : ""}
+        </button>
+    `;
+}
+
+function renderAssetTreeNode(asset, context = {}) {
+    const selected = state.selectedTreeNode.type === TREE_NODE_TYPES.ASSET
+        && state.selectedTreeNode.id === asset.id;
+    return renderTreeNode({
+        type: TREE_NODE_TYPES.ASSET,
+        label: asset.asset_tag || asset.serial_number || shortenTechnicalValue(asset.id),
+        meta: `${asset.asset_type || "-"} · ${String(asset.status || "UNKNOWN").toUpperCase()}`,
+        selected,
+        attributes: `
+            data-asset-id="${escapeAttribute(asset.id)}"
+            data-source="${escapeAttribute(context.source || "")}"
+            data-parent-id="${escapeAttribute(context.parentId || "")}"
+            data-group="${escapeAttribute(context.group || "")}"
+        `
+    });
+}
+
+function renderTreeEmpty(copy) {
+    return `<p class="tree-empty">${escapeHtml(copy)}</p>`;
+}
+
+function renderTreeDetail() {
+    const node = state.selectedTreeNode || { type: TREE_NODE_TYPES.WORKSPACE };
+
+    if (node.type === TREE_NODE_TYPES.DEPARTMENT) {
+        ui.workspaceDetail.innerHTML = renderDepartmentDetail(node.id);
+        return;
+    }
+    if (node.type === TREE_NODE_TYPES.USER) {
+        ui.workspaceDetail.innerHTML = renderUserDetail(node.id);
+        return;
+    }
+    if (node.type === TREE_NODE_TYPES.BRANCH) {
+        ui.workspaceDetail.innerHTML = renderBranchDetail(node.id);
+        return;
+    }
+    if (node.type === TREE_NODE_TYPES.LOCATION) {
+        ui.workspaceDetail.innerHTML = renderLocationDetail(node.id);
+        return;
+    }
+    if (node.type === TREE_NODE_TYPES.ASSET) {
+        ui.workspaceDetail.innerHTML = renderAssetDetailPanel();
+        return;
+    }
+    if (node.type === TREE_NODE_TYPES.ASSET_GROUP) {
+        ui.workspaceDetail.innerHTML = renderAllAssetsGroupDetail(node.group);
+        return;
+    }
+    if (node.type === TREE_NODE_TYPES.SETUP) {
+        ui.workspaceDetail.innerHTML = renderSetupResourceDetail(node.resource || state.activeAdminResource);
+        return;
+    }
+
+    ui.workspaceDetail.innerHTML = renderWorkspaceOverviewDetail();
+}
+
+function renderWorkspaceOverviewDetail() {
+    const totalAssets = state.assets.length;
+    const assigned = state.assets.filter((asset) => Boolean(asset.assigned_user_id)).length;
+    const withoutUser = state.assets.filter((asset) => !asset.assigned_user_id).length;
+    const withoutLocation = state.assets.filter((asset) => !asset.location_id).length;
+
+    return `
+        <div class="stack">
+            ${renderDetailHeader("Рабочее место", "Обзор / что делать первым", "Выберите путь слева: по ответственности, по физической локации, через общий список активов или через настройку tenant.")}
+            <div class="overview-grid">
+                ${renderMetricCard("Активов", String(totalAssets), "Загружено из существующего реестра активов.")}
+                ${renderMetricCard("Назначенные", String(assigned), "Есть текущий ответственный пользователь.")}
+                ${renderMetricCard("Неназначенные", String(withoutUser), "Нет текущего assigned_user_id.")}
+                ${renderMetricCard("Без локации", String(withoutLocation), "Нет текущего location_id в загруженной карточке.")}
+            </div>
+            <div class="workspace-path-grid">
+                ${renderWorkspacePathCard("Оргструктура", "Department -> User -> assigned assets", "Ответственность и ежедневный поиск через подразделения и пользователей.", TREE_GROUPS.ORG)}
+                ${renderWorkspacePathCard("Локации", "Branch -> Location -> assets at location", "Физическое размещение без смешивания с подразделениями.", TREE_GROUPS.LOCATIONS)}
+                ${renderWorkspacePathCard("Все активы", "Назначенные / Неназначенные / Retired", "Запасной путь, когда неизвестны пользователь или локация.", TREE_GROUPS.ALL_ASSETS)}
+                ${renderWorkspacePathCard("Настройка", "Роли / пользователи / справочники", "Отдельная зона Tenant Admin для справочных данных.", TREE_GROUPS.SETUP)}
+            </div>
+            <div class="journey-banner tone-info">
+                <div class="journey-copy">
+                    <strong>С чего начать</strong>
+                    <p>Подключите контекст, обновите данные, затем раскройте нужный путь в дереве. Дерево не хранит состояние между сессиями и не запрашивает новые серверные проекции.</p>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function renderWorkspacePathCard(title, path, copy, groupKey) {
+    return `
+        <article class="workspace-area-card">
+            <p class="metric-label">${escapeHtml(path)}</p>
+            <strong>${escapeHtml(title)}</strong>
+            <p>${escapeHtml(copy)}</p>
+            <button class="button button-secondary" type="button" data-tree-toggle="${escapeAttribute(groupKey)}">Открыть в дереве</button>
+        </article>
+    `;
+}
+
+function renderDepartmentDetail(departmentId) {
+    const department = getDepartmentTreeNodes().find((item) => item.id === departmentId);
+    if (!department) {
+        return renderPanelEmpty("Оргструктура", "Подразделение не найдено", "Данные могли измениться. Обновите рабочий контур.");
+    }
+
+    const users = getUsersForDepartment(departmentId);
+    const assets = getAssetsForDepartment(departmentId);
+
+    return `
+        <div class="stack">
+            ${renderDetailHeader("Оргструктура", department.name, "Managerial view: Department -> Users -> assigned assets. Это не физическая локация.")}
+            <div class="asset-summary-grid">
+                ${renderSummaryCard("Пользователи", escapeHtml(String(users.length)), "По users.department_id из уже загруженных пользователей.")}
+                ${renderSummaryCard("Назначенные активы", escapeHtml(String(assets.length)), "По assets.assigned_user_id через пользователей подразделения.")}
+                ${renderSummaryCard("Служебный ID", renderTechnicalValue(department.id, { copy: true }), "Техническое значение доступно для поддержки.")}
+            </div>
+            <section>
+                <div class="panel-heading">
+                    <div>
+                        <p class="section-kicker">Users</p>
+                        <h3>Пользователи подразделения</h3>
+                    </div>
+                    <span class="summary-pill">${escapeHtml(String(users.length))}</span>
+                </div>
+                ${renderUserList(users)}
+            </section>
+            <section>
+                <div class="panel-heading">
+                    <div>
+                        <p class="section-kicker">Assigned assets</p>
+                        <h3>Активы, назначенные пользователям</h3>
+                    </div>
+                    <span class="summary-pill">${escapeHtml(String(assets.length))}</span>
+                </div>
+                ${renderAssetList(assets, { empty: "У пользователей этого подразделения нет назначенных активов.", source: "department", parentId: departmentId })}
+            </section>
+        </div>
+    `;
+}
+
+function renderUserDetail(userId) {
+    const user = state.references.users.find((item) => item.id === userId);
+    if (!user) {
+        return renderPanelEmpty("Оргструктура", "Пользователь не найден", "Данные могли измениться. Обновите рабочий контур.");
+    }
+
+    const assets = getAssetsForUser(userId);
+    const departmentName = resolveDepartmentName(user.department_id);
+
+    return `
+        <div class="stack">
+            ${renderDetailHeader("User", user.name || shortenTechnicalValue(user.id), "Пользовательский узел показывает только уже доступные setup-поля и назначенные активы.")}
+            <div class="asset-summary-grid">
+                ${renderSummaryCard("Имя", escapeHtml(user.name || "-"), "Существующее поле пользователя.")}
+                ${renderSummaryCard("Подразделение", escapeHtml(departmentName), user.department_id ? "По department_id пользователя." : "Пользователь попадает в fallback Без подразделения.")}
+                ${renderSummaryCard("Назначенные активы", escapeHtml(String(assets.length)), "Клиентская группировка по assigned_user_id.")}
+                ${renderSummaryCard("Служебный ID", renderTechnicalValue(user.id, { copy: true }), "Техническое значение доступно для поддержки.")}
+            </div>
+            ${canTenantAdmin() ? renderUserRoleBinding(user) : `
+                <div class="journey-banner tone-readonly">
+                    <div class="journey-copy">
+                        <strong>Роли не раскрываются как IAM-профиль</strong>
+                        <p>Полная видимость назначенных ролей не подтверждена текущими frontend-данными. Назначение роли доступно только Tenant Admin в уже существующей настройке.</p>
+                    </div>
+                </div>
+            `}
+            <section>
+                <div class="panel-heading">
+                    <div>
+                        <p class="section-kicker">Assigned assets</p>
+                        <h3>Активы пользователя</h3>
+                    </div>
+                    <span class="summary-pill">${escapeHtml(String(assets.length))}</span>
+                </div>
+                ${renderAssetList(assets, { empty: "На пользователя не назначены активы из загруженного реестра.", source: "user", parentId: userId })}
+            </section>
+        </div>
+    `;
+}
+
+function renderBranchDetail(branchId) {
+    const branch = getBranchTreeNodes().find((item) => item.id === branchId);
+    if (!branch) {
+        return renderPanelEmpty("Локации", "Филиал не найден", "Данные могли измениться. Обновите рабочий контур.");
+    }
+
+    const locations = getLocationsForBranch(branchId);
+    const assets = getAssetsForBranch(branchId);
+
+    return `
+        <div class="stack">
+            ${renderDetailHeader("Локации", branch.name, "Physical view: Branch -> Location -> assets at location. Это не managerial org tree.")}
+            <div class="asset-summary-grid">
+                ${renderSummaryCard("Локации", escapeHtml(String(locations.length)), "По locations.branch_id из уже загруженных справочников.")}
+                ${renderSummaryCard("Активы в локациях", escapeHtml(String(assets.length)), "Клиентская группировка по assets.location_id.")}
+                ${renderSummaryCard("Служебный ID", renderTechnicalValue(branch.id, { copy: true }), "Техническое значение доступно для поддержки.")}
+            </div>
+            <section>
+                <div class="panel-heading">
+                    <div>
+                        <p class="section-kicker">Locations</p>
+                        <h3>Локации филиала</h3>
+                    </div>
+                    <span class="summary-pill">${escapeHtml(String(locations.length))}</span>
+                </div>
+                ${renderLocationList(locations)}
+            </section>
+            <section>
+                <div class="panel-heading">
+                    <div>
+                        <p class="section-kicker">Assets at location</p>
+                        <h3>Активы в локациях филиала</h3>
+                    </div>
+                    <span class="summary-pill">${escapeHtml(String(assets.length))}</span>
+                </div>
+                ${renderAssetList(assets, { empty: "В локациях филиала нет активов из загруженного реестра.", source: "branch", parentId: branchId })}
+            </section>
+        </div>
+    `;
+}
+
+function renderLocationDetail(locationId) {
+    const location = state.references.locations.find((item) => item.id === locationId);
+    if (!location) {
+        return renderPanelEmpty("Локации", "Локация не найдена", "Если в активе есть только ID локации, он остаётся техническим значением без новой lookup-логики.");
+    }
+
+    const assets = getAssetsForLocation(locationId);
+    const branchName = resolveBranchName(location.branch_id);
+
+    return `
+        <div class="stack">
+            ${renderDetailHeader("Location", location.name || shortenTechnicalValue(location.id), "Физическая локация и активы, у которых уже загружен matching location_id.")}
+            <div class="asset-summary-grid">
+                ${renderSummaryCard("Филиал", escapeHtml(branchName), "По branch_id локации.")}
+                ${renderSummaryCard("Активы в локации", escapeHtml(String(assets.length)), "Клиентская группировка по assets.location_id.")}
+                ${renderSummaryCard("Служебный ID", renderTechnicalValue(location.id, { copy: true }), "Техническое значение доступно для поддержки.")}
+            </div>
+            ${renderAssetList(assets, { empty: "В этой локации нет активов из загруженного реестра.", source: "location", parentId: locationId })}
+        </div>
+    `;
+}
+
+function renderAllAssetsGroupDetail(groupKey) {
+    const group = getAllAssetGroups().find((item) => item.key === groupKey) || getAllAssetGroups()[0];
+    const title = group ? group.label : "Все активы";
+    const assets = group ? group.assets : [];
+
+    return `
+        <div class="stack">
+            ${renderDetailHeader("Все активы", title, "Fallback-группа построена только из уже загруженного списка активов.")}
+            <div class="asset-summary-grid">
+                ${renderSummaryCard("Активов", escapeHtml(String(assets.length)), "Клиентская группировка для ориентации.")}
+                ${renderSummaryCard("Без ответственного", escapeHtml(String(state.assets.filter((asset) => !asset.assigned_user_id).length)), "Активы без assigned_user_id остаются видимыми.")}
+                ${renderSummaryCard("Без локации", escapeHtml(String(state.assets.filter((asset) => !asset.location_id).length)), "Активы без location_id не скрываются.")}
+            </div>
+            ${canAssetMutate() ? renderAssetCreatePanelMarkup() : ""}
+            ${renderAssetList(assets, { empty: "В этой группе нет активов из загруженного реестра.", source: "all", group: group?.key || "" })}
+        </div>
+    `;
+}
+
+function renderSetupResourceDetail(resourceKey) {
+    const config = ADMIN_RESOURCES[resourceKey] || ADMIN_RESOURCES.roles;
+    state.activeAdminResource = config.key;
+
+    if (!canTenantAdmin()) {
+        return `
+            <div class="stack">
+                ${renderDetailHeader("Настройка", config.label, "Setup/Admin отделена от ежедневных операций с активами.")}
+                <div class="journey-banner tone-readonly">
+                    <div class="journey-copy">
+                        <strong>Настройка доступна Tenant Admin</strong>
+                        <p>Текущий UI-профиль не открывает изменение справочников. Новая модель доступа не добавляется.</p>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    return `
+        <div class="stack">
+            ${renderDetailHeader("Настройка", config.label, "Роли, пользователи, подразделения, филиалы и локации остаются отдельной setup-зоной.")}
+            <div class="setup-order">
+                Порядок первой настройки: <strong>роли -> пользователи -> филиалы -> локации -> подразделения</strong>
+            </div>
+            ${renderSetupOverviewMarkup()}
+            ${renderAdminResourceNavMarkup()}
+            <div class="admin-grid">
+                ${renderAdminTableMarkup(config)}
+                ${renderAdminEditorMarkup(config)}
+            </div>
+        </div>
+    `;
+}
+
+function renderAssetDetailPanel() {
+    if (state.loading.assetDetail && !state.selectedAsset) {
+        return renderPanelEmpty("Карточка", "Загружаем карточку", "Как только данные актива будут доступны, UI откроет карточку и вкладки.");
+    }
+
+    if (!state.selectedAsset) {
+        return renderPanelEmpty("Карточка", "Актив не выбран", "Откройте актив из дерева Оргструктура, Локации или Все активы.");
+    }
+
+    const asset = state.selectedAsset;
+    const canMutate = canAssetMutate();
+    const hasUsers = state.references.users.length > 0;
+    const hasLocations = state.references.locations.length > 0;
+    const hasCurrentUser = hasCurrentUserResponsibility(asset);
+
+    if (!ASSET_SECTIONS.some((section) => section.key === state.activeAssetSection)) {
+        state.activeAssetSection = "overview";
+    }
+
+    return `
+        <div class="stack">
+            <div class="panel-heading">
+                <div class="asset-card-header">
+                    <p class="section-kicker">Asset detail</p>
+                    <div class="asset-card-title">
+                        <h2>${escapeHtml(asset.asset_tag || "-")}</h2>
+                        ${renderStatusBadge(asset.status)}
+                    </div>
+                    <div class="asset-card-meta">
+                        <span class="reference-meta">SN: ${escapeHtml(asset.serial_number || "-")}</span>
+                        <span class="reference-meta">Тип: ${escapeHtml(asset.asset_type || "-")}</span>
+                        ${renderTechnicalDisclosure("ID актива", asset.id, { label: "ID актива" })}
+                    </div>
+                </div>
+                <button class="button button-secondary ${isBusy("refreshAsset") ? "is-loading" : ""}" data-refresh-asset type="button" ${isBusy("refreshAsset") ? "disabled" : ""}>
+                    ${isBusy("refreshAsset") ? "Обновляем" : "Обновить карточку"}
+                </button>
+            </div>
+            ${renderAssetSectionNav()}
+            <div class="asset-card">
+                ${renderAssetSectionContent(asset, canMutate, hasUsers, hasLocations, hasCurrentUser)}
+            </div>
+        </div>
+    `;
+}
+
+function renderDetailHeader(kicker, title, copy) {
+    return `
+        <div class="screen-header detail-header">
+            <div>
+                <p class="section-kicker">${escapeHtml(kicker)}</p>
+                <h2>${escapeHtml(title)}</h2>
+                <p class="screen-copy">${escapeHtml(copy)}</p>
+            </div>
+        </div>
+    `;
+}
+
+function renderUserList(users) {
+    if (users.length === 0) {
+        return renderInlineEmpty("Пользователи не найдены", "Нет пользователей в этой ветке дерева.");
+    }
+
+    return `
+        <div class="table-wrap">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Пользователь</th>
+                        <th>Подразделение</th>
+                        <th>Активы</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${users.map((user) => `
+                        <tr>
+                            <td>${escapeHtml(user.name || shortenTechnicalValue(user.id))}</td>
+                            <td>${escapeHtml(resolveDepartmentName(user.department_id))}</td>
+                            <td>${escapeHtml(String(getAssetsForUser(user.id).length))}</td>
+                            <td><button class="button button-ghost" type="button" data-node-type="${TREE_NODE_TYPES.USER}" data-user-id="${escapeAttribute(user.id)}">Открыть</button></td>
+                        </tr>
+                    `).join("")}
+                </tbody>
+            </table>
+        </div>
+    `;
+}
+
+function renderLocationList(locations) {
+    if (locations.length === 0) {
+        return renderInlineEmpty("Локации не найдены", "В этой ветке нет локаций из загруженных справочников.");
+    }
+
+    return `
+        <div class="table-wrap">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Локация</th>
+                        <th>Филиал</th>
+                        <th>Активы</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${locations.map((location) => `
+                        <tr>
+                            <td>${escapeHtml(location.name || shortenTechnicalValue(location.id))}</td>
+                            <td>${escapeHtml(resolveBranchName(location.branch_id))}</td>
+                            <td>${escapeHtml(String(getAssetsForLocation(location.id).length))}</td>
+                            <td><button class="button button-ghost" type="button" data-node-type="${TREE_NODE_TYPES.LOCATION}" data-location-id="${escapeAttribute(location.id)}">Открыть</button></td>
+                        </tr>
+                    `).join("")}
+                </tbody>
+            </table>
+        </div>
+    `;
+}
+
+function renderAssetList(assets, options = {}) {
+    if (assets.length === 0) {
+        return renderInlineEmpty("Активы не найдены", options.empty || "В этой ветке нет активов из загруженного реестра.");
+    }
+
+    return `
+        <div class="table-wrap">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Актив</th>
+                        <th>Тип</th>
+                        <th>Статус</th>
+                        <th>Ответственный</th>
+                        <th>Локация</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${assets.map((asset) => `
+                        <tr class="${asset.id === state.selectedAssetId ? "is-active" : ""}">
+                            <td>${renderAssetIdentity(asset)}</td>
+                            <td>${escapeHtml(asset.asset_type || "-")}</td>
+                            <td>${renderStatusBadge(asset.status)}</td>
+                            <td>${renderUserReference(asset.assigned_user_id)}</td>
+                            <td>${renderLocationReference(asset.location_id)}</td>
+                            <td>
+                                <button
+                                    class="button button-secondary"
+                                    type="button"
+                                    data-node-type="${TREE_NODE_TYPES.ASSET}"
+                                    data-asset-id="${escapeAttribute(asset.id)}"
+                                    data-source="${escapeAttribute(options.source || "")}"
+                                    data-parent-id="${escapeAttribute(options.parentId || "")}"
+                                    data-group="${escapeAttribute(options.group || "")}"
+                                >Открыть карточку</button>
+                            </td>
+                        </tr>
+                    `).join("")}
+                </tbody>
+            </table>
+        </div>
+    `;
+}
+
+function renderAssetCreatePanelMarkup() {
+    return `
+        <section class="panel panel-tight">
+            <div class="panel-heading">
+                <div>
+                    <p class="section-kicker">Create</p>
+                    <h3>Создать актив</h3>
+                </div>
+            </div>
+            <form id="asset-create-form" class="form-grid">
+                <label class="field">
+                    <span>Инвентарный тег</span>
+                    <input name="asset_tag" type="text" autocomplete="off" required>
+                </label>
+                <label class="field">
+                    <span>Серийный номер</span>
+                    <input name="serial_number" type="text" autocomplete="off" required>
+                </label>
+                <label class="field">
+                    <span>Тип актива</span>
+                    <input name="asset_type" type="text" autocomplete="off" required>
+                </label>
+                <div class="button-row button-row-inline">
+                    <button class="button button-primary ${isBusy("createAsset") ? "is-loading" : ""}" type="submit" ${isBusy("createAsset") ? "disabled" : ""}>
+                        ${isBusy("createAsset") ? "Создаём" : "Создать актив"}
+                    </button>
+                </div>
+            </form>
+            <p class="muted-note">
+                Создание заполняет только master-record. Ответственность задаётся отдельным assign после открытия карточки.
+            </p>
+        </section>
+    `;
+}
+
+function renderSetupOverviewMarkup() {
+    const steps = getSetupStepStatuses();
+    const completed = steps.filter((step) => step.count > 0).length;
+    return `
+        <section class="workspace-overview panel panel-tight">
+            <div class="panel-heading">
+                <div>
+                    <p class="section-kicker">Порядок настройки</p>
+                    <h3>Порядок первой tenant-настройки</h3>
+                </div>
+                <span class="summary-pill">${completed}/${SETUP_SEQUENCE.length} заполнено</span>
+            </div>
+            <div class="overview-grid">
+                ${steps.map((step) => `
+                    <article class="setup-card ${step.status}">
+                        <p class="metric-label">Шаг ${step.index}</p>
+                        <strong>${escapeHtml(step.label)}</strong>
+                        <p class="metric-value">${escapeHtml(String(step.count))}</p>
+                        <p class="metric-copy">${escapeHtml(step.description)}</p>
+                        <p class="setup-status">${escapeHtml(step.statusLabel)}</p>
+                        <button class="button button-secondary" type="button" data-resource-key="${step.key}">Открыть раздел</button>
+                    </article>
+                `).join("")}
+            </div>
+        </section>
+    `;
+}
+
+function renderAdminResourceNavMarkup() {
+    return `
+        <nav class="admin-nav" aria-label="Разделы настройки">
+            ${Object.values(ADMIN_RESOURCES).map((resource) => `
+                <button
+                    class="nav-chip ${resource.key === state.activeAdminResource ? "is-active" : ""}"
+                    type="button"
+                    data-resource-key="${resource.key}"
+                >
+                    ${escapeHtml(resource.label)}
+                </button>
+            `).join("")}
+        </nav>
+    `;
+}
+
+function renderAdminTableMarkup(config) {
+    const items = getAdminItems(config.key);
+    const loading = (state.loading.references || state.loading.roles) && items.length === 0;
+    const meta = ADMIN_RESOURCE_META[config.key];
+    const emptyMessage = [meta.empty, meta.prerequisite].filter(Boolean).join(" ") || config.emptyText;
+    const body = loading
+        ? `<tr><td colspan="${config.columns.length}" class="empty-cell">Загружаем ${escapeHtml(config.label.toLowerCase())}...</td></tr>`
+        : items.length === 0
+            ? `<tr><td colspan="${config.columns.length}" class="empty-cell">${escapeHtml(emptyMessage)}</td></tr>`
+            : items.map((item) => `
+                <tr
+                    class="${item.id === state.selectedAdminItemId ? "is-active" : ""}"
+                    data-admin-id="${escapeHtml(item.id)}"
+                    aria-selected="${item.id === state.selectedAdminItemId ? "true" : "false"}"
+                    title="Нажмите, чтобы открыть запись в редакторе"
+                >
+                    ${config.columns.map((column) => `<td>${column.render(item)}</td>`).join("")}
+                </tr>
+            `).join("");
+
+    return `
+        <section class="panel">
+            <div class="panel-heading">
+                <div>
+                    <p class="section-kicker">Текущий раздел</p>
+                    <h3>${escapeHtml(config.label)}</h3>
+                </div>
+                <button class="button button-secondary" id="refresh-admin-resource" type="button">Обновить список</button>
+            </div>
+            <p class="table-helper">Нажмите строку, чтобы открыть редактирование. Выбранная запись остаётся подсвеченной.</p>
+            <div class="table-wrap">
+                <table class="data-table">
+                    <thead>
+                        <tr>${config.columns.map((column) => `<th>${escapeHtml(column.label)}</th>`).join("")}</tr>
+                    </thead>
+                    <tbody>${body}</tbody>
+                </table>
+            </div>
+        </section>
+    `;
+}
+
+function renderAdminEditorMarkup(config) {
+    const selectedItem = getAdminItems(config.key).find((item) => item.id === state.selectedAdminItemId) || null;
+    const meta = ADMIN_RESOURCE_META[config.key];
+    const canSubmit = canSubmitAdminResource(config.key);
+    const resourceBusy = isBusy("adminResource");
+    const prerequisiteMessage = getAdminPrerequisiteMessage(config.key);
+    const heading = selectedItem ? `Редактировать: ${config.label}` : `Создать: ${config.label}`;
+    const resetLabel = selectedItem ? "Новая запись" : "Очистить форму";
+
+    return `
+        <section class="panel">
+            <div class="stack">
+                <div class="panel-heading">
+                    <div>
+                        <p class="section-kicker">Редактор</p>
+                        <h3>${escapeHtml(heading)}</h3>
+                    </div>
+                    <button class="button button-ghost" type="button" data-admin-reset>${escapeHtml(resetLabel)}</button>
+                </div>
+                <p class="muted-note">${escapeHtml(meta.helper)}</p>
+                ${prerequisiteMessage ? `<div class="journey-banner tone-warning"><div class="journey-copy"><strong>Проверьте условие</strong><p>${escapeHtml(prerequisiteMessage)}</p></div></div>` : ""}
+                <form id="admin-resource-form" class="form-grid">
+                    ${config.fields.map((field) => renderAdminField(field, selectedItem)).join("")}
+                    <div class="button-row button-row-inline">
+                        <button class="button button-primary ${resourceBusy ? "is-loading" : ""}" type="submit" ${canSubmit && !resourceBusy ? "" : "disabled"}>
+                            ${resourceBusy ? "Сохраняем" : selectedItem ? "Сохранить изменения" : "Создать запись"}
+                        </button>
+                    </div>
+                </form>
+                ${config.key === "users" ? renderUserRoleBinding(selectedItem) : ""}
+            </div>
+        </section>
+    `;
+}
+
+function getSelectedTreeNodeLabel() {
+    const node = state.selectedTreeNode || { type: TREE_NODE_TYPES.WORKSPACE };
+    if (node.type === TREE_NODE_TYPES.DEPARTMENT) {
+        return getDepartmentTreeNodes().find((item) => item.id === node.id)?.name || "Подразделение";
+    }
+    if (node.type === TREE_NODE_TYPES.USER) {
+        return state.references.users.find((item) => item.id === node.id)?.name || "Пользователь";
+    }
+    if (node.type === TREE_NODE_TYPES.BRANCH) {
+        return getBranchTreeNodes().find((item) => item.id === node.id)?.name || "Филиал";
+    }
+    if (node.type === TREE_NODE_TYPES.LOCATION) {
+        return state.references.locations.find((item) => item.id === node.id)?.name || "Локация";
+    }
+    if (node.type === TREE_NODE_TYPES.ASSET) {
+        return state.selectedAsset?.asset_tag || state.assets.find((item) => item.id === node.id)?.asset_tag || "Актив";
+    }
+    if (node.type === TREE_NODE_TYPES.ASSET_GROUP) {
+        return getAllAssetGroups().find((item) => item.key === node.group)?.label || "Все активы";
+    }
+    if (node.type === TREE_NODE_TYPES.SETUP) {
+        return ADMIN_RESOURCES[node.resource]?.label || "Настройка";
+    }
+    return "Рабочее место";
+}
+
+function getSelectedTreePath() {
+    const node = state.selectedTreeNode || { type: TREE_NODE_TYPES.WORKSPACE };
+    if (node.type === TREE_NODE_TYPES.WORKSPACE) {
+        return [TREE_GROUPS.WORKSPACE];
+    }
+    if (node.type === TREE_NODE_TYPES.DEPARTMENT) {
+        return [TREE_GROUPS.ORG, getDepartmentTreeKey(node.id)];
+    }
+    if (node.type === TREE_NODE_TYPES.USER) {
+        const user = state.references.users.find((item) => item.id === node.id);
+        const departmentId = getDepartmentIdForUser(user);
+        return [TREE_GROUPS.ORG, getDepartmentTreeKey(departmentId), getUserTreeKey(node.id)];
+    }
+    if (node.type === TREE_NODE_TYPES.BRANCH) {
+        return [TREE_GROUPS.LOCATIONS, getBranchTreeKey(node.id)];
+    }
+    if (node.type === TREE_NODE_TYPES.LOCATION) {
+        const location = state.references.locations.find((item) => item.id === node.id);
+        const branchId = getBranchIdForLocation(location);
+        return [TREE_GROUPS.LOCATIONS, getBranchTreeKey(branchId), getLocationTreeKey(node.id)];
+    }
+    if (node.type === TREE_NODE_TYPES.ASSET) {
+        if (node.source === "user") {
+            const user = state.references.users.find((item) => item.id === node.parentId);
+            const departmentId = getDepartmentIdForUser(user);
+            return [TREE_GROUPS.ORG, getDepartmentTreeKey(departmentId), getUserTreeKey(node.parentId)];
+        }
+        if (node.source === "department") {
+            return [TREE_GROUPS.ORG, getDepartmentTreeKey(node.parentId)];
+        }
+        if (node.source === "location") {
+            const location = state.references.locations.find((item) => item.id === node.parentId);
+            const branchId = getBranchIdForLocation(location);
+            return [TREE_GROUPS.LOCATIONS, getBranchTreeKey(branchId), getLocationTreeKey(node.parentId)];
+        }
+        if (node.source === "branch") {
+            return [TREE_GROUPS.LOCATIONS, getBranchTreeKey(node.parentId)];
+        }
+        return [TREE_GROUPS.ALL_ASSETS];
+    }
+    if (node.type === TREE_NODE_TYPES.ASSET_GROUP) {
+        return [TREE_GROUPS.ALL_ASSETS];
+    }
+    if (node.type === TREE_NODE_TYPES.SETUP) {
+        return [TREE_GROUPS.SETUP];
+    }
+    return [TREE_GROUPS.WORKSPACE];
+}
+
+function isTreeExpanded(key, selectedPath) {
+    return state.expandedTreeNodes.has(key) || selectedPath.includes(key);
+}
+
+function getDepartmentTreeNodes() {
+    const nodes = state.references.departments.map((department) => ({
+        id: department.id,
+        name: department.name || shortenTechnicalValue(department.id)
+    }));
+    const knownIds = new Set(nodes.map((department) => department.id));
+    const needsFallback = state.references.users.some((user) => !user.department_id || !knownIds.has(user.department_id));
+    if (needsFallback) {
+        nodes.push({ id: FALLBACK_DEPARTMENT_ID, name: "Без подразделения" });
+    }
+    return nodes;
+}
+
+function getDepartmentIdForUser(user) {
+    if (!user || !user.department_id) {
+        return FALLBACK_DEPARTMENT_ID;
+    }
+    const known = state.references.departments.some((department) => department.id === user.department_id);
+    return known ? user.department_id : FALLBACK_DEPARTMENT_ID;
+}
+
+function getUsersForDepartment(departmentId) {
+    return state.references.users.filter((user) => getDepartmentIdForUser(user) === departmentId);
+}
+
+function getAssetsForDepartment(departmentId) {
+    const userIds = new Set(getUsersForDepartment(departmentId).map((user) => user.id));
+    return state.assets.filter((asset) => userIds.has(asset.assigned_user_id));
+}
+
+function getAssetsForUser(userId) {
+    return state.assets.filter((asset) => asset.assigned_user_id === userId);
+}
+
+function getDepartmentTreeKey(departmentId) {
+    return `department:${departmentId || FALLBACK_DEPARTMENT_ID}`;
+}
+
+function getUserTreeKey(userId) {
+    return `user:${userId || ""}`;
+}
+
+function getBranchTreeNodes() {
+    const nodes = state.references.branches.map((branch) => ({
+        id: branch.id,
+        name: branch.name || shortenTechnicalValue(branch.id)
+    }));
+    const knownIds = new Set(nodes.map((branch) => branch.id));
+    const needsFallback = state.references.locations.some((location) => !location.branch_id || !knownIds.has(location.branch_id));
+    if (needsFallback) {
+        nodes.push({ id: FALLBACK_BRANCH_ID, name: "Без филиала" });
+    }
+    return nodes;
+}
+
+function getBranchIdForLocation(location) {
+    if (!location || !location.branch_id) {
+        return FALLBACK_BRANCH_ID;
+    }
+    const known = state.references.branches.some((branch) => branch.id === location.branch_id);
+    return known ? location.branch_id : FALLBACK_BRANCH_ID;
+}
+
+function getLocationsForBranch(branchId) {
+    return state.references.locations.filter((location) => getBranchIdForLocation(location) === branchId);
+}
+
+function getAssetsForBranch(branchId) {
+    const locationIds = new Set(getLocationsForBranch(branchId).map((location) => location.id));
+    return state.assets.filter((asset) => locationIds.has(asset.location_id));
+}
+
+function getAssetsForLocation(locationId) {
+    return state.assets.filter((asset) => asset.location_id === locationId);
+}
+
+function getBranchTreeKey(branchId) {
+    return `branch:${branchId || FALLBACK_BRANCH_ID}`;
+}
+
+function getLocationTreeKey(locationId) {
+    return `location:${locationId || ""}`;
+}
+
+function getAllAssetGroups() {
+    const groups = [
+        {
+            key: ASSET_GROUPS.ASSIGNED,
+            label: "Назначенные",
+            assets: state.assets.filter((asset) => Boolean(asset.assigned_user_id))
+        },
+        {
+            key: ASSET_GROUPS.UNASSIGNED,
+            label: "Неназначенные",
+            assets: state.assets.filter((asset) => !asset.assigned_user_id)
+        }
+    ];
+
+    if (hasRetiredStatusSupport()) {
+        groups.push({
+            key: ASSET_GROUPS.RETIRED,
+            label: "Retired / списанные",
+            assets: state.assets.filter((asset) => String(asset.status || "").toUpperCase() === "RETIRED")
+        });
+    }
+
+    return groups;
+}
+
+function hasRetiredStatusSupport() {
+    return state.assets.some((asset) => Object.prototype.hasOwnProperty.call(asset, "status"));
 }
 
 function renderUserServiceUrlPreview() {
@@ -1605,26 +2889,27 @@ function renderAssetSectionNav() {
 }
 
 function renderAssetSectionContent(asset, canMutate, hasUsers, hasLocations, hasCurrentUser) {
-    if (state.activeAssetSection === "master") {
-        return renderAssetMasterSection(asset, canMutate);
-    }
-
     if (state.activeAssetSection === "responsibility") {
         return renderAssetResponsibilitySection(asset, hasCurrentUser);
     }
 
     if (state.activeAssetSection === "actions") {
-        return renderAssetActionsSection(canMutate, hasUsers, hasLocations, hasCurrentUser);
+        return renderAssetActionsSection(asset, canMutate, hasUsers, hasLocations, hasCurrentUser);
     }
 
     if (state.activeAssetSection === "history") {
         return renderAssetHistoryAuditSection();
     }
 
+    if (state.activeAssetSection === "technical") {
+        return renderAssetTechnicalSection(asset);
+    }
+
     return renderAssetOverviewSection(asset, canMutate);
 }
 
 function renderAssetOverviewSection(asset, canMutate) {
+    const displayName = asset.display_name || asset.name || asset.asset_tag || "-";
     return `
         <section class="asset-section">
             <div class="journey-banner tone-info">
@@ -1638,6 +2923,7 @@ function renderAssetOverviewSection(asset, canMutate) {
 
             <div class="asset-summary-grid">
                 ${renderSummaryCard("Инвентарный тег", escapeHtml(asset.asset_tag), "Главный пользовательский идентификатор в реестре.")}
+                ${renderSummaryCard("Display name", escapeHtml(displayName), "Используется только уже доступное поле или asset_tag как отображаемый ярлык.")}
                 ${renderSummaryCard("Статус", renderStatusBadge(asset.status), "Не кодирует текущую ответственность.")}
                 ${renderSummaryCard("Тип", escapeHtml(asset.asset_type), "Поле карточки актива.")}
                 ${renderSummaryCard("Серийный номер", escapeHtml(asset.serial_number), "Поле карточки актива.")}
@@ -1646,9 +2932,9 @@ function renderAssetOverviewSection(asset, canMutate) {
             </div>
 
             <div class="button-row">
-                ${canMutate ? `<button class="button button-secondary" type="button" data-asset-section="master">Редактировать данные актива</button>` : ""}
                 ${canMutate ? `<button class="button button-secondary" type="button" data-asset-section="actions">Открыть действия</button>` : ""}
                 <button class="button button-ghost" type="button" data-asset-section="history">История и аудит</button>
+                <button class="button button-ghost" type="button" data-asset-section="technical">Technical details</button>
             </div>
         </section>
     `;
@@ -1730,7 +3016,7 @@ function renderAssetResponsibilitySection(asset, hasCurrentUser) {
     `;
 }
 
-function renderAssetActionsSection(canMutate, hasUsers, hasLocations, hasCurrentUser) {
+function renderAssetActionsSection(asset, canMutate, hasUsers, hasLocations, hasCurrentUser) {
     if (!canMutate) {
         return `
             <section class="asset-section">
@@ -1749,10 +3035,12 @@ function renderAssetActionsSection(canMutate, hasUsers, hasLocations, hasCurrent
             <div class="panel-heading">
                 <div>
                     <p class="section-kicker">Отдельные действия</p>
-                    <h3>Assign / Transfer / Return</h3>
+                    <h3>Actions</h3>
                 </div>
                 <span class="summary-pill">${escapeHtml(hasCurrentUser ? "Есть текущий пользователь" : "Нет текущего пользователя")}</span>
             </div>
+
+            ${renderAssetMasterSection(asset, canMutate)}
 
             <div class="action-grid">
                 ${renderAssignCard(hasUsers, hasCurrentUser)}
@@ -1793,8 +3081,37 @@ function renderAssetHistoryAuditSection() {
             </div>
 
             <div class="button-row">
-                <button class="button button-secondary" type="button" data-screen="${PRIMARY_SCREENS.REVIEW}">Открыть историю и аудит</button>
+                <button class="button button-secondary" type="button" data-asset-section="technical">Открыть technical details</button>
             </div>
+        </section>
+    `;
+}
+
+function renderAssetTechnicalSection(asset) {
+    return `
+        <section class="asset-section">
+            <div class="panel-heading">
+                <div>
+                    <p class="section-kicker">Technical details</p>
+                    <h3>Служебные значения</h3>
+                </div>
+                <span class="summary-pill">Secondary</span>
+            </div>
+            <p class="muted-note">
+                Технические значения доступны для поддержки и сверки. Они не являются основной рабочей навигацией.
+            </p>
+            <div class="asset-summary-grid">
+                ${renderSummaryCard("Asset ID", renderTechnicalValue(asset.id, { copy: true, label: "asset ID" }), "Идентификатор актива.")}
+                ${renderSummaryCard("Tenant ID", renderTechnicalValue(state.context.tenantId, { copy: true, label: "tenant ID" }), "Текущий контекст доступа.")}
+                ${renderSummaryCard("Current user ID", renderTechnicalValue(state.context.userId, { copy: true, label: "user ID" }), "Текущий контекст доступа.")}
+                ${renderSummaryCard("Actor", renderTechnicalValue(state.context.actor, { copy: true, label: "actor" }), "Значение X-Authenticated-Actor.")}
+                ${renderSummaryCard("assigned_user_id", renderTechnicalValue(asset.assigned_user_id, { copy: true, label: "assigned_user_id" }), "Raw value из карточки актива.")}
+                ${renderSummaryCard("location_id", renderTechnicalValue(asset.location_id, { copy: true, label: "location_id" }), "Raw value из карточки актива.")}
+            </div>
+            <details class="audit-raw">
+                <summary>Raw asset payload</summary>
+                <pre class="json-block">${escapeHtml(JSON.stringify(asset, null, 2))}</pre>
+            </details>
         </section>
     `;
 }
