@@ -154,6 +154,12 @@ const ACTION_MESSAGES = {
     actionFailed: "Не удалось выполнить действие. Проверьте данные и повторите попытку."
 };
 
+const FEEDBACK_SCOPES = {
+    WORKSPACE: "workspace",
+    ASSET: "asset",
+    SETUP: "setup"
+};
+
 const ADMIN_RESOURCES = {
     roles: {
         key: "roles",
@@ -293,7 +299,8 @@ const state = {
     selectedAdminItemId: null,
     selectedTreeNode: { type: TREE_NODE_TYPES.WORKSPACE },
     expandedTreeNodes: new Set(),
-    lastRoleAssignment: null
+    lastRoleAssignment: null,
+    lastFeedback: null
 };
 
 document.addEventListener("DOMContentLoaded", initialize);
@@ -454,6 +461,7 @@ function clearSession() {
     state.selectedTreeNode = { type: TREE_NODE_TYPES.WORKSPACE };
     state.expandedTreeNodes = new Set();
     state.lastRoleAssignment = null;
+    state.lastFeedback = null;
 
     window.localStorage.removeItem(STORAGE_KEY);
     syncContextToForm();
@@ -903,10 +911,10 @@ async function onAssetCreateSubmit(event) {
             state.selectedTreeNode = { type: TREE_NODE_TYPES.ASSET, id: created.id, source: "all", group: ASSET_GROUPS.UNASSIGNED };
             await refreshAssets();
             scrollToElement(ui.workspaceDetail || ui.assetDetailPanel);
-            showActionSuccess("assetCreated");
+            showActionSuccess("assetCreated", { scope: FEEDBACK_SCOPES.ASSET, assetId: created.id });
         });
     } catch (error) {
-        showActionError(error);
+        showActionError(error, { scope: FEEDBACK_SCOPES.WORKSPACE });
     }
 }
 
@@ -948,7 +956,7 @@ async function onAssetDetailSubmit(event) {
                 state.activeAssetSection = "overview";
                 await refreshAssets();
                 scrollToElement(ui.workspaceDetail || ui.assetDetailPanel);
-                showActionSuccess("assetUpdated");
+                showActionSuccess("assetUpdated", { scope: FEEDBACK_SCOPES.ASSET, assetId: state.selectedAssetId });
             });
             return;
         }
@@ -971,7 +979,7 @@ async function onAssetDetailSubmit(event) {
                 state.activeReviewSection = "history";
                 await refreshAssets();
                 scrollToElement(ui.workspaceDetail || ui.assetDetailPanel);
-                showActionSuccess("assetAssigned");
+                showActionSuccess("assetAssigned", { scope: FEEDBACK_SCOPES.ASSET, assetId: state.selectedAssetId });
             });
             return;
         }
@@ -1003,7 +1011,7 @@ async function onAssetDetailSubmit(event) {
                 state.activeReviewSection = "history";
                 await refreshAssets();
                 scrollToElement(ui.workspaceDetail || ui.assetDetailPanel);
-                showActionSuccess("assetTransferred");
+                showActionSuccess("assetTransferred", { scope: FEEDBACK_SCOPES.ASSET, assetId: state.selectedAssetId });
             });
             return;
         }
@@ -1024,11 +1032,11 @@ async function onAssetDetailSubmit(event) {
                 state.activeReviewSection = "history";
                 await refreshAssets();
                 scrollToElement(ui.workspaceDetail || ui.assetDetailPanel);
-                showActionSuccess("assetReturned");
+                showActionSuccess("assetReturned", { scope: FEEDBACK_SCOPES.ASSET, assetId: state.selectedAssetId });
             });
         }
     } catch (error) {
-        showActionError(error);
+        showActionError(error, { scope: FEEDBACK_SCOPES.ASSET, assetId: state.selectedAssetId });
     }
 }
 
@@ -1161,7 +1169,7 @@ async function onAdminEditorSubmit(event) {
                 state.selectedTreeNode = { type: TREE_NODE_TYPES.SETUP, resource: config.key };
                 render();
                 scrollToElement(ui.workspaceDetail || ui.adminEditorPanel);
-                showActionSuccess("setupSaved");
+                showActionSuccess("setupSaved", { scope: FEEDBACK_SCOPES.SETUP, resourceKey: config.key });
             });
             return;
         }
@@ -1190,11 +1198,11 @@ async function onAdminEditorSubmit(event) {
                 };
                 render();
                 scrollToElement(ui.workspaceDetail || ui.adminEditorPanel);
-                showActionSuccess("roleAssigned");
+                showActionSuccess("roleAssigned", { scope: FEEDBACK_SCOPES.SETUP, resourceKey: state.activeAdminResource });
             });
         }
     } catch (error) {
-        showActionError(error);
+        showActionError(error, { scope: FEEDBACK_SCOPES.SETUP, resourceKey: state.activeAdminResource });
     }
 }
 
@@ -1816,6 +1824,9 @@ function renderWorkspaceOverviewDetail() {
     return `
         <div class="stack">
             ${renderDetailHeader("Рабочее место", "Обзор / что делать первым", "Выберите путь слева: по ответственности, по физической локации, через общий список активов или через настройку tenant.")}
+            <div class="context-feedback-slot" data-context-feedback-slot="${FEEDBACK_SCOPES.WORKSPACE}">
+                ${renderContextualFeedback(FEEDBACK_SCOPES.WORKSPACE)}
+            </div>
             <div class="overview-grid">
                 ${renderMetricCard("Активов", String(totalAssets), "Загружено из существующего реестра активов.")}
                 ${renderMetricCard("Назначенные", String(assigned), "Есть текущий ответственный пользователь.")}
@@ -2033,6 +2044,9 @@ function renderSetupResourceDetail(resourceKey) {
     return `
         <div class="stack">
             ${renderDetailHeader("Настройка", config.label, "Роли, пользователи, подразделения, филиалы и локации остаются отдельной setup-зоной.")}
+            <div class="context-feedback-slot" data-context-feedback-slot="${FEEDBACK_SCOPES.SETUP}" data-resource-key="${escapeAttribute(config.key)}">
+                ${renderContextualFeedback(FEEDBACK_SCOPES.SETUP, { resourceKey: config.key })}
+            </div>
             <div class="setup-order">
                 Порядок первой настройки: <strong>роли -> пользователи -> филиалы -> локации -> подразделения</strong>
             </div>
@@ -2083,6 +2097,9 @@ function renderAssetDetailPanel() {
                 <button class="button button-secondary ${isBusy("refreshAsset") ? "is-loading" : ""}" data-refresh-asset type="button" ${isBusy("refreshAsset") ? "disabled" : ""}>
                     ${isBusy("refreshAsset") ? "Обновляем" : "Обновить карточку"}
                 </button>
+            </div>
+            <div class="context-feedback-slot" data-context-feedback-slot="${FEEDBACK_SCOPES.ASSET}" data-asset-id="${escapeAttribute(asset.id || "")}">
+                ${renderContextualFeedback(FEEDBACK_SCOPES.ASSET, { assetId: asset.id })}
             </div>
             ${renderAssetSectionNav()}
             <div class="asset-card">
@@ -4271,6 +4288,10 @@ function scrollToElement(element) {
 }
 
 function showFlash(message, tone) {
+    if (!ui.flashStack) {
+        return;
+    }
+
     const titleByTone = {
         success: "Готово",
         error: "Ошибка",
@@ -4297,17 +4318,96 @@ function showFlash(message, tone) {
     window.setTimeout(() => node.remove(), durationByTone[tone] || durationByTone.info);
 }
 
-function showActionSuccess(messageKey) {
-    showFlash(ACTION_MESSAGES[messageKey] || ACTION_MESSAGES.assetUpdated, "success");
+function showActionSuccess(messageKey, options = {}) {
+    const message = ACTION_MESSAGES[messageKey] || ACTION_MESSAGES.assetUpdated;
+    rememberFeedback(message, "success", options);
+    showFlash(message, "success");
+    renderContextualFeedbackTargets();
 }
 
-function showActionError(error) {
+function showActionError(error, options = {}) {
     const detail = error?.message ? ` ${error.message}` : "";
-    showFlash(`${ACTION_MESSAGES.actionFailed}${detail}`, "error");
+    const message = `${ACTION_MESSAGES.actionFailed}${detail}`;
+    rememberFeedback(message, "error", options);
+    showFlash(message, "error");
+    renderContextualFeedbackTargets();
 }
 
 function handleUnexpectedError(error) {
     showActionError(error);
+}
+
+function rememberFeedback(message, tone, options = {}) {
+    const scope = options.scope || getCurrentFeedbackScope();
+    state.lastFeedback = {
+        message,
+        tone,
+        scope,
+        assetId: options.assetId ?? (scope === FEEDBACK_SCOPES.ASSET ? state.selectedAssetId : null),
+        resourceKey: options.resourceKey ?? (scope === FEEDBACK_SCOPES.SETUP ? state.activeAdminResource : null),
+        createdAt: new Date().toISOString()
+    };
+}
+
+function getCurrentFeedbackScope() {
+    if (state.selectedTreeNode?.type === TREE_NODE_TYPES.SETUP) {
+        return FEEDBACK_SCOPES.SETUP;
+    }
+    if (state.selectedAssetId) {
+        return FEEDBACK_SCOPES.ASSET;
+    }
+    return FEEDBACK_SCOPES.WORKSPACE;
+}
+
+function renderContextualFeedback(scope, options = {}) {
+    const feedback = state.lastFeedback;
+    if (!shouldRenderContextualFeedback(feedback, scope, options)) {
+        return "";
+    }
+
+    const tone = ["success", "error", "warning", "info"].includes(feedback.tone) ? feedback.tone : "info";
+    const titleByTone = {
+        success: "Действие выполнено",
+        error: "Действие не выполнено",
+        warning: "Проверьте действие",
+        info: "Информация"
+    };
+    const role = tone === "error" || tone === "warning" ? "alert" : "status";
+
+    return `
+        <div class="context-feedback context-feedback-${tone}" role="${role}" aria-live="${tone === "error" || tone === "warning" ? "assertive" : "polite"}">
+            <strong>${escapeHtml(titleByTone[tone])}</strong>
+            <span>${escapeHtml(feedback.message)}</span>
+            <span class="context-feedback-meta">${escapeHtml(formatTimestamp(feedback.createdAt))}</span>
+        </div>
+    `;
+}
+
+function shouldRenderContextualFeedback(feedback, scope, options = {}) {
+    if (!feedback || feedback.scope !== scope) {
+        return false;
+    }
+
+    if (scope === FEEDBACK_SCOPES.ASSET) {
+        const expectedAssetId = options.assetId || state.selectedAssetId;
+        return !feedback.assetId || !expectedAssetId || feedback.assetId === expectedAssetId;
+    }
+
+    if (scope === FEEDBACK_SCOPES.SETUP) {
+        const expectedResourceKey = options.resourceKey || state.activeAdminResource;
+        return !feedback.resourceKey || !expectedResourceKey || feedback.resourceKey === expectedResourceKey;
+    }
+
+    return true;
+}
+
+function renderContextualFeedbackTargets() {
+    document.querySelectorAll("[data-context-feedback-slot]").forEach((slot) => {
+        slot.innerHTML = renderContextualFeedback(slot.dataset.contextFeedbackSlot, {
+            assetId: slot.dataset.assetId || state.selectedAssetId,
+            resourceKey: slot.dataset.resourceKey || state.activeAdminResource
+        });
+    });
 }
 
 function escapeHtml(value) {

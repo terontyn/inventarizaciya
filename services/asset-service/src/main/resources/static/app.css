@@ -361,6 +361,54 @@ code {
     border-color: #dc2626;
 }
 
+.context-feedback-slot {
+    display: grid;
+    gap: 0.55rem;
+}
+
+.context-feedback {
+    display: grid;
+    gap: 0.25rem;
+    padding: 0.9rem 1rem;
+    border-radius: var(--radius-md);
+    border: 2px solid transparent;
+    box-shadow: 0 14px 32px rgba(15, 23, 42, 0.12);
+}
+
+.context-feedback strong {
+    color: var(--ink);
+}
+
+.context-feedback span {
+    color: var(--ink);
+    line-height: 1.45;
+}
+
+.context-feedback-meta {
+    font-size: 0.82rem;
+    color: var(--muted) !important;
+}
+
+.context-feedback-info {
+    background: rgba(255, 255, 255, 0.92);
+    border-color: rgba(22, 32, 42, 0.2);
+}
+
+.context-feedback-success {
+    background: #dcfce7;
+    border-color: #16a34a;
+}
+
+.context-feedback-warning {
+    background: #ffedd5;
+    border-color: #ea580c;
+}
+
+.context-feedback-error {
+    background: #fee2e2;
+    border-color: #dc2626;
+}
+
 .screen-nav,
 .admin-nav {
     display: flex;
