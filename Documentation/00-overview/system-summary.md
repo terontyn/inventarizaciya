@@ -2,7 +2,7 @@
 
 Status: approved
 Owner: project
-Last Updated: 2026-04-30
+Last Updated: 2026-05-14
 
 ## Purpose
 IT Asset Management SaaS для учета активов, оргструктуры, ответственности за технику и истории критических изменений.
@@ -879,3 +879,46 @@ Future First-Tenant Operational Validation still requires:
 - real tenant actors;
 - real usage loop;
 - observed operational actions beyond scripted internal walkthrough.
+
+## Current Baseline Update — Operational Workspace UX v3.1 Closeout
+
+Operational Workspace UX v3.1 has been implemented and accepted as a narrow frontend-only usability hardening pass over the accepted Operational Workspace UX v3 surface.
+
+v3.1 addressed:
+
+- visible success/error feedback after mutating actions;
+- clearer role assignment confirmation;
+- setup table affordance preservation;
+- technical-noise reduction preservation;
+- audit/history wording hardening;
+- location visibility using existing frontend data only.
+
+Implementation precision:
+
+- changed files were limited to existing static UI resources:
+  - `app.css`
+  - `app.js`
+- no production backend/API behavior was changed;
+- no new endpoint was introduced;
+- no DTO/read-model change was introduced;
+- no database/migration change was introduced;
+- no BFF/UI backend was introduced;
+- no auth/IAM expansion was introduced;
+- no product parity scope was opened.
+
+Manual ground-truth verification confirmed that setup save and role assignment notifications are visible in the live UI.
+
+Remaining minor UX friction:
+
+- notification lifetime may be tuned shorter later.
+
+This remains controlled synthetic / internal evidence only.
+
+It is not:
+
+- release-ready tenant-facing product;
+- FTOV start;
+- FTOV exit;
+- production tenant readiness proof;
+- real tenant validation;
+- real day-to-day operational validation.

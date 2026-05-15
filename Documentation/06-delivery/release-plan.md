@@ -2,7 +2,7 @@
 
 Status: approved
 Owner: product
-Last Updated: 2026-04-30
+Last Updated: 2026-05-14
 
 ## MVP Timeline
 Срок MVP: 6–8 недель
@@ -1225,3 +1225,97 @@ The project remains in:
 **Project Stabilization / First-Adopter-Gated Hold**
 
 First-Tenant Operational Validation still requires real tenant / first adopter / real usage loop.
+
+
+## Operational Workspace UX v3.1 Closeout Clarification
+
+Operational Workspace UX v3.1 is accepted as implemented after frontend-only feedback visibility correction.
+
+This was a narrow frontend-only usability hardening pass over the already accepted Operational Workspace UX v3 surface.
+
+### Delivery interpretation
+
+The implementation is accepted as:
+
+**frontend-only refine-in-place usability hardening over existing Operational Workspace UI surfaces.**
+
+Changed files were limited to existing static UI resources:
+
+- `app.css`
+- `app.js`
+
+No production backend/API behavior was changed.
+
+### Implemented hardening
+
+v3.1 addressed:
+
+- explicit success/error notification visibility after mutating actions;
+- clearer feedback after asset create/edit;
+- clearer feedback after assign / transfer / return;
+- clearer feedback after setup create/update;
+- clearer confirmation after role assignment;
+- setup table row affordance preservation;
+- technical-noise reduction preservation;
+- audit/history wording preservation;
+- location visibility using existing frontend data only.
+
+### Feedback visibility correction
+
+Post-v3.1 controlled synthetic re-review initially produced conflicting evidence around setup save and role assignment notifications.
+
+Manual ground-truth verification confirmed:
+
+- setup save shows a visible sticky success banner:
+  `Готово. Запись настройки сохранена.`
+- role assignment shows a visible sticky success banner:
+  `Готово. Роль назначена пользователю. Изменение сохранено.`
+- role assignment also shows local inline confirmation:
+  `Последнее назначение в этой сессии подтверждено.`
+
+The feedback visibility correction is accepted as passed.
+
+### Remaining minor friction
+
+Remaining minor frontend UX hardening candidate:
+
+- notification lifetime may be shortened/tuned later so success banners remain noticeable but do not feel too long-lived.
+
+This is not a blocker for v3.1 acceptance.
+
+### Boundary rule
+
+This closeout does not open:
+
+- backend/API changes;
+- new endpoints;
+- DTO / read-model changes;
+- database / migration changes;
+- BFF / UI backend;
+- auth/IAM expansion;
+- new role model;
+- new bounded context;
+- new Wave 2 surface;
+- dashboard / BI / analytics;
+- Asset 360;
+- global search / Elasticsearch;
+- saved views / persistent preferences;
+- bulk actions;
+- barcode / QR / scanning / printer integration;
+- import/export engine;
+- Hardware Inspector parity.
+
+### Non-claim rule
+
+This closeout does not prove:
+
+- release readiness;
+- production tenant readiness;
+- FTOV start;
+- FTOV exit;
+- real tenant validation;
+- real day-to-day operational validation.
+
+The project remains in:
+
+**Project Stabilization / First-Adopter-Gated Hold**

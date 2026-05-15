@@ -2,7 +2,7 @@
 
 Status: approved
 Owner: product
-Last Updated: 2026-04-30
+Last Updated: 2026-05-14
 
 ## Wave 1 Epics
 
@@ -184,6 +184,49 @@ This section does not authorize:
 
 The current UI remains accepted for controlled internal/synthetic review with minor-to-moderate usability friction.
 
-The strongest narrow future candidate is frontend-only usability hardening around action feedback, role assignment confirmation, setup row affordance, location visibility and technical-noise reduction.
+The strongest previously identified narrow frontend-only usability hardening candidate was addressed by Operational Workspace UX v3.1.
+
+Remaining narrow frontend-only UX hardening candidate:
+
+- tune notification lifetime shorter so success banners remain visible but less long-lived.
+
+Further daily-use improvements beyond this point should be treated either as separate minor UX hardening or as product expansion decision, depending on scope.
 
 The strongest future product-expansion candidates are search/filtering, import/export, barcode/QR, reporting/dashboard and asset catalogue enrichment, but only after separate explicit product decision.
+
+### Operational Workspace UX v3.1 hardening closeout
+
+Status: implemented and accepted as frontend-only usability hardening after feedback visibility correction.
+
+Handled by v3.1:
+
+- explicit success/error notification visibility after write operations;
+- setup save confirmation;
+- role assignment confirmation;
+- setup row affordance;
+- technical ID visual de-emphasis;
+- audit/history wording hardening;
+- location visibility using existing frontend data only.
+
+Manual ground-truth verification confirmed:
+
+- `Готово. Запись настройки сохранена.`
+- `Готово. Роль назначена пользователю. Изменение сохранено.`
+- local inline role assignment confirmation is visible.
+
+Remaining deferred minor UX hardening candidate:
+
+- tune notification lifetime shorter so success banners remain visible but less long-lived.
+
+Remaining product expansion / parity candidates:
+
+- broader daily-use layout simplification;
+- advanced search/filtering;
+- import/export;
+- barcode/QR;
+- reports/dashboard;
+- Asset 360;
+- richer asset catalogue;
+- Hardware Inspector parity.
+
+The remaining items are not authorized by v3.1 and require separate product decision where applicable.
