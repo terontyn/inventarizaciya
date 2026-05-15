@@ -2,7 +2,7 @@
 
 Status: approved
 Owner: product
-Last Updated: 2026-05-14
+Last Updated: 2026-05-15
 
 ## Wave 1 Epics
 
@@ -230,3 +230,50 @@ Remaining product expansion / parity candidates:
 - Hardware Inspector parity.
 
 The remaining items are not authorized by v3.1 and require separate product decision where applicable.
+
+### Operational Workspace Tree-and-Detail UX closeout
+
+Status: implemented and accepted as frontend-only information architecture / layout restructuring after feedback preservation correction.
+
+Handled:
+
+- replaced long-scroll primary orientation with tree-and-detail UI;
+- introduced collapsed hierarchical left navigation;
+- introduced selected-object right detail pane;
+- introduced contextual asset tabs:
+  - Overview;
+  - Responsibility;
+  - Actions;
+  - History / Audit;
+  - Technical details;
+- separated Setup/Admin from daily asset operations;
+- preserved assign / transfer / return as dedicated flows;
+- preserved generic edit as master-record-only;
+- preserved selected-asset contextual history/audit;
+- preserved v3.1 feedback behavior after correction.
+
+Accepted navigation model:
+
+- `Оргструктура -> Department -> Users -> assigned assets`;
+- `Локации -> Branch -> Location -> assets at location`;
+- `Все активы -> Назначенные / Неназначенные / Retired`;
+- `Настройка -> Роли / Пользователи / Подразделения / Филиалы / Локации`.
+
+Remaining deferred minor UX hardening candidates:
+
+- tune notification placement/lifetime if future reviews show friction;
+- improve role visibility only if existing frontend data supports it;
+- continue reducing context/technical value friction where possible frontend-only.
+
+Remaining product expansion / parity candidates:
+
+- advanced search/filtering;
+- import/export;
+- barcode/QR;
+- reports/dashboard;
+- Asset 360;
+- richer asset catalogue;
+- attachments/documents/photos/acts;
+- Hardware Inspector parity.
+
+The remaining items are not authorized by Tree-and-Detail UX closeout and require separate product decision where applicable.

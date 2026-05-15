@@ -299,6 +299,7 @@ const state = {
     selectedAdminItemId: null,
     selectedTreeNode: { type: TREE_NODE_TYPES.WORKSPACE },
     expandedTreeNodes: new Set(),
+    treeFilter: "",
     lastRoleAssignment: null,
     lastFeedback: null
 };
@@ -329,6 +330,8 @@ function cacheElements() {
     ui.activeScreenLabel = document.getElementById("active-screen-label");
     ui.flashStack = document.getElementById("flash-stack");
     ui.workspaceTree = document.getElementById("workspace-tree");
+    ui.treeFilter = document.getElementById("tree-filter");
+    ui.treeFilterStatus = document.getElementById("tree-filter-status");
     ui.workspaceTreeBody = document.getElementById("workspace-tree-body");
     ui.workspaceDetail = document.getElementById("workspace-detail");
     ui.screenNav = document.getElementById("screen-nav");
@@ -366,6 +369,7 @@ function bindStaticEvents() {
     ui.clearSession.addEventListener("click", clearSession);
     ui.refreshAssets?.addEventListener("click", onRefreshAssetsClick);
     ui.refreshAdminResource?.addEventListener("click", onRefreshAdminResourceClick);
+    ui.treeFilter?.addEventListener("input", onTreeFilterInput);
     ui.workspaceTreeBody?.addEventListener("click", onTreeClick);
     ui.workspaceDetail?.addEventListener("click", onWorkspaceDetailClick);
     ui.workspaceDetail?.addEventListener("submit", onWorkspaceDetailSubmit);
@@ -460,6 +464,7 @@ function clearSession() {
     state.selectedAdminItemId = null;
     state.selectedTreeNode = { type: TREE_NODE_TYPES.WORKSPACE };
     state.expandedTreeNodes = new Set();
+    state.treeFilter = "";
     state.lastRoleAssignment = null;
     state.lastFeedback = null;
 
@@ -1229,6 +1234,11 @@ function onTreeClick(event) {
     selectTreeNodeFromElement(node);
 }
 
+function onTreeFilterInput(event) {
+    state.treeFilter = event.target.value || "";
+    applyTreeFilter();
+}
+
 function onWorkspaceDetailClick(event) {
     const toggle = event.target.closest("[data-tree-toggle]");
     if (toggle) {
@@ -1494,6 +1504,7 @@ function renderTreeWorkspace() {
 
     renderTreeNavigation();
     renderTreeDetail();
+    applyTreeFilter();
 }
 
 function renderTreeNavigation() {
@@ -1505,6 +1516,45 @@ function renderTreeNavigation() {
         renderAllAssetsTreeGroup(selectedPath),
         renderSetupTreeGroup(selectedPath)
     ].join("");
+}
+
+function applyTreeFilter() {
+    if (!ui.workspaceTreeBody) {
+        return;
+    }
+
+    const query = normalizeTreeFilter(state.treeFilter);
+    if (ui.treeFilter && ui.treeFilter.value !== state.treeFilter) {
+        ui.treeFilter.value = state.treeFilter;
+    }
+
+    const rowContainers = [...ui.workspaceTreeBody.querySelectorAll(".tree-line, .tree-node")];
+    rowContainers.forEach((row) => {
+        const rowLabel = row.classList.contains("tree-node") ? row : row.querySelector(".tree-node");
+        const matches = !query || normalizeTreeFilter(rowLabel?.textContent || row.textContent).includes(query);
+        row.classList.toggle("is-filter-hidden", !matches);
+    });
+
+    const groups = [...ui.workspaceTreeBody.querySelectorAll(".tree-group")];
+    groups.forEach((group) => {
+        const header = group.querySelector(".tree-group-header");
+        const headerMatches = !query || normalizeTreeFilter(header?.textContent || "").includes(query);
+        const visibleChildren = [...group.querySelectorAll(".tree-line, .tree-node")]
+            .some((row) => !row.classList.contains("is-filter-hidden"));
+        group.classList.toggle("is-filter-hidden", Boolean(query) && !headerMatches && !visibleChildren);
+    });
+
+    if (ui.treeFilterStatus) {
+        const visibleRows = [...ui.workspaceTreeBody.querySelectorAll(".tree-node")]
+            .filter((row) => !row.closest(".is-filter-hidden")).length;
+        ui.treeFilterStatus.textContent = query
+            ? `Показаны совпадения среди раскрытых строк: ${visibleRows}. Скрытые ветки не раскрываются автоматически.`
+            : "Фильтр локальный, без запроса к серверу.";
+    }
+}
+
+function normalizeTreeFilter(value) {
+    return String(value || "").trim().toLocaleLowerCase("ru-RU");
 }
 
 function renderWorkspaceTreeGroup(selectedPath) {
@@ -1826,6 +1876,15 @@ function renderWorkspaceOverviewDetail() {
             ${renderDetailHeader("Рабочее место", "Обзор / что делать первым", "Выберите путь слева: по ответственности, по физической локации, через общий список активов или через настройку tenant.")}
             <div class="context-feedback-slot" data-context-feedback-slot="${FEEDBACK_SCOPES.WORKSPACE}">
                 ${renderContextualFeedback(FEEDBACK_SCOPES.WORKSPACE)}
+            </div>
+            <div class="daily-guide">
+                <strong>Выберите путь по тому, что уже знаете</strong>
+                <ul class="compact-list">
+                    <li><strong>Оргструктура</strong> — когда известен отдел или ответственный пользователь.</li>
+                    <li><strong>Локации</strong> — когда известен филиал или физическое место.</li>
+                    <li><strong>Все активы</strong> — когда пользователь или локация неизвестны.</li>
+                    <li><strong>Настройка</strong> — только для ролей и справочников tenant.</li>
+                </ul>
             </div>
             <div class="overview-grid">
                 ${renderMetricCard("Активов", String(totalAssets), "Загружено из существующего реестра активов.")}
@@ -2238,6 +2297,7 @@ function renderAssetCreatePanelMarkup() {
                 </div>
             </div>
             <form id="asset-create-form" class="form-grid">
+                <div class="form-section-label">Основные поля</div>
                 <label class="field">
                     <span>Инвентарный тег</span>
                     <input name="asset_tag" type="text" autocomplete="off" required>
@@ -2256,9 +2316,10 @@ function renderAssetCreatePanelMarkup() {
                     </button>
                 </div>
             </form>
-            <p class="muted-note">
-                Создание заполняет только master-record. Ответственность задаётся отдельным assign после открытия карточки.
-            </p>
+            <details class="form-support-disclosure">
+                <summary>Что произойдёт после создания</summary>
+                <p>Создание заполняет только master-record. Ответственность задаётся отдельным assign после открытия карточки.</p>
+            </details>
         </section>
     `;
 }
@@ -2368,9 +2429,13 @@ function renderAdminEditorMarkup(config) {
                     </div>
                     <button class="button button-ghost" type="button" data-admin-reset>${escapeHtml(resetLabel)}</button>
                 </div>
-                <p class="muted-note">${escapeHtml(meta.helper)}</p>
+                <details class="form-support-disclosure">
+                    <summary>Подсказка по справочнику</summary>
+                    <p>${escapeHtml(meta.helper)}</p>
+                </details>
                 ${prerequisiteMessage ? `<div class="journey-banner tone-warning"><div class="journey-copy"><strong>Проверьте условие</strong><p>${escapeHtml(prerequisiteMessage)}</p></div></div>` : ""}
                 <form id="admin-resource-form" class="form-grid">
+                    <div class="form-section-label">Поля записи</div>
                     ${config.fields.map((field) => renderAdminField(field, selectedItem)).join("")}
                     <div class="button-row button-row-inline">
                         <button class="button button-primary ${resourceBusy ? "is-loading" : ""}" type="submit" ${canSubmit && !resourceBusy ? "" : "disabled"}>
@@ -2987,12 +3052,16 @@ function renderAssetMasterSection(asset, canMutate) {
                 <span class="summary-pill">Только данные актива</span>
             </div>
 
-            <p class="muted-note">
-                Эта форма управляет только инвентарным тегом, серийным номером и типом. Ответственность и текущая
-                локация меняются только через отдельные действия assign / transfer / return.
-            </p>
+            <details class="form-support-disclosure">
+                <summary>Граница редактирования</summary>
+                <p>
+                    Эта форма управляет только инвентарным тегом, серийным номером и типом. Ответственность и текущая
+                    локация меняются только через отдельные действия assign / transfer / return.
+                </p>
+            </details>
 
             <form id="asset-update-form" class="form-grid">
+                <div class="form-section-label">Основные поля master-record</div>
                 <label class="field">
                     <span>Инвентарный тег</span>
                     <input name="asset_tag" type="text" value="${escapeAttribute(asset.asset_tag)}" required>
@@ -3071,30 +3140,29 @@ function renderAssetActionsSection(asset, canMutate, hasUsers, hasLocations, has
 function renderAssetHistoryAuditSection() {
     return `
         <section class="asset-section">
-            <div class="detail-grid">
-                <section>
-                    <div class="panel-heading">
-                        <div>
-                            <p class="section-kicker">History</p>
-                            <h3>История ответственности</h3>
-                        </div>
-                        <span class="summary-pill">${escapeHtml(String(state.assetHistory.length))}</span>
-                    </div>
-                    <p class="muted-note">Журнал только для просмотра показывает доступные значения до и после без дополнительной интерпретации.</p>
-                    ${renderHistoryTable()}
-                </section>
+            <div class="history-audit-strip">
+                ${renderSummaryCard("История", escapeHtml(String(state.assetHistory.length)), "Факты assign / transfer / return для выбранного актива.")}
+                ${renderSummaryCard("Аудит", escapeHtml(String(state.assetAudit.length)), "Локальные записи аудита для выбранного актива.")}
+            </div>
 
-                <section>
-                    <div class="panel-heading">
-                        <div>
-                            <p class="section-kicker">Audit</p>
-                            <h3>Локальный аудит</h3>
-                        </div>
+            <div class="progressive-stack">
+                <details class="progressive-panel" open>
+                    <summary>
+                        <span>История ответственности</span>
+                        <span class="summary-pill">${escapeHtml(String(state.assetHistory.length))}</span>
+                    </summary>
+                    <p class="muted-note">Сначала показано, что произошло, когда и какие значения изменились. Служебные детали остаются ниже в раскрытии.</p>
+                    ${renderHistoryTable()}
+                </details>
+
+                <details class="progressive-panel">
+                    <summary>
+                        <span>Локальный аудит</span>
                         <span class="summary-pill">${escapeHtml(String(state.assetAudit.length))}</span>
-                    </div>
-                    <p class="muted-note">Аудит показывает actor, time, result и детали изменения только из уже доступных полей.</p>
+                    </summary>
+                    <p class="muted-note">Аудит выбранного актива скрыт за раскрытием, чтобы ежедневная карточка не превращалась в технический журнал.</p>
                     ${renderAuditTable()}
-                </section>
+                </details>
             </div>
 
             <div class="button-row">
@@ -3117,14 +3185,17 @@ function renderAssetTechnicalSection(asset) {
             <p class="muted-note">
                 Технические значения доступны для поддержки и сверки. Они не являются основной рабочей навигацией.
             </p>
-            <div class="asset-summary-grid">
-                ${renderSummaryCard("Asset ID", renderTechnicalValue(asset.id, { copy: true, label: "asset ID" }), "Идентификатор актива.")}
-                ${renderSummaryCard("Tenant ID", renderTechnicalValue(state.context.tenantId, { copy: true, label: "tenant ID" }), "Текущий контекст доступа.")}
-                ${renderSummaryCard("Current user ID", renderTechnicalValue(state.context.userId, { copy: true, label: "user ID" }), "Текущий контекст доступа.")}
-                ${renderSummaryCard("Actor", renderTechnicalValue(state.context.actor, { copy: true, label: "actor" }), "Значение X-Authenticated-Actor.")}
-                ${renderSummaryCard("assigned_user_id", renderTechnicalValue(asset.assigned_user_id, { copy: true, label: "assigned_user_id" }), "Raw value из карточки актива.")}
-                ${renderSummaryCard("location_id", renderTechnicalValue(asset.location_id, { copy: true, label: "location_id" }), "Raw value из карточки актива.")}
-            </div>
+            <details class="technical-disclosure-panel">
+                <summary>Показать служебные идентификаторы</summary>
+                <div class="asset-summary-grid technical-grid-muted">
+                    ${renderSummaryCard("Asset ID", renderTechnicalValue(asset.id, { copy: true, label: "asset ID" }), "Идентификатор актива.")}
+                    ${renderSummaryCard("Tenant ID", renderTechnicalValue(state.context.tenantId, { copy: true, label: "tenant ID" }), "Текущий контекст доступа.")}
+                    ${renderSummaryCard("Current user ID", renderTechnicalValue(state.context.userId, { copy: true, label: "user ID" }), "Текущий контекст доступа.")}
+                    ${renderSummaryCard("Actor", renderTechnicalValue(state.context.actor, { copy: true, label: "actor" }), "Значение X-Authenticated-Actor.")}
+                    ${renderSummaryCard("assigned_user_id", renderTechnicalValue(asset.assigned_user_id, { copy: true, label: "assigned_user_id" }), "Raw value из карточки актива.")}
+                    ${renderSummaryCard("location_id", renderTechnicalValue(asset.location_id, { copy: true, label: "location_id" }), "Raw value из карточки актива.")}
+                </div>
+            </details>
             <details class="audit-raw">
                 <summary>Raw asset payload</summary>
                 <pre class="json-block">${escapeHtml(JSON.stringify(asset, null, 2))}</pre>
@@ -3137,12 +3208,15 @@ function renderAssignCard(hasUsers, hasCurrentUser) {
     const busy = isBusy("assignAsset");
     const disabled = !hasUsers || hasCurrentUser || busy ? "disabled" : "";
     return `
-        <article class="action-card">
+        <article class="action-card action-card-daily">
             <div class="action-card-header">
                 <p class="section-kicker">Assign</p>
                 <h4>Первичное назначение</h4>
             </div>
-            <p class="muted-note">Используйте assign для явного назначения ответственного пользователя. Если у актива уже есть ответственность, переходите в transfer.</p>
+            <details class="form-support-disclosure">
+                <summary>Когда использовать assign</summary>
+                <p>Используйте assign для явного назначения ответственного пользователя. Если у актива уже есть ответственность, переходите в transfer.</p>
+            </details>
             ${!hasUsers ? `<p class="inline-warning">Для assign нужен хотя бы один пользователь в справочнике.</p>` : ""}
             ${hasCurrentUser ? `<p class="inline-warning">В карточке уже есть текущий пользователь. Для смены пользователя используйте transfer.</p>` : ""}
             <form id="asset-assign-form" class="form-grid">
@@ -3172,12 +3246,15 @@ function renderTransferCard(hasUsers, hasLocations, hasCurrentUser) {
             : "";
 
     return `
-        <article class="action-card">
+        <article class="action-card action-card-daily">
             <div class="action-card-header">
                 <p class="section-kicker">Transfer</p>
                 <h4>Передача ответственности</h4>
             </div>
-            <p class="muted-note">Transfer меняет пользователя и/или локацию отдельным действием. Редактирование данных актива не участвует.</p>
+            <details class="form-support-disclosure">
+                <summary>Когда использовать transfer</summary>
+                <p>Transfer меняет пользователя и/или локацию отдельным действием. Редактирование данных актива не участвует.</p>
+            </details>
             ${warning ? `<p class="inline-warning">${escapeHtml(warning)}</p>` : ""}
             <form id="asset-transfer-form" class="form-grid">
                 <label class="field">
@@ -3206,12 +3283,15 @@ function renderReturnCard(hasCurrentUser) {
     const busy = isBusy("returnAsset");
     const disabled = hasCurrentUser && !busy ? "" : "disabled";
     return `
-        <article class="action-card">
+        <article class="action-card action-card-daily">
             <div class="action-card-header">
                 <p class="section-kicker">Return</p>
                 <h4>Возврат из ответственности</h4>
             </div>
-            <p class="muted-note">Return остаётся отдельным действием и не трактуется как перемещение или редактирование данных актива.</p>
+            <details class="form-support-disclosure">
+                <summary>Когда использовать return</summary>
+                <p>Return остаётся отдельным действием и не трактуется как перемещение или редактирование данных актива.</p>
+            </details>
             ${!hasCurrentUser ? `<p class="inline-warning">В карточке нет текущего назначенного пользователя, поэтому return сейчас недоступен.</p>` : ""}
             <form id="asset-return-form" class="form-grid">
                 <div class="button-row button-row-inline">

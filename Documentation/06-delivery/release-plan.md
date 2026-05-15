@@ -2,7 +2,7 @@
 
 Status: approved
 Owner: product
-Last Updated: 2026-05-14
+Last Updated: 2026-05-15
 
 ## MVP Timeline
 Срок MVP: 6–8 недель
@@ -1304,6 +1304,126 @@ This closeout does not open:
 - barcode / QR / scanning / printer integration;
 - import/export engine;
 - Hardware Inspector parity.
+
+### Non-claim rule
+
+This closeout does not prove:
+
+- release readiness;
+- production tenant readiness;
+- FTOV start;
+- FTOV exit;
+- real tenant validation;
+- real day-to-day operational validation.
+
+The project remains in:
+
+**Project Stabilization / First-Adopter-Gated Hold**
+
+
+## Operational Workspace Tree-and-Detail UX Closeout Clarification
+
+Operational Workspace Tree-and-Detail UX is accepted as implemented after frontend-only feedback preservation correction.
+
+This was a frontend-only information architecture / layout restructuring over the accepted Operational Workspace UI surface.
+
+### Delivery interpretation
+
+The implementation is accepted as:
+
+**frontend-only tree-and-detail UX restructuring over existing Operational Workspace UI surfaces.**
+
+The delivery replaced the long-scroll primary orientation model with:
+
+- collapsed hierarchical left navigation;
+- selected-object right detail pane;
+- contextual asset tabs;
+- separated Setup/Admin area.
+
+### Implemented navigation model
+
+Accepted navigation model:
+
+- `Оргструктура -> Department -> Users -> assigned assets`;
+- `Локации -> Branch -> Location -> assets at location`;
+- `Все активы -> Назначенные / Неназначенные / Retired`;
+- `Настройка -> Роли / Пользователи / Подразделения / Филиалы / Локации`.
+
+The previous flat left-pane model is not the accepted primary navigation model.
+
+### Implemented right-pane model
+
+When an asset is selected, the right pane provides:
+
+- Overview;
+- Responsibility;
+- Actions;
+- History / Audit;
+- Technical details.
+
+Dedicated responsibility flows are preserved:
+
+- assign;
+- transfer;
+- return.
+
+Generic edit remains master-record-only.
+
+### Feedback preservation correction
+
+Post-implementation live review confirmed the tree-and-detail structure, but initially found that v3.1 feedback notifications could be missed after right-pane render / auto-navigation.
+
+A small frontend-only correction preserved feedback inside the tree-and-detail layout.
+
+Controlled synthetic / internal re-check confirmed:
+
+- setup save feedback is visible;
+- role assignment feedback is visible;
+- assign feedback is visible in the asset card context;
+- transfer feedback is visible in the asset card context;
+- return feedback is visible in the asset card context.
+
+Asset action feedback may be contextual in the right pane rather than always duplicated as a global banner.
+
+### Boundary rule
+
+This closeout does not open:
+
+- backend/API changes;
+- new endpoints;
+- DTO / read-model changes;
+- database / migration changes;
+- BFF / UI backend;
+- auth/IAM expansion;
+- new role model;
+- new bounded context;
+- new Wave 2 surface;
+- new frontend framework / router / microfrontend;
+- server-computed tree;
+- persistent saved tree state;
+- saved views / persistent preferences;
+- global search / Elasticsearch;
+- advanced search/filtering as product feature;
+- bulk actions;
+- barcode / QR / scanning / printer integration;
+- import/export engine;
+- dashboard / BI / analytics;
+- Asset 360;
+- attachments / documents / photos / acts;
+- full software/license desktop-like tabs;
+- warehouse expansion;
+- maintenance expansion;
+- ticket/helpdesk expansion;
+- Hardware Inspector parity;
+- desktop app clone.
+
+### Remaining minor friction
+
+Remaining deferred candidates:
+
+- full assigned-role visibility remains deferred unless already available from existing frontend data;
+- further tuning of notification lifetime / placement may be considered later;
+- broader Hardware Inspector-like feature parity remains separate product expansion.
 
 ### Non-claim rule
 

@@ -100,6 +100,11 @@
                 <p class="muted-note">
                     Группы строятся только из уже загруженных данных. Счётчики помогают ориентироваться и не являются отчётами.
                 </p>
+                <label class="tree-filter field">
+                    <span>Фильтр видимых узлов</span>
+                    <input id="tree-filter" type="text" autocomplete="off" placeholder="Только по уже раскрытым строкам">
+                    <small id="tree-filter-status">Фильтр локальный, без запроса к серверу.</small>
+                </label>
                 <div id="workspace-tree-body" class="tree-body" aria-live="polite"></div>
             </aside>
 

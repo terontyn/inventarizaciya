@@ -40,6 +40,7 @@ class MinimalPilotUiSmokeTest {
             .andExpect(content().string(containsString("id=\"session-form\"")))
             .andExpect(content().string(containsString("data-tree-detail-shell=\"true\"")))
             .andExpect(content().string(containsString("id=\"workspace-tree\"")))
+            .andExpect(content().string(containsString("id=\"tree-filter\"")))
             .andExpect(content().string(containsString("id=\"workspace-tree-body\"")))
             .andExpect(content().string(containsString("id=\"workspace-detail\"")));
     }
@@ -65,6 +66,8 @@ class MinimalPilotUiSmokeTest {
             .andExpect(content().string(containsString("data-asset-section")))
             .andExpect(content().string(containsString("data-node-type")))
             .andExpect(content().string(containsString("data-context-feedback-slot")))
+            .andExpect(content().string(containsString("applyTreeFilter")))
+            .andExpect(content().string(containsString("form-support-disclosure")))
             .andExpect(content().string(containsString("renderTreeNavigation")))
             .andExpect(content().string(containsString("renderAssetDetailPanel")))
             .andExpect(content().string(containsString("renderContextualFeedback")))

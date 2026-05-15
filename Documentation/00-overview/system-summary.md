@@ -2,7 +2,7 @@
 
 Status: approved
 Owner: project
-Last Updated: 2026-05-14
+Last Updated: 2026-05-15
 
 ## Purpose
 IT Asset Management SaaS для учета активов, оргструктуры, ответственности за технику и истории критических изменений.
@@ -911,6 +911,52 @@ Manual ground-truth verification confirmed that setup save and role assignment n
 Remaining minor UX friction:
 
 - notification lifetime may be tuned shorter later.
+
+This remains controlled synthetic / internal evidence only.
+
+It is not:
+
+- release-ready tenant-facing product;
+- FTOV start;
+- FTOV exit;
+- production tenant readiness proof;
+- real tenant validation;
+- real day-to-day operational validation.
+
+## Current Baseline Update — Operational Workspace Tree-and-Detail UX Closeout
+
+Operational Workspace Tree-and-Detail UX has been implemented and accepted as a frontend-only information architecture / layout restructuring over the accepted Operational Workspace UI surface.
+
+The accepted UI model now uses:
+
+- collapsed hierarchical left navigation;
+- selected-object right detail pane;
+- contextual asset tabs;
+- separated Setup/Admin area.
+
+Accepted navigation model:
+
+- `Оргструктура -> Department -> Users -> assigned assets`;
+- `Локации -> Branch -> Location -> assets at location`;
+- `Все активы -> Назначенные / Неназначенные / Retired`;
+- `Настройка -> Роли / Пользователи / Подразделения / Филиалы / Локации`.
+
+The implementation preserved:
+
+- dedicated assign / transfer / return flows;
+- generic edit as master-record-only;
+- selected-asset contextual History / Audit;
+- technical details as secondary/copyable;
+- v3.1 success/error feedback behavior.
+
+Post-implementation controlled synthetic / internal review confirmed:
+
+- old long-scroll primary UI is replaced by tree-and-detail layout;
+- left navigation tree is visible and functional;
+- right detail pane opens selected-node detail;
+- asset tabs are present and usable;
+- setup/admin is separated from daily asset operations;
+- feedback preservation correction passed.
 
 This remains controlled synthetic / internal evidence only.
 
