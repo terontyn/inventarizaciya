@@ -1950,8 +1950,8 @@ function renderWorkspaceOverviewDetail() {
                 ${renderMetricCard("Без локации", String(withoutLocation), "Нет текущего location_id в загруженной карточке.")}
             </div>
             <div class="workspace-path-grid">
-                ${renderWorkspacePathCard("Оргструктура", "Department -> User -> assigned assets", "Ответственность и ежедневный поиск через подразделения и пользователей.", TREE_GROUPS.ORG)}
-                ${renderWorkspacePathCard("Локации", "Branch -> Location -> assets at location", "Физическое размещение без смешивания с подразделениями.", TREE_GROUPS.LOCATIONS)}
+                ${renderWorkspacePathCard("Оргструктура", "Подразделение -> пользователь -> активы", "Ответственность и ежедневный поиск через подразделения и пользователей.", TREE_GROUPS.ORG)}
+                ${renderWorkspacePathCard("Локации", "Филиал -> локация -> активы", "Физическое размещение без смешивания с подразделениями.", TREE_GROUPS.LOCATIONS)}
                 ${renderWorkspacePathCard("Все активы", "Назначенные / Неназначенные / Retired", "Запасной путь, когда неизвестны пользователь или локация.", TREE_GROUPS.ALL_ASSETS)}
                 ${renderWorkspacePathCard("Настройка", "Роли / пользователи / справочники", "Отдельная зона Tenant Admin для справочных данных.", TREE_GROUPS.SETUP)}
             </div>
@@ -1987,16 +1987,16 @@ function renderDepartmentDetail(departmentId) {
 
     return `
         <div class="stack">
-            ${renderDetailHeader("Оргструктура", department.name, "Managerial view: Department -> Users -> assigned assets. Это не физическая локация.")}
+            ${renderDetailHeader("Оргструктура", department.name, "Управленческий путь: подразделение, пользователи и назначенные им активы. Это не физическая локация.")}
             <div class="asset-summary-grid">
-                ${renderSummaryCard("Пользователи", escapeHtml(String(users.length)), "По users.department_id из уже загруженных пользователей.")}
-                ${renderSummaryCard("Назначенные активы", escapeHtml(String(assets.length)), "По assets.assigned_user_id через пользователей подразделения.")}
+                ${renderSummaryCard("Пользователи", escapeHtml(String(users.length)), "Пользователи, привязанные к этому подразделению в загруженных данных.")}
+                ${renderSummaryCard("Назначенные активы", escapeHtml(String(assets.length)), "Активы, назначенные пользователям этого подразделения.")}
                 ${renderSummaryCard("Служебный ID", renderTechnicalValue(department.id, { copy: true }), "Техническое значение доступно для поддержки.")}
             </div>
             <section>
                 <div class="panel-heading">
                     <div>
-                        <p class="section-kicker">Users</p>
+                        <p class="section-kicker">Пользователи</p>
                         <h3>Пользователи подразделения</h3>
                     </div>
                     <span class="summary-pill">${escapeHtml(String(users.length))}</span>
@@ -2006,7 +2006,7 @@ function renderDepartmentDetail(departmentId) {
             <section>
                 <div class="panel-heading">
                     <div>
-                        <p class="section-kicker">Assigned assets</p>
+                        <p class="section-kicker">Активы</p>
                         <h3>Активы, назначенные пользователям</h3>
                     </div>
                     <span class="summary-pill">${escapeHtml(String(assets.length))}</span>
@@ -2028,11 +2028,11 @@ function renderUserDetail(userId) {
 
     return `
         <div class="stack">
-            ${renderDetailHeader("User", user.name || shortenTechnicalValue(user.id), "Пользовательский узел показывает только уже доступные setup-поля и назначенные активы.")}
+            ${renderDetailHeader("Оргструктура", user.name || shortenTechnicalValue(user.id), "Пользовательский узел показывает только уже доступные поля настройки и назначенные активы.")}
             <div class="asset-summary-grid">
                 ${renderSummaryCard("Имя", escapeHtml(user.name || "-"), "Существующее поле пользователя.")}
-                ${renderSummaryCard("Подразделение", escapeHtml(departmentName), user.department_id ? "По department_id пользователя." : "Пользователь попадает в fallback Без подразделения.")}
-                ${renderSummaryCard("Назначенные активы", escapeHtml(String(assets.length)), "Клиентская группировка по assigned_user_id.")}
+                ${renderSummaryCard("Подразделение", escapeHtml(departmentName), user.department_id ? "Подразделение из загруженных данных пользователя." : "Пользователь показан в группе Без подразделения.")}
+                ${renderSummaryCard("Назначенные активы", escapeHtml(String(assets.length)), "Активы, где этот пользователь указан ответственным.")}
                 ${renderSummaryCard("Служебный ID", renderTechnicalValue(user.id, { copy: true }), "Техническое значение доступно для поддержки.")}
             </div>
             ${canTenantAdmin() ? renderUserRoleBinding(user) : `
@@ -2046,7 +2046,7 @@ function renderUserDetail(userId) {
             <section>
                 <div class="panel-heading">
                     <div>
-                        <p class="section-kicker">Assigned assets</p>
+                        <p class="section-kicker">Активы</p>
                         <h3>Активы пользователя</h3>
                     </div>
                     <span class="summary-pill">${escapeHtml(String(assets.length))}</span>

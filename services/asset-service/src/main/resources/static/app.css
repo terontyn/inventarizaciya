@@ -568,8 +568,8 @@ code {
 
 .tree-group-header {
     display: grid;
-    grid-template-columns: auto minmax(0, 1fr) auto;
-    gap: 0.55rem;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 0.18rem 0.55rem;
     align-items: center;
     width: 100%;
     min-height: 3rem;
@@ -577,6 +577,16 @@ code {
     background: rgba(255, 255, 255, 0.78);
     font-weight: 800;
     text-align: left;
+}
+
+.tree-caret {
+    grid-row: 1 / span 2;
+}
+
+.tree-count {
+    grid-column: 2;
+    justify-self: start;
+    line-height: 1.25;
 }
 
 .tree-count,
