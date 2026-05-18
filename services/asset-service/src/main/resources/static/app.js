@@ -167,8 +167,7 @@ const ADMIN_RESOURCES = {
         path: "/api/v1/roles",
         emptyText: "Роли ещё не созданы.",
         columns: [
-            { label: "Название", render: (item) => escapeHtml(item.name) },
-            { label: "Служебный ID", render: (item) => renderTechnicalValue(item.id) }
+            { label: "Название", render: (item) => escapeHtml(item.name) }
         ],
         fields: [
             { name: "name", label: "Название роли", type: "text", required: true }
@@ -181,8 +180,7 @@ const ADMIN_RESOURCES = {
         emptyText: "Пользователи ещё не созданы.",
         columns: [
             { label: "Имя", render: (item) => escapeHtml(item.name) },
-            { label: "Подразделение", render: (item) => escapeHtml(resolveDepartmentName(item.department_id)) },
-            { label: "Служебный ID", render: (item) => renderTechnicalValue(item.id) }
+            { label: "Подразделение", render: (item) => escapeHtml(resolveDepartmentName(item.department_id)) }
         ],
         fields: [
             { name: "name", label: "Имя пользователя", type: "text", required: true },
@@ -195,8 +193,7 @@ const ADMIN_RESOURCES = {
         path: "/api/v1/departments",
         emptyText: "Подразделения ещё не созданы.",
         columns: [
-            { label: "Название", render: (item) => escapeHtml(item.name) },
-            { label: "Служебный ID", render: (item) => renderTechnicalValue(item.id) }
+            { label: "Название", render: (item) => escapeHtml(item.name) }
         ],
         fields: [
             { name: "name", label: "Название подразделения", type: "text", required: true }
@@ -208,8 +205,7 @@ const ADMIN_RESOURCES = {
         path: "/api/v1/branches",
         emptyText: "Филиалы ещё не созданы.",
         columns: [
-            { label: "Название", render: (item) => escapeHtml(item.name) },
-            { label: "Служебный ID", render: (item) => renderTechnicalValue(item.id) }
+            { label: "Название", render: (item) => escapeHtml(item.name) }
         ],
         fields: [
             { name: "name", label: "Название филиала", type: "text", required: true }
@@ -222,8 +218,7 @@ const ADMIN_RESOURCES = {
         emptyText: "Локации ещё не созданы.",
         columns: [
             { label: "Название", render: (item) => escapeHtml(item.name) },
-            { label: "Филиал", render: (item) => escapeHtml(resolveBranchName(item.branch_id)) },
-            { label: "Служебный ID", render: (item) => renderTechnicalValue(item.id) }
+            { label: "Филиал", render: (item) => escapeHtml(resolveBranchName(item.branch_id)) }
         ],
         fields: [
             { name: "name", label: "Название локации", type: "text", required: true },
@@ -326,6 +321,7 @@ function cacheElements() {
     ui.userServiceUrlPreview = document.getElementById("user-service-url-preview");
     ui.assetServiceOrigin = document.getElementById("asset-service-origin");
     ui.contextTechnicalSummary = document.getElementById("context-technical-summary");
+    ui.connectionStatusBadge = document.getElementById("connection-status-badge");
     ui.roleSummaryBadge = document.getElementById("role-summary-badge");
     ui.activeScreenLabel = document.getElementById("active-screen-label");
     ui.flashStack = document.getElementById("flash-stack");
@@ -1435,6 +1431,7 @@ async function refreshAdminResource() {
 }
 
 function render() {
+    renderConnectionStatusBadge();
     renderRoleSummary();
     renderTreeWorkspace();
     syncStaticActionControls();
@@ -1442,6 +1439,28 @@ function render() {
     renderContextTechnicalSummary();
     ui.activeScreenLabel.textContent = getSelectedTreeNodeLabel();
     ui.assetServiceOrigin.textContent = window.location.origin;
+}
+
+function renderConnectionStatusBadge() {
+    if (!ui.connectionStatusBadge) {
+        return;
+    }
+
+    let label = "Не подключено";
+    let tone = "disconnected";
+    if (hasConnectionContext() && (isBusy("session") || state.loading.profile)) {
+        label = "Подключаем";
+        tone = "loading";
+    } else if (hasResolvedProfile()) {
+        label = "Подключено";
+        tone = "connected";
+    } else if (hasConnectionContext()) {
+        label = "Контекст задан";
+        tone = "warning";
+    }
+
+    ui.connectionStatusBadge.textContent = label;
+    ui.connectionStatusBadge.className = `connection-badge connection-${tone}`;
 }
 
 function renderRoleSummary() {
@@ -1548,13 +1567,51 @@ function applyTreeFilter() {
         const visibleRows = [...ui.workspaceTreeBody.querySelectorAll(".tree-node")]
             .filter((row) => !row.closest(".is-filter-hidden")).length;
         ui.treeFilterStatus.textContent = query
-            ? `Показаны совпадения среди раскрытых строк: ${visibleRows}. Скрытые ветки не раскрываются автоматически.`
-            : "Фильтр локальный, без запроса к серверу.";
+            ? `Локально: ${visibleRows} открытых строк. Скрытые ветки не раскрываются.`
+            : "Локально, без поиска на сервере.";
     }
 }
 
 function normalizeTreeFilter(value) {
     return String(value || "").trim().toLocaleLowerCase("ru-RU");
+}
+
+function formatTreeCount(count, filledLabels, emptyLabel) {
+    const safeCount = Number(count) || 0;
+    const labels = Array.isArray(filledLabels) ? filledLabels : [filledLabels, filledLabels, filledLabels];
+    return safeCount === 0 ? emptyLabel : `${safeCount} ${pickRussianCountLabel(safeCount, labels)}`;
+}
+
+function pickRussianCountLabel(count, labels) {
+    const absolute = Math.abs(count);
+    const lastTwo = absolute % 100;
+    const last = absolute % 10;
+    if (lastTwo >= 11 && lastTwo <= 14) {
+        return labels[2];
+    }
+    if (last === 1) {
+        return labels[0];
+    }
+    if (last >= 2 && last <= 4) {
+        return labels[1];
+    }
+    return labels[2];
+}
+
+function formatAssetCount(count, emptyLabel = "нет активов") {
+    return formatTreeCount(count, ["актив", "актива", "активов"], emptyLabel);
+}
+
+function formatUserCount(count, emptyLabel = "нет пользователей") {
+    return formatTreeCount(count, ["пользователь", "пользователя", "пользователей"], emptyLabel);
+}
+
+function formatLocationCount(count, emptyLabel = "нет локаций") {
+    return formatTreeCount(count, ["локация", "локации", "локаций"], emptyLabel);
+}
+
+function formatRecordCount(count, emptyLabel = "нет записей") {
+    return formatTreeCount(count, ["запись", "записи", "записей"], emptyLabel);
 }
 
 function renderWorkspaceTreeGroup(selectedPath) {
@@ -1585,7 +1642,7 @@ function renderOrgTreeGroup(selectedPath) {
     return renderTreeGroup({
         key: TREE_GROUPS.ORG,
         label: "Оргструктура",
-        count: `${userCount} users / ${assignedAssets} assets`,
+        count: `${formatUserCount(userCount)} / ${formatAssetCount(assignedAssets, "нет назначенных активов")}`,
         selectedPath,
         body
     });
@@ -1607,11 +1664,11 @@ function renderDepartmentTreeNode(department, selectedPath) {
     return `
         <div class="tree-branch">
             <div class="tree-line">
-                ${renderTreeToggle(key, expanded, `${users.length} users / ${assets.length} assets`)}
+                ${renderTreeToggle(key, expanded, `${formatUserCount(users.length)} / ${formatAssetCount(assets.length)}`)}
                 ${renderTreeNode({
                     type: TREE_NODE_TYPES.DEPARTMENT,
                     label: department.name,
-                    meta: `${users.length} users / ${assets.length} assets`,
+                    meta: `${formatUserCount(users.length)} / ${formatAssetCount(assets.length)}`,
                     selected,
                     attributes: `data-department-id="${escapeAttribute(department.id)}"`
                 })}
@@ -1639,11 +1696,11 @@ function renderUserTreeNode(user, selectedPath) {
     return `
         <div class="tree-branch">
             <div class="tree-line">
-                ${renderTreeToggle(key, expanded, `${assets.length} assets`)}
+                ${renderTreeToggle(key, expanded, formatAssetCount(assets.length, "нет назначенных активов"))}
                 ${renderTreeNode({
                     type: TREE_NODE_TYPES.USER,
                     label: user.name || shortenTechnicalValue(user.id),
-                    meta: `${assets.length} assets`,
+                    meta: formatAssetCount(assets.length, "нет назначенных активов"),
                     selected,
                     attributes: `data-user-id="${escapeAttribute(user.id)}"`
                 })}
@@ -1664,7 +1721,7 @@ function renderLocationsTreeGroup(selectedPath) {
     return renderTreeGroup({
         key: TREE_GROUPS.LOCATIONS,
         label: "Локации",
-        count: `${locationCount} locations / ${locatedAssetCount} assets`,
+        count: `${formatLocationCount(locationCount)} / ${formatAssetCount(locatedAssetCount, "нет активов с локацией")}`,
         selectedPath,
         body
     });
@@ -1686,11 +1743,11 @@ function renderBranchTreeNode(branch, selectedPath) {
     return `
         <div class="tree-branch">
             <div class="tree-line">
-                ${renderTreeToggle(key, expanded, `${locations.length} locations / ${assets.length} assets`)}
+                ${renderTreeToggle(key, expanded, `${formatLocationCount(locations.length)} / ${formatAssetCount(assets.length)}`)}
                 ${renderTreeNode({
                     type: TREE_NODE_TYPES.BRANCH,
                     label: branch.name,
-                    meta: `${locations.length} locations / ${assets.length} assets`,
+                    meta: `${formatLocationCount(locations.length)} / ${formatAssetCount(assets.length)}`,
                     selected,
                     attributes: `data-branch-id="${escapeAttribute(branch.id)}"`
                 })}
@@ -1718,11 +1775,11 @@ function renderLocationTreeNode(location, selectedPath) {
     return `
         <div class="tree-branch">
             <div class="tree-line">
-                ${renderTreeToggle(key, expanded, `${assets.length} assets`)}
+                ${renderTreeToggle(key, expanded, formatAssetCount(assets.length, "нет активов в этой локации"))}
                 ${renderTreeNode({
                     type: TREE_NODE_TYPES.LOCATION,
                     label: location.name || shortenTechnicalValue(location.id),
-                    meta: `${assets.length} assets`,
+                    meta: formatAssetCount(assets.length, "нет активов в этой локации"),
                     selected,
                     attributes: `data-location-id="${escapeAttribute(location.id)}"`
                 })}
@@ -1739,7 +1796,7 @@ function renderAllAssetsTreeGroup(selectedPath) {
     return renderTreeGroup({
         key: TREE_GROUPS.ALL_ASSETS,
         label: "Все активы",
-        count: `${state.assets.length} assets`,
+        count: formatAssetCount(state.assets.length),
         selectedPath,
         body
     });
@@ -1751,7 +1808,7 @@ function renderAssetGroupTreeNode(group) {
     return renderTreeNode({
         type: TREE_NODE_TYPES.ASSET_GROUP,
         label: group.label,
-        meta: `${group.assets.length} assets`,
+        meta: formatAssetCount(group.assets.length),
         selected,
         attributes: `data-group="${escapeAttribute(group.key)}"`
     });
@@ -1762,7 +1819,7 @@ function renderSetupTreeGroup(selectedPath) {
         .map((resource) => renderTreeNode({
             type: TREE_NODE_TYPES.SETUP,
             label: resource.label,
-            meta: `${getAdminItems(resource.key).length} записей`,
+            meta: formatRecordCount(getAdminItems(resource.key).length),
             selected: state.selectedTreeNode.type === TREE_NODE_TYPES.SETUP
                 && state.selectedTreeNode.resource === resource.key,
             attributes: `data-resource="${escapeAttribute(resource.key)}"`
@@ -2106,9 +2163,6 @@ function renderSetupResourceDetail(resourceKey) {
             <div class="context-feedback-slot" data-context-feedback-slot="${FEEDBACK_SCOPES.SETUP}" data-resource-key="${escapeAttribute(config.key)}">
                 ${renderContextualFeedback(FEEDBACK_SCOPES.SETUP, { resourceKey: config.key })}
             </div>
-            <div class="setup-order">
-                Порядок первой настройки: <strong>роли -> пользователи -> филиалы -> локации -> подразделения</strong>
-            </div>
             ${renderSetupOverviewMarkup()}
             ${renderAdminResourceNavMarkup()}
             <div class="admin-grid">
@@ -2327,27 +2381,33 @@ function renderAssetCreatePanelMarkup() {
 function renderSetupOverviewMarkup() {
     const steps = getSetupStepStatuses();
     const completed = steps.filter((step) => step.count > 0).length;
+    const currentStep = steps.find((step) => step.status === "current");
     return `
-        <section class="workspace-overview panel panel-tight">
+        <section class="setup-order-panel panel panel-tight">
             <div class="panel-heading">
                 <div>
                     <p class="section-kicker">Порядок настройки</p>
-                    <h3>Порядок первой tenant-настройки</h3>
+                    <h3>Короткая подсказка по порядку</h3>
                 </div>
                 <span class="summary-pill">${completed}/${SETUP_SEQUENCE.length} заполнено</span>
             </div>
-            <div class="overview-grid">
-                ${steps.map((step) => `
-                    <article class="setup-card ${step.status}">
-                        <p class="metric-label">Шаг ${step.index}</p>
-                        <strong>${escapeHtml(step.label)}</strong>
-                        <p class="metric-value">${escapeHtml(String(step.count))}</p>
-                        <p class="metric-copy">${escapeHtml(step.description)}</p>
-                        <p class="setup-status">${escapeHtml(step.statusLabel)}</p>
-                        <button class="button button-secondary" type="button" data-resource-key="${step.key}">Открыть раздел</button>
-                    </article>
-                `).join("")}
-            </div>
+            <p class="muted-note">
+                Разделы открываются через вкладки ниже или через пункт «Настройка» в дереве. Подсказка показывает только рекомендуемую последовательность.
+            </p>
+            <details class="setup-order-disclosure">
+                <summary>
+                    <span>${escapeHtml(currentStep ? `Следующий шаг: ${currentStep.label}` : "Базовые разделы заполнены")}</span>
+                    <span class="summary-pill">порядок</span>
+                </summary>
+                <ol class="setup-order-list">
+                    ${steps.map((step) => `
+                        <li class="${step.status}">
+                            <span><strong>${escapeHtml(step.index)}. ${escapeHtml(step.label)}</strong> — ${escapeHtml(step.description)}</span>
+                            <span class="setup-order-count">${escapeHtml(formatRecordCount(step.count))}</span>
+                        </li>
+                    `).join("")}
+                </ol>
+            </details>
         </section>
     `;
 }
@@ -2397,7 +2457,7 @@ function renderAdminTableMarkup(config) {
                 </div>
                 <button class="button button-secondary" id="refresh-admin-resource" type="button">Обновить список</button>
             </div>
-            <p class="table-helper">Нажмите строку, чтобы открыть редактирование. Выбранная запись остаётся подсвеченной.</p>
+            <p class="table-helper">Нажмите строку, чтобы открыть редактирование. Служебный ID доступен в редакторе выбранной записи.</p>
             <div class="table-wrap">
                 <table class="data-table">
                     <thead>
@@ -2443,9 +2503,23 @@ function renderAdminEditorMarkup(config) {
                         </button>
                     </div>
                 </form>
+                ${renderAdminSelectedTechnicalDetails(selectedItem)}
                 ${config.key === "users" ? renderUserRoleBinding(selectedItem) : ""}
             </div>
         </section>
+    `;
+}
+
+function renderAdminSelectedTechnicalDetails(selectedItem) {
+    if (!selectedItem?.id) {
+        return "";
+    }
+
+    return `
+        <details class="technical-disclosure-panel admin-record-technical">
+            <summary>Служебный ID выбранной записи</summary>
+            ${renderTechnicalValue(selectedItem.id, { copy: true, label: "служебный ID записи" })}
+        </details>
     `;
 }
 
@@ -3126,13 +3200,21 @@ function renderAssetActionsSection(asset, canMutate, hasUsers, hasLocations, has
                 <span class="summary-pill">${escapeHtml(hasCurrentUser ? "Есть текущий пользователь" : "Нет текущего пользователя")}</span>
             </div>
 
-            ${renderAssetMasterSection(asset, canMutate)}
+            <p class="muted-note">Основные ежедневные действия — выдать, переместить или вернуть актив. Редактирование ниже меняет только master-record.</p>
 
-            <div class="action-grid">
+            <div class="action-grid action-grid-primary">
                 ${renderAssignCard(hasUsers, hasCurrentUser)}
                 ${renderTransferCard(hasUsers, hasLocations, hasCurrentUser)}
                 ${renderReturnCard(hasCurrentUser)}
             </div>
+
+            <details class="progressive-panel secondary-action-panel">
+                <summary>
+                    <span>Редактировать данные актива</span>
+                    <span class="summary-pill">master-record</span>
+                </summary>
+                ${renderAssetMasterSection(asset, canMutate)}
+            </details>
         </section>
     `;
 }
@@ -3506,23 +3588,29 @@ function renderSetupOverview() {
             <div class="panel-heading">
                 <div>
                     <p class="section-kicker">Порядок настройки</p>
-                    <h3>Порядок первой tenant-настройки</h3>
+                    <h3>Короткая подсказка по порядку</h3>
                 </div>
                 <span class="summary-pill">${completed}/${SETUP_SEQUENCE.length} заполнено</span>
             </div>
 
-            <div class="overview-grid">
-                ${steps.map((step) => `
-                    <article class="setup-card ${step.status}">
-                        <p class="metric-label">Шаг ${step.index}</p>
-                        <strong>${escapeHtml(step.label)}</strong>
-                        <p class="metric-value">${escapeHtml(String(step.count))}</p>
-                        <p class="metric-copy">${escapeHtml(step.description)}</p>
-                        <p class="setup-status">${escapeHtml(step.statusLabel)}</p>
-                        <button class="button button-secondary" type="button" data-resource-key="${step.key}">Открыть раздел</button>
-                    </article>
-                `).join("")}
-            </div>
+            <p class="muted-note">
+                Разделы открываются через вкладки настройки. Подсказка ниже не дублирует навигацию.
+            </p>
+
+            <details class="setup-order-disclosure">
+                <summary>
+                    <span>${escapeHtml(currentStep ? `Следующий шаг: ${currentStep.label}` : "Базовые разделы заполнены")}</span>
+                    <span class="summary-pill">порядок</span>
+                </summary>
+                <ol class="setup-order-list">
+                    ${steps.map((step) => `
+                        <li class="${step.status}">
+                            <span><strong>${escapeHtml(step.index)}. ${escapeHtml(step.label)}</strong> — ${escapeHtml(step.description)}</span>
+                            <span class="setup-order-count">${escapeHtml(formatRecordCount(step.count))}</span>
+                        </li>
+                    `).join("")}
+                </ol>
+            </details>
 
             <p class="muted-note">
                 ${escapeHtml(currentStep
@@ -3611,6 +3699,7 @@ function renderAdminEditor() {
                 </div>
             </form>
 
+            ${renderAdminSelectedTechnicalDetails(selectedItem)}
             ${state.activeAdminResource === "users" ? renderUserRoleBinding(selectedItem) : ""}
         </div>
     `;
@@ -4052,10 +4141,22 @@ function renderTechnicalValue(value, options = {}) {
     const copy = Boolean(options.copy);
     const label = options.label || "значение";
     const shortValue = shortenTechnicalValue(raw);
+    const copyLabel = `Скопировать ${label}`;
     return `
         <span class="technical-value" title="${escapeAttribute(raw)}">
             <code>${escapeHtml(shortValue)}</code>
-            ${copy ? `<button class="copy-button" type="button" data-copy-value="${escapeAttribute(raw)}" aria-label="Скопировать ${escapeAttribute(label)}">Копировать</button>` : ""}
+            ${copy ? `
+                <button
+                    class="copy-button copy-button-icon"
+                    type="button"
+                    data-copy-value="${escapeAttribute(raw)}"
+                    aria-label="${escapeAttribute(copyLabel)}"
+                    title="${escapeAttribute(copyLabel)}"
+                >
+                    <span aria-hidden="true">⧉</span>
+                    <span class="sr-only">${escapeHtml(copyLabel)}</span>
+                </button>
+            ` : ""}
         </span>
     `;
 }

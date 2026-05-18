@@ -79,6 +79,7 @@
                 </div>
 
                 <div class="inline-meta">
+                    <span id="connection-status-badge" class="connection-badge connection-disconnected">Не подключено</span>
                     <span><strong>Сервис активов:</strong> <code id="asset-service-origin">same origin</code></span>
                     <span><strong>Текущий экран:</strong> <code id="active-screen-label">assets</code></span>
                     <span id="context-technical-summary"></span>
@@ -101,9 +102,9 @@
                     Группы строятся только из уже загруженных данных. Счётчики помогают ориентироваться и не являются отчётами.
                 </p>
                 <label class="tree-filter field">
-                    <span>Фильтр видимых узлов</span>
-                    <input id="tree-filter" type="text" autocomplete="off" placeholder="Только по уже раскрытым строкам">
-                    <small id="tree-filter-status">Фильтр локальный, без запроса к серверу.</small>
+                    <span>Фильтр дерева</span>
+                    <input id="tree-filter" type="text" autocomplete="off" placeholder="По открытым строкам">
+                    <small id="tree-filter-status">Локально, без поиска на сервере.</small>
                 </label>
                 <div id="workspace-tree-body" class="tree-body" aria-live="polite"></div>
             </aside>
