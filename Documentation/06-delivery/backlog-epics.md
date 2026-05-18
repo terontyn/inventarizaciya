@@ -2,7 +2,7 @@
 
 Status: approved
 Owner: product
-Last Updated: 2026-05-15
+Last Updated: 2026-05-18
 
 ## Wave 1 Epics
 
@@ -277,3 +277,53 @@ Remaining product expansion / parity candidates:
 - Hardware Inspector parity.
 
 The remaining items are not authorized by Tree-and-Detail UX closeout and require separate product decision where applicable.
+
+### Operational Workspace Tree-and-Detail UX Density Reduction closeout
+
+Status: implemented and accepted as frontend-only density reduction and progressive disclosure hardening inside the accepted Tree-and-Detail UI.
+
+Handled:
+
+- reduced left-tree visual density;
+- improved tree row scan/click affordance;
+- kept top-level groups compact and explicitly expandable;
+- kept local counts as navigation hints only;
+- added tiny local-only visible-tree filter without backend calls or persistence;
+- improved Workspace / Overview first-step guidance;
+- made forms less visually heavy through progressive disclosure;
+- moved support/help copy into disclosures;
+- de-emphasized technical IDs while keeping them copyable/accessible;
+- made History / Audit summary-first;
+- kept raw/correlation/service details collapsed by default but accessible;
+- kept Setup/Admin separate from daily operations;
+- preserved Assign / Transfer / Return as dedicated flows;
+- preserved generic edit as master-record-only;
+- preserved v3.1 / Tree-and-Detail feedback behavior.
+
+Targeted Setup navigation verification confirmed:
+
+- `Настройка` is visible;
+- `Роли`, `Пользователи`, `Подразделения`, `Филиалы`, `Локации` appear after expansion;
+- each setup item opens the correct right-pane setup surface;
+- reload is not required.
+
+Remaining deferred minor UX hardening candidates:
+
+- tune Setup group collapse affordance if future reviews show friction;
+- continue minor typography / spacing polish only if it remains frontend-only;
+- further reduce context / technical value friction where possible without hiding support-critical data.
+
+Remaining product expansion / parity candidates:
+
+- advanced search/filtering;
+- global search / Elasticsearch;
+- saved views / persistent preferences;
+- import/export;
+- barcode/QR;
+- reports/dashboard;
+- Asset 360;
+- richer asset catalogue;
+- attachments/documents/photos/acts;
+- Hardware Inspector parity.
+
+The remaining items are not authorized by Density Reduction closeout and require separate product decision where applicable.

@@ -2,7 +2,7 @@
 
 Status: approved
 Owner: project
-Last Updated: 2026-05-15
+Last Updated: 2026-05-18
 
 ## Purpose
 IT Asset Management SaaS для учета активов, оргструктуры, ответственности за технику и истории критических изменений.
@@ -957,6 +957,55 @@ Post-implementation controlled synthetic / internal review confirmed:
 - asset tabs are present and usable;
 - setup/admin is separated from daily asset operations;
 - feedback preservation correction passed.
+
+This remains controlled synthetic / internal evidence only.
+
+It is not:
+
+- release-ready tenant-facing product;
+- FTOV start;
+- FTOV exit;
+- production tenant readiness proof;
+- real tenant validation;
+- real day-to-day operational validation.
+
+## Current Baseline Update — Operational Workspace Tree-and-Detail UX Density Reduction Closeout
+
+Operational Workspace Tree-and-Detail UX Density Reduction has been implemented and accepted as a small frontend-only density reduction and progressive disclosure hardening pass over the accepted Tree-and-Detail UI.
+
+The hardening reduced visual density while preserving the accepted Tree-and-Detail model:
+
+- `Оргструктура -> Department -> Users -> assigned assets`;
+- `Локации -> Branch -> Location -> assets at location`;
+- `Все активы -> Назначенные / Неназначенные / Retired`;
+- `Настройка -> Роли / Пользователи / Подразделения / Филиалы / Локации`.
+
+The implementation preserved:
+
+- selected-object right detail pane;
+- contextual asset tabs;
+- dedicated assign / transfer / return flows;
+- generic edit as master-record-only;
+- selected-asset contextual History / Audit;
+- Technical details accessibility;
+- Setup/Admin separation;
+- v3.1 / Tree-and-Detail feedback behavior.
+
+Density reduction addressed:
+
+- tree scan/click usability;
+- form progressive disclosure;
+- technical details de-emphasis;
+- audit raw-details collapse;
+- first-step daily-user guidance;
+- empty-state guidance;
+- Setup/Admin de-emphasis.
+
+A tiny local-only visible-tree filter was added without backend calls, persistence, saved views, global search or advanced filtering.
+
+Controlled synthetic / internal live re-check confirmed that density reduction passed with minor friction.
+
+Targeted Setup navigation verification confirmed that setup sub-items appear and route correctly.
 
 This remains controlled synthetic / internal evidence only.
 

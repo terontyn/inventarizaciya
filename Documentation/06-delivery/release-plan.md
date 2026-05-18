@@ -2,7 +2,7 @@
 
 Status: approved
 Owner: product
-Last Updated: 2026-05-15
+Last Updated: 2026-05-18
 
 ## MVP Timeline
 Срок MVP: 6–8 недель
@@ -1424,6 +1424,134 @@ Remaining deferred candidates:
 - full assigned-role visibility remains deferred unless already available from existing frontend data;
 - further tuning of notification lifetime / placement may be considered later;
 - broader Hardware Inspector-like feature parity remains separate product expansion.
+
+### Non-claim rule
+
+This closeout does not prove:
+
+- release readiness;
+- production tenant readiness;
+- FTOV start;
+- FTOV exit;
+- real tenant validation;
+- real day-to-day operational validation.
+
+The project remains in:
+
+**Project Stabilization / First-Adopter-Gated Hold**
+
+## Operational Workspace Tree-and-Detail UX Density Reduction Closeout Clarification
+
+Operational Workspace Tree-and-Detail UX Density Reduction is accepted as implemented after controlled synthetic / internal live re-check and targeted Setup navigation verification.
+
+This was a small frontend-only density reduction and progressive disclosure hardening pass inside the already accepted Tree-and-Detail Operational Workspace UI.
+
+### Delivery interpretation
+
+The implementation is accepted as:
+
+**frontend-only density reduction and progressive disclosure hardening over the accepted Tree-and-Detail UI.**
+
+The delivery reduced visible density without changing backend/API behavior or product scope.
+
+### Implemented hardening
+
+The hardening addressed:
+
+- left tree scan/click usability;
+- collapsed / explicit expansion behavior;
+- local client-side counts as navigation hints;
+- first-step guidance in Workspace / Overview;
+- form progressive disclosure;
+- support/help copy moved into disclosures;
+- History / Audit summary-first display;
+- raw audit / correlation / service details collapsed by default;
+- Technical details kept accessible but deeper by default;
+- technical IDs remaining copyable but less dominant;
+- Setup/Admin remaining separate from daily asset operations.
+
+### Local tree filter decision
+
+A tiny local-only visible-tree filter was implemented.
+
+This filter:
+
+- filters only already rendered/open tree rows in the browser;
+- does not call backend;
+- does not expand hidden branches;
+- is not saved or persisted;
+- is not product search;
+- is not global search;
+- is not advanced filtering.
+
+### Live review result
+
+Controlled synthetic / internal live re-check confirmed:
+
+- Tree-and-Detail layout remains active;
+- old long-scroll layout did not return;
+- tree groups are not fully expanded by default;
+- tree rows are easier to click;
+- selected row is clearer;
+- counts are helpful but not reporting-like;
+- forms are less visually heavy;
+- primary / optional disclosure works;
+- technical IDs are de-emphasized but accessible;
+- History / Audit is summary-first;
+- raw audit details are collapsed but accessible;
+- daily-user first-step guidance improved;
+- Setup/Admin remains separate;
+- Assign / Transfer / Return remain discoverable;
+- feedback remains visible.
+
+A targeted Setup navigation check confirmed:
+
+- `Настройка` is visible in the left tree;
+- setup sub-items appear immediately after expansion;
+- `Роли`, `Пользователи`, `Подразделения`, `Филиалы`, `Локации` route to the correct right-pane setup surfaces;
+- reload is not required.
+
+### Remaining minor friction
+
+Remaining deferred minor UX candidate:
+
+- Setup group collapse affordance may be tuned later if future reviews show friction.
+
+This is not a blocker for Density Reduction acceptance.
+
+### Boundary rule
+
+This closeout does not open:
+
+- backend/API changes;
+- new endpoints;
+- DTO / read-model changes;
+- database / migration changes;
+- BFF / UI backend;
+- auth/IAM expansion;
+- new role model;
+- new bounded context;
+- new Wave 2 surface;
+- new frontend framework / router / microfrontend;
+- server-computed tree;
+- backend-side grouping;
+- backend-side search/filtering;
+- persistent saved tree state;
+- saved views / persistent preferences;
+- global search / Elasticsearch;
+- advanced search/filtering as product feature;
+- bulk actions;
+- barcode / QR / scanning / printer integration;
+- import/export engine;
+- dashboard / BI / analytics;
+- Asset 360;
+- attachments / documents / photos / acts;
+- full software/license desktop-like tabs;
+- warehouse expansion;
+- maintenance expansion;
+- ticket/helpdesk expansion;
+- Hardware Inspector parity;
+- desktop app clone.
 
 ### Non-claim rule
 
