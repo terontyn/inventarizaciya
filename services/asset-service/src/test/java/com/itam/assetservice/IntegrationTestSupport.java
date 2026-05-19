@@ -83,11 +83,36 @@ public abstract class IntegrationTestSupport {
         UUID assignedUserId,
         UUID locationId
     ) {
+        return insertAsset(
+            tenantId,
+            assetTag,
+            serialNumber,
+            assetType,
+            status,
+            assignedUserId,
+            locationId,
+            null,
+            null
+        );
+    }
+
+    protected UUID insertAsset(
+        UUID tenantId,
+        String assetTag,
+        String serialNumber,
+        String assetType,
+        String status,
+        UUID assignedUserId,
+        UUID locationId,
+        String displayName,
+        String note
+    ) {
         UUID id = UUID.randomUUID();
         jdbcTemplate.update(
             "INSERT INTO assets ("
-                + "id, tenant_id, asset_tag, serial_number, asset_type, status, assigned_user_id, location_id"
-                + ") VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                + "id, tenant_id, asset_tag, serial_number, asset_type, status, assigned_user_id, "
+                + "location_id, display_name, note"
+                + ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             id,
             tenantId,
             assetTag,
@@ -95,7 +120,9 @@ public abstract class IntegrationTestSupport {
             assetType,
             status,
             assignedUserId,
-            locationId
+            locationId,
+            displayName,
+            note
         );
         return id;
     }
@@ -201,7 +228,8 @@ public abstract class IntegrationTestSupport {
 
     protected AssetRow assetRow(UUID tenantId, UUID assetId) {
         return jdbcTemplate.query(
-            "SELECT id, tenant_id, asset_tag, serial_number, asset_type, status, assigned_user_id, location_id "
+            "SELECT id, tenant_id, asset_tag, serial_number, asset_type, status, assigned_user_id, "
+                + "location_id, display_name, note "
                 + "FROM assets WHERE tenant_id = ? AND id = ?",
             resultSet -> {
                 if (!resultSet.next()) {
@@ -215,7 +243,9 @@ public abstract class IntegrationTestSupport {
                     resultSet.getString("asset_type"),
                     resultSet.getString("status"),
                     resultSet.getObject("assigned_user_id", UUID.class),
-                    resultSet.getObject("location_id", UUID.class)
+                    resultSet.getObject("location_id", UUID.class),
+                    resultSet.getString("display_name"),
+                    resultSet.getString("note")
                 );
             },
             tenantId,
@@ -328,7 +358,9 @@ public abstract class IntegrationTestSupport {
         String assetType,
         String status,
         UUID assignedUserId,
-        UUID locationId
+        UUID locationId,
+        String displayName,
+        String note
     ) {
     }
 

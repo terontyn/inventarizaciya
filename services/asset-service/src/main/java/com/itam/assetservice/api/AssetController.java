@@ -17,6 +17,7 @@ import java.net.URI;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -26,6 +27,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @Validated
@@ -68,6 +70,8 @@ public class AssetController {
             request.assetType(),
             request.assignedUserId(),
             request.locationId(),
+            request.displayName(),
+            request.note(),
             requestContextExtractor.requireAuditMetadata(servletRequest)
         );
         return ResponseEntity
@@ -134,6 +138,10 @@ public class AssetController {
             request.assetTag(),
             request.serialNumber(),
             request.assetType(),
+            request.displayNameValue(),
+            request.touchesDisplayName(),
+            request.noteValue(),
+            request.touchesNote(),
             request.touchesAssignedUserId(),
             request.touchesLocationId(),
             requestContextExtractor.requireAuditMetadata(servletRequest)
@@ -217,7 +225,9 @@ public class AssetController {
         @NotBlank String serialNumber,
         @NotBlank String assetType,
         UUID assignedUserId,
-        UUID locationId
+        UUID locationId,
+        String displayName,
+        String note
     ) {
     }
 
@@ -226,15 +236,46 @@ public class AssetController {
         @NotBlank String assetTag,
         @NotBlank String serialNumber,
         @NotBlank String assetType,
+        JsonNode displayName,
+        JsonNode note,
         JsonNode assignedUserId,
         JsonNode locationId
     ) {
+        public boolean touchesDisplayName() {
+            return displayName != null;
+        }
+
+        public boolean touchesNote() {
+            return note != null;
+        }
+
         public boolean touchesAssignedUserId() {
             return assignedUserId != null;
         }
 
         public boolean touchesLocationId() {
             return locationId != null;
+        }
+
+        public String displayNameValue() {
+            return optionalTextValue(displayName, "display_name");
+        }
+
+        public String noteValue() {
+            return optionalTextValue(note, "note");
+        }
+
+        private static String optionalTextValue(JsonNode node, String fieldName) {
+            if (node == null || node.isNull()) {
+                return null;
+            }
+            if (!node.isTextual()) {
+                throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    fieldName + " must be a string or null"
+                );
+            }
+            return node.asText();
         }
     }
 
@@ -245,7 +286,9 @@ public class AssetController {
         String assetType,
         String status,
         UUID assignedUserId,
-        UUID locationId
+        UUID locationId,
+        String displayName,
+        String note
     ) {
 
         private static AssetResponse from(Asset asset) {
@@ -256,7 +299,9 @@ public class AssetController {
                 asset.assetType(),
                 asset.status(),
                 asset.assignedUserId(),
-                asset.locationId()
+                asset.locationId(),
+                asset.displayName(),
+                asset.note()
             );
         }
     }

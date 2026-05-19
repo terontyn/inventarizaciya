@@ -1,6 +1,7 @@
 package com.itam.assetservice;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import com.itam.assetservice.domain.AssetStatus;
 import java.util.UUID;
@@ -55,6 +56,51 @@ class SchemaConstraintIntegrationTest extends IntegrationTestSupport {
                 "SN-001",
                 "Laptop",
                 "BROKEN"
+            )
+        ).isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void identityFieldsAreNullableAndDisplayNameLengthIsBounded() {
+        UUID tenantId = UUID.randomUUID();
+        UUID nullableAssetId = insertAsset(
+            tenantId,
+            "LAP-NULL",
+            "SN-NULL",
+            "Laptop",
+            AssetStatus.ACTIVE,
+            null,
+            null
+        );
+        assertThat(assetRow(tenantId, nullableAssetId).displayName()).isNull();
+        assertThat(assetRow(tenantId, nullableAssetId).note()).isNull();
+
+        UUID maxDisplayNameAssetId = insertAsset(
+            tenantId,
+            "LAP-MAX",
+            "SN-MAX",
+            "Laptop",
+            AssetStatus.ACTIVE,
+            null,
+            null,
+            "d".repeat(160),
+            "Plain operational note"
+        );
+        assertThat(assetRow(tenantId, maxDisplayNameAssetId).displayName()).hasSize(160);
+        assertThat(assetRow(tenantId, maxDisplayNameAssetId).note()).isEqualTo("Plain operational note");
+
+        assertThatThrownBy(() ->
+            jdbcTemplate.update(
+                "INSERT INTO assets ("
+                    + "id, tenant_id, asset_tag, serial_number, asset_type, status, display_name"
+                    + ") VALUES (?, ?, ?, ?, ?, ?, ?)",
+                UUID.randomUUID(),
+                tenantId,
+                "LAP-TOO-LONG",
+                "SN-TOO-LONG",
+                "Laptop",
+                AssetStatus.ACTIVE,
+                "d".repeat(161)
             )
         ).isInstanceOf(DataIntegrityViolationException.class);
     }

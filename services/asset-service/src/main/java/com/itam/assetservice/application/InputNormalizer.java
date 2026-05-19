@@ -20,4 +20,29 @@ public final class InputNormalizer {
 
         return normalized;
     }
+
+    public static String optionalTrimmed(
+        String value,
+        String fieldName,
+        int maxLength,
+        boolean normalizeLineBreaks
+    ) {
+        if (value == null) {
+            return null;
+        }
+
+        String normalized = normalizeLineBreaks ? value.replaceAll("\\R+", " ") : value;
+        normalized = normalized.trim();
+        if (normalized.isEmpty()) {
+            return null;
+        }
+        if (normalized.length() > maxLength) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                fieldName + " must not exceed " + maxLength + " characters"
+            );
+        }
+
+        return normalized;
+    }
 }

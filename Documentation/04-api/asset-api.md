@@ -2,7 +2,7 @@
 
 Status: draft
 Owner: architecture
-Last Updated: 2026-04-02
+Last Updated: 2026-05-19
 
 ## Purpose
 Минимальный API-контракт Foundation Slice для asset-service.
@@ -248,3 +248,72 @@ Derived display representation допускается только как presen
 - label v1 не требует `status`, `assigned_user_id`, `location_id`, history или audit
   как обязательной части printable payload;
 - label v1 не открывает scope в bulk print, printer integration, barcode / QR или scanning workflows.
+
+## Asset Identity v1 API Extension
+
+Asset Identity v1 adds two optional Asset master-record fields to the existing Asset CRUD surfaces:
+
+- `display_name`
+- `note`
+
+### Create
+
+`POST /api/v1/assets` may accept:
+
+- `display_name`
+- `note`
+
+Rules:
+
+- both fields are optional;
+- omitted values are allowed;
+- `null` is allowed;
+- blank / whitespace-only values may normalize to `null`;
+- existing required fields remain unchanged.
+
+### Update
+
+`PATCH /api/v1/assets/{id}` may update:
+
+- `display_name`
+- `note`
+
+as ordinary Asset master-record fields.
+
+This does not change the responsibility-flow boundary.
+
+Generic PATCH must still not be used for:
+
+- `assigned_user_id`;
+- `location_id` where current responsibility/location boundary forbids it;
+- responsibility state;
+- status transition.
+
+If true partial PATCH semantics are desired beyond these fields, that requires a separate API semantics decision.
+
+### Read
+
+Asset read surfaces should include:
+
+- `display_name`
+- `note`
+
+Compatibility rules:
+
+- existing assets may return `null`;
+- existing clients may omit these fields in create/update requests;
+- `display_name` can be used by UI as a human-readable title;
+- `note` should be treated as optional plain text and may be detail-first if future API separates list/detail shapes.
+
+### Validation
+
+Recommended validation:
+
+- `display_name`: optional, nullable, max length `160`;
+- `note`: optional, nullable, plain text, max length `2000`.
+
+### Audit
+
+Changes to `display_name` and `note` are Asset master-record updates and should be covered by existing update-asset audit behavior.
+
+No new audit event type is required by this API extension.

@@ -12,7 +12,9 @@ public interface AssetRepository {
         String serialNumber,
         String assetType,
         UUID assignedUserId,
-        UUID locationId
+        UUID locationId,
+        String displayName,
+        String note
     );
 
     List<Asset> findAll(UUID tenantId);
@@ -24,7 +26,9 @@ public interface AssetRepository {
         UUID id,
         String assetTag,
         String serialNumber,
-        String assetType
+        String assetType,
+        String displayName,
+        String note
     );
 
     Optional<Asset> updateCurrentState(

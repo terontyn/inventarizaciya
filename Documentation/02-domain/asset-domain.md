@@ -2,7 +2,7 @@
 
 Status: approved
 Owner: architecture
-Last Updated: 2026-04-07
+Last Updated: 2026-05-19
 
 ## Scope
 Asset Domain реализуется внутри asset-service.
@@ -20,6 +20,11 @@ Asset Domain реализуется внутри asset-service.
 - status
 - assigned_user_id
 - location_id
+
+Asset Identity v1 extension fields:
+
+- display_name
+- note
 
 ## Invariants
 - актив принадлежит tenant;
@@ -54,6 +59,60 @@ Asset Domain реализуется внутри asset-service.
 - transfer -> status не меняется
 - return -> status не меняется; post-return status = `ACTIVE`
 - retire -> status становится `RETIRED`
+
+## Asset Identity v1 Extension
+
+Asset Identity v1 adds two optional Asset master-record fields:
+
+- `display_name`
+- `note`
+
+### display_name
+
+`display_name` is a human-readable Asset title used to make an Asset easier to recognize in UI, lists, cards and future presentation surfaces if separately approved.
+
+Rules:
+
+- optional;
+- nullable;
+- complements `asset_tag`;
+- does not replace `asset_tag`;
+- not unique;
+- not a second canonical identifier family;
+- no search index is implied by this field.
+
+### note
+
+`note` is an optional plain-text operational note for daily context.
+
+Rules:
+
+- optional;
+- nullable;
+- plain text only;
+- not rich text;
+- not an attachment;
+- not a document;
+- not an act;
+- not a photo;
+- not a comment thread;
+- not a workflow state.
+
+### Boundary
+
+Asset Identity v1 does not change responsibility semantics.
+
+The following remain unchanged:
+
+- `asset_tag` remains the canonical inventory/business identifier inside tenant;
+- `assigned_user_id` does not move into generic edit;
+- `location_id` does not move into generic edit where responsibility/location boundary forbids it;
+- Assign remains dedicated;
+- Transfer remains dedicated;
+- Return remains dedicated;
+- Retire remains dedicated where currently present;
+- generic edit remains master-record-only;
+- status vocabulary remains `ACTIVE` / `RETIRED`.
 
 ## CRUD v1 Boundary
 Foundation Slice v1 включает:

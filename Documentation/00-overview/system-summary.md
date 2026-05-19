@@ -2,7 +2,7 @@
 
 Status: approved
 Owner: project
-Last Updated: 2026-05-18
+Last Updated: 2026-05-19
 
 ## Purpose
 IT Asset Management SaaS для учета активов, оргструктуры, ответственности за технику и истории критических изменений.
@@ -1017,3 +1017,89 @@ It is not:
 - production tenant readiness proof;
 - real tenant validation;
 - real day-to-day operational validation.
+
+
+## Current Baseline Update — Operational Workspace Tree-and-Detail UX Small Frontend Cleanup Closeout
+
+Operational Workspace Tree-and-Detail UX Small Frontend Cleanup has been implemented and accepted as a small frontend-only cleanup pass over the accepted Tree-and-Detail UI after Density Reduction.
+
+The cleanup preserved the accepted Tree-and-Detail model:
+
+- `Оргструктура -> Department -> Users -> assigned assets`;
+- `Локации -> Branch -> Location -> assets at location`;
+- `Все активы -> Назначенные / Неназначенные / Retired`;
+- `Настройка -> Роли / Пользователи / Подразделения / Филиалы / Локации`.
+
+The implementation preserved:
+
+- selected-object right detail pane;
+- contextual asset tabs;
+- dedicated assign / transfer / return flows;
+- generic edit as master-record-only;
+- selected-object contextual History / Audit;
+- Technical details accessibility;
+- Setup/Admin separation;
+- v3.1 / Tree-and-Detail feedback behavior.
+
+Small cleanup addressed:
+
+- Setup/Admin duplicate navigation reduction;
+- setup-order guidance simplification;
+- service ID primary table de-emphasis;
+- compact accessible clipboard copy controls;
+- connection status badge;
+- local tree filter clarity;
+- Actions tab hierarchy;
+- zero-count wording;
+- hover/focus states;
+- selected tree row emphasis;
+- responsive wrapping.
+
+The implementation intentionally skipped:
+
+- full user role column/chips because complete user -> roles mapping is not available in current frontend state;
+- client-side sorting;
+- client-side pagination;
+- broad feedback/toast rewrite.
+
+Controlled synthetic / internal live re-check confirmed that the small cleanup passed with minor friction.
+
+This remains controlled synthetic / internal evidence only.
+
+It is not:
+
+- release-ready tenant-facing product;
+- FTOV start;
+- FTOV exit;
+- production tenant readiness proof;
+- real tenant validation;
+- real day-to-day operational validation.
+
+## Current Baseline Update — Asset Identity v1 Canon Alignment
+
+Asset Identity v1 canon alignment has been accepted as a narrow Asset master-record extension.
+
+Approved fields:
+
+- `display_name`
+- `note`
+
+Interpretation:
+
+- `display_name` is an optional nullable human-readable Asset title;
+- `note` is an optional nullable plain-text operational note;
+- `asset_tag` remains the canonical inventory/business identifier;
+- Assign / Transfer / Return remain dedicated responsibility flows;
+- generic edit remains master-record-only.
+
+This canon alignment does not open:
+
+- QR/barcode;
+- import/export;
+- global search;
+- Asset 360;
+- reporting/dashboard;
+- attachments/documents/photos/acts;
+- Hardware Inspector parity.
+
+This does not prove release readiness, FTOV start, FTOV exit, production readiness, real tenant validation or real day-to-day operational validation.

@@ -2,7 +2,7 @@
 
 Status: approved
 Owner: product
-Last Updated: 2026-05-18
+Last Updated: 2026-05-19
 
 ## MVP Timeline
 Срок MVP: 6–8 недель
@@ -1567,3 +1567,150 @@ This closeout does not prove:
 The project remains in:
 
 **Project Stabilization / First-Adopter-Gated Hold**
+
+## Operational Workspace Tree-and-Detail UX Small Frontend Cleanup Closeout Clarification
+
+Operational Workspace Tree-and-Detail UX Small Frontend Cleanup is accepted as implemented after controlled synthetic / internal live re-check.
+
+This was a small frontend-only cleanup pass inside the already accepted Tree-and-Detail UI after Density Reduction.
+
+### Delivery interpretation
+
+The implementation is accepted as:
+
+**small frontend-only cleanup over the accepted Tree-and-Detail UI.**
+
+The delivery reduced remaining UI noise without changing backend/API behavior or product scope.
+
+### Implemented cleanup
+
+The cleanup addressed:
+
+- Setup/Admin duplicate navigation reduction;
+- setup order guidance changed into a concise hint;
+- setup tabs/tree retained as primary navigation;
+- service IDs moved out of primary setup table columns;
+- selected record service IDs kept available through technical disclosure and copy affordance;
+- text `Копировать` controls replaced with compact accessible clipboard icon buttons where appropriate;
+- compact connection status badge added from existing frontend state;
+- local tree filter copy clarified as local/open-tree only;
+- Assign / Transfer / Return made visually primary;
+- master-record edit made visually secondary while remaining master-record-only;
+- tree count wording improved;
+- hover/focus states improved;
+- selected tree row emphasis improved;
+- narrow-width wrapping improved.
+
+### Conditional decisions
+
+The implementation intentionally did not add:
+
+- full user role column/chips, because current frontend state does not contain complete user -> role mapping;
+- client-side sorting;
+- client-side pagination;
+- broad feedback/toast rewrite, because no concrete current feedback defect was found.
+
+Existing sticky/contextual feedback behavior was preserved.
+
+### Live review result
+
+Controlled synthetic / internal live re-check confirmed:
+
+- Tree-and-Detail layout remains active;
+- old long-scroll layout did not return;
+- connection status badge is visible;
+- local tree filter is clearly local-only;
+- Setup/Admin duplication is reduced;
+- setup sections remain accessible;
+- service IDs are removed from primary table noise;
+- IDs remain accessible and copyable;
+- clipboard icon copy controls are usable;
+- Actions tab hierarchy is clearer;
+- Assign / Transfer / Return remain dedicated;
+- master-record edit remains secondary;
+- zero-count wording is clearer;
+- hover/focus states are improved;
+- responsive setup/open-section layout is acceptable;
+- feedback remains visible;
+- no forbidden product scope appeared.
+
+### Remaining minor friction
+
+Remaining deferred minor UX candidates:
+
+- disclosure arrow affordance may be made more obvious later;
+- copy icon discoverability may be improved later if reviews show friction;
+- left-tree scroll / page-scroll interaction may be tuned later;
+- mixed RU/EN tab names may be addressed in future RU copy polish.
+
+These are not blockers for Small Frontend Cleanup acceptance.
+
+### Boundary rule
+
+This closeout does not open:
+
+- backend/API changes;
+- new endpoints;
+- DTO / read-model changes;
+- database / migration changes;
+- BFF / UI backend;
+- auth/IAM expansion;
+- new role model;
+- new bounded context;
+- new Wave 2 surface;
+- global search;
+- backend search;
+- advanced search/filtering;
+- Elasticsearch;
+- saved views / preferences;
+- server-side pagination;
+- server-side sorting;
+- server-generated tree;
+- import/export;
+- barcode / QR / scanning / printer integration;
+- dashboard / BI / analytics;
+- Asset 360;
+- attachments / documents / photos / acts;
+- warehouse expansion;
+- maintenance expansion;
+- ticket/helpdesk expansion;
+- Hardware Inspector parity;
+- desktop app clone.
+
+### Non-claim rule
+
+This closeout does not prove:
+
+- release readiness;
+- production tenant readiness;
+- FTOV start;
+- FTOV exit;
+- real tenant validation;
+- real day-to-day operational validation.
+
+The project remains in:
+
+**Project Stabilization / First-Adopter-Gated Hold**
+
+## Asset Identity v1 Canon Alignment Clarification
+
+Asset Identity v1 is accepted as a narrow Asset master-record canon extension intended to improve Asset recognizability and creation/edit clarity.
+
+Approved fields:
+
+- `display_name`
+- `note`
+
+Delivery interpretation:
+
+- this is not a new bounded context;
+- this is not a new Wave 2 surface;
+- this is not QR/barcode/label implementation;
+- this is not import/export;
+- this is not Asset 360;
+- this is not reporting/dashboard;
+- this is not release readiness or FTOV evidence.
+
+Implementation is not authorized by this clarification.
+
+Backend/API/DB implementation planning may proceed separately after docs alignment is accepted.

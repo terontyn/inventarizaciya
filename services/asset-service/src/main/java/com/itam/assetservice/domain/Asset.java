@@ -10,6 +10,8 @@ public record Asset(
     String assetType,
     String status,
     UUID assignedUserId,
-    UUID locationId
+    UUID locationId,
+    String displayName,
+    String note
 ) {
 }

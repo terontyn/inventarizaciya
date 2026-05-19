@@ -15,6 +15,9 @@ import org.springframework.web.server.ResponseStatusException;
 @Service
 public class AssetApplicationService {
 
+    private static final int DISPLAY_NAME_MAX_LENGTH = 160;
+    private static final int NOTE_MAX_LENGTH = 2000;
+
     private final AssetRepository assetRepository;
     private final AssetReferenceValidator assetReferenceValidator;
     private final AuditWriter auditWriter;
@@ -38,11 +41,15 @@ public class AssetApplicationService {
         String assetType,
         UUID assignedUserId,
         UUID locationId,
+        String displayName,
+        String note,
         AuditMetadata auditMetadata
     ) {
         String normalizedAssetTag = InputNormalizer.requiredTrimmed(assetTag, "asset_tag");
         String normalizedSerialNumber = InputNormalizer.requiredTrimmed(serialNumber, "serial_number");
         String normalizedAssetType = InputNormalizer.requiredTrimmed(assetType, "asset_type");
+        String normalizedDisplayName = normalizeDisplayName(displayName);
+        String normalizedNote = normalizeNote(note);
 
         assetReferenceValidator.requireUserInSameTenant(
             tenantId,
@@ -64,7 +71,9 @@ public class AssetApplicationService {
                 normalizedSerialNumber,
                 normalizedAssetType,
                 assignedUserId,
-                locationId
+                locationId,
+                normalizedDisplayName,
+                normalizedNote
             );
             auditWriter.record(
                 tenantId,
@@ -79,7 +88,9 @@ public class AssetApplicationService {
                     asset.assetType(),
                     asset.status(),
                     asset.assignedUserId(),
-                    asset.locationId()
+                    asset.locationId(),
+                    asset.displayName(),
+                    asset.note()
                 )
             );
             return asset;
@@ -108,6 +119,10 @@ public class AssetApplicationService {
         String assetTag,
         String serialNumber,
         String assetType,
+        String displayName,
+        boolean touchesDisplayName,
+        String note,
+        boolean touchesNote,
         boolean touchesAssignedUserId,
         boolean touchesLocationId,
         AuditMetadata auditMetadata
@@ -122,6 +137,11 @@ public class AssetApplicationService {
         String normalizedAssetTag = InputNormalizer.requiredTrimmed(assetTag, "asset_tag");
         String normalizedSerialNumber = InputNormalizer.requiredTrimmed(serialNumber, "serial_number");
         String normalizedAssetType = InputNormalizer.requiredTrimmed(assetType, "asset_type");
+        Asset currentAsset = findById(tenantId, id);
+        String normalizedDisplayName = touchesDisplayName
+            ? normalizeDisplayName(displayName)
+            : currentAsset.displayName();
+        String normalizedNote = touchesNote ? normalizeNote(note) : currentAsset.note();
 
         try {
             Asset asset = assetRepository.update(
@@ -129,7 +149,9 @@ public class AssetApplicationService {
                 id,
                 normalizedAssetTag,
                 normalizedSerialNumber,
-                normalizedAssetType
+                normalizedAssetType,
+                normalizedDisplayName,
+                normalizedNote
             ).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Asset not found"));
 
             auditWriter.record(
@@ -145,7 +167,9 @@ public class AssetApplicationService {
                     asset.assetType(),
                     asset.status(),
                     asset.assignedUserId(),
-                    asset.locationId()
+                    asset.locationId(),
+                    asset.displayName(),
+                    asset.note()
                 )
             );
             return asset;
@@ -158,6 +182,24 @@ public class AssetApplicationService {
         }
     }
 
+    private String normalizeDisplayName(String displayName) {
+        return InputNormalizer.optionalTrimmed(
+            displayName,
+            "display_name",
+            DISPLAY_NAME_MAX_LENGTH,
+            true
+        );
+    }
+
+    private String normalizeNote(String note) {
+        return InputNormalizer.optionalTrimmed(
+            note,
+            "note",
+            NOTE_MAX_LENGTH,
+            false
+        );
+    }
+
     private record AssetAuditPayload(
         UUID id,
         String assetTag,
@@ -165,7 +207,9 @@ public class AssetApplicationService {
         String assetType,
         String status,
         UUID assignedUserId,
-        UUID locationId
+        UUID locationId,
+        String displayName,
+        String note
     ) {
     }
 }

@@ -2,7 +2,7 @@
 
 Status: approved
 Owner: product
-Last Updated: 2026-05-18
+Last Updated: 2026-05-19
 
 ## Wave 1 Epics
 
@@ -327,3 +327,122 @@ Remaining product expansion / parity candidates:
 - Hardware Inspector parity.
 
 The remaining items are not authorized by Density Reduction closeout and require separate product decision where applicable.
+
+### Operational Workspace Tree-and-Detail UX Small Frontend Cleanup closeout
+
+Status: implemented and accepted as small frontend-only cleanup inside the accepted Tree-and-Detail UI after Density Reduction.
+
+Handled:
+
+- reduced Setup/Admin duplicate navigation;
+- converted setup step cards into concise setup-order guidance;
+- kept setup tabs/tree as primary navigation;
+- moved service IDs out of primary setup table columns;
+- kept selected record service IDs accessible through technical disclosure and copy;
+- replaced text copy controls with compact accessible clipboard icon buttons where appropriate;
+- added compact connection status badge from existing frontend state;
+- clarified local tree filter copy as local/open-tree only;
+- made Assign / Transfer / Return visually primary;
+- made master-record edit visually secondary while preserving master-record-only semantics;
+- improved tree count wording;
+- improved hover/focus states;
+- improved selected tree row emphasis;
+- improved narrow-width wrapping.
+
+Conditional decisions:
+
+- full user role column/chips skipped because current frontend state does not contain complete user -> roles mapping;
+- client-side sorting skipped;
+- client-side pagination skipped;
+- broad feedback/toast rewrite skipped because no concrete current defect was found.
+
+Preserved:
+
+- accepted Tree-and-Detail navigation model;
+- selected-object right detail pane;
+- contextual asset tabs;
+- Assign / Transfer / Return as dedicated flows;
+- generic edit as master-record-only;
+- selected-object contextual History / Audit;
+- Technical details accessibility;
+- Setup/Admin separation;
+- v3.1 / Tree-and-Detail feedback behavior.
+
+Controlled synthetic / internal live re-check confirmed:
+
+- connection status badge is visible;
+- local tree filter is clearly local-only;
+- Setup/Admin duplication is reduced;
+- service IDs are not primary table noise where human labels exist;
+- IDs remain accessible and copyable;
+- clipboard icon copy controls are usable;
+- Actions tab hierarchy is clearer;
+- zero-count wording is clearer;
+- hover/focus states are improved;
+- no forbidden product scope appeared.
+
+Remaining deferred minor UX hardening candidates:
+
+- improve disclosure arrow affordance if future reviews show friction;
+- improve copy icon discoverability if future reviews show friction;
+- tune left-tree scroll / page-scroll interaction if future reviews show friction;
+- optionally normalize mixed RU/EN tab labels as future RU copy polish.
+
+Remaining product expansion / parity candidates:
+
+- global search;
+- backend search;
+- advanced search/filtering;
+- saved views / preferences;
+- server-side pagination;
+- server-side sorting;
+- import/export;
+- barcode/QR;
+- reports/dashboard;
+- Asset 360;
+- richer asset catalogue;
+- attachments/documents/photos/acts;
+- Hardware Inspector parity.
+
+The remaining items are not authorized by Small Frontend Cleanup closeout and require separate product decision where applicable.
+
+### Asset Identity v1 canon alignment
+
+Status: approved as narrow Asset master-record canon extension.
+
+Approved:
+
+- `display_name`
+- `note`
+
+Purpose:
+
+- improve human recognition of assets;
+- support clearer creation/edit flows;
+- provide a small plain-text operational note field.
+
+Preserved:
+
+- `asset_tag` remains canonical inventory/business identifier;
+- `display_name` does not replace `asset_tag`;
+- `note` remains plain text only;
+- Assign / Transfer / Return remain dedicated;
+- generic edit remains master-record-only;
+- responsibility/location changes do not move into generic PATCH.
+
+Not approved by this alignment:
+
+- manufacturer/model;
+- condition;
+- purchase/warranty/cost;
+- QR/barcode;
+- import/export;
+- global search;
+- Asset 360;
+- reporting/dashboard;
+- attachments/documents/photos/acts;
+- Hardware Inspector parity.
+
+Next step after docs alignment:
+
+- backend/API/DB implementation planning packet for `display_name` and `note`.

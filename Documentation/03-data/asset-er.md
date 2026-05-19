@@ -2,7 +2,7 @@
 
 Status: draft
 Owner: architecture
-Last Updated: 2026-04-07
+Last Updated: 2026-05-19
 
 ## Purpose
 Минимальная ER-модель Foundation Slice для asset-service.
@@ -32,6 +32,72 @@ Last Updated: 2026-04-07
 | status | TEXT | current asset status |
 | assigned_user_id | UUID | logical reference to User |
 | location_id | UUID | logical reference to Location |
+| display_name | VARCHAR(160) | optional human-readable Asset title; nullable; not unique |
+| note | TEXT | optional plain-text operational note; nullable |
+
+## Asset Identity v1 ER Extension
+
+Asset Identity v1 adds two nullable columns to `assets`:
+
+- `display_name`
+- `note`
+
+### display_name
+
+`display_name` is an optional human-readable Asset title.
+
+Rules:
+
+- nullable;
+- not unique;
+- no default required;
+- no backfill required;
+- no search index by default;
+- does not replace `asset_tag`.
+
+Recommended physical shape:
+
+- `display_name VARCHAR(160) NULL`
+
+### note
+
+`note` is an optional plain-text operational note.
+
+Rules:
+
+- nullable;
+- no default required;
+- no backfill required;
+- no rich text semantics;
+- no attachment/document/act semantics;
+- no comment-thread semantics;
+- no search index by default.
+
+Recommended physical shape:
+
+- `note TEXT NULL`
+
+Application-level validation should keep `note` bounded, recommended max length `2000`.
+
+### Boundary
+
+This ER extension does not add:
+
+- new table;
+- attachment table;
+- document table;
+- act table;
+- photo/image storage;
+- QR/barcode columns;
+- label-specific columns;
+- `inventory_number`;
+- manufacturer/model fields;
+- purchase/warranty/cost fields;
+- condition field;
+- persistent category taxonomy;
+- search index.
+
+`assigned_user_id` and `location_id` remain history-sensitive fields and remain excluded from generic PATCH.
 
 ## Relationships
 
@@ -68,7 +134,15 @@ Generic PATCH **не должен** менять:
 - Все tenant-aware запросы и проверки должны выполняться в tenant scope.
 - В v1 этот файл описывает только минимальный реестр активов.
 
+
 ## Minimal Business Fields for Slice 3
+
+This Slice 3 minimal field set describes the original Foundation Slice v1 baseline before the later Asset Identity v1 extension.
+
+Asset Identity v1 separately approves two additional nullable master-record fields:
+
+- `display_name`
+- `note`
 
 Чтобы реализация Slice 3 могла быть выполнена без выдумывания business attributes,
 в Foundation Slice v1 фиксируется следующий минимальный physical field set для Asset master record.
@@ -86,7 +160,7 @@ Generic PATCH **не должен** менять:
 - Это минимальный business field set только для Slice 3.
 - `assigned_user_id` и `location_id` остаются history-sensitive fields.
 - Generic PATCH не должен менять `assigned_user_id` и `location_id`.
-- Поля вроде `barcode`, `qr_code`, `model_id`, `manufacturer_id`, `purchase_date`, `cost`, `condition_status`, `notes`, `created_at`, `updated_at` пока не фиксируются как часть канона.
+- Поля вроде `barcode`, `qr_code`, `model_id`, `manufacturer_id`, `purchase_date`, `cost`, `condition_status`, `created_at`, `updated_at` пока не фиксируются как часть канона.
 - Если позже понадобится richer model, она должна добавляться отдельным изменением docs, а не выдумываться в реализации.
 
 ## Responsibility History Clarification
@@ -141,12 +215,15 @@ ER v1 по-прежнему не канонизирует physical tables для
 - `department_id`
 - `parent_asset_id`
 - `inventory_number`
-- `notes`
 - `created_at`
 - `updated_at`
 - `created_by`
 - `updated_by`
 - `version`
+
+The earlier broad `notes` blueprint item is not approved as a notes collection, comment thread, document, act or rich text feature.
+
+Only singular `note` is approved by Asset Identity v1 as an optional plain-text Asset master-record field.
 
 Они не должны считаться каноном Foundation Slice v1 без отдельного подтверждения.
 

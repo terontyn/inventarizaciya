@@ -15,6 +15,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.JsonNode;
 import com.itam.assetservice.application.PilotRoleNames;
 import com.itam.assetservice.domain.AssetStatus;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -576,6 +577,292 @@ class AssetApiIntegrationTest extends IntegrationTestSupport {
     }
 
     @Test
+    void createAssetStoresIdentityFieldsAndResponsesIncludeThem() throws Exception {
+        UUID tenantId = UUID.randomUUID();
+        UUID tenantAdminId = UUID.randomUUID();
+
+        expectRoleLookup(tenantId, tenantAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+        expectRoleLookup(tenantId, tenantAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+        expectRoleLookup(tenantId, tenantAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+
+        Map<String, Object> createPayload = assetPayload("LAP-IDENTITY", "SN-IDENTITY", "Laptop");
+        createPayload.put("display_name", "  Dell XPS\n13  ");
+        createPayload.put("note", "  First deployment\nKeep charger nearby  ");
+
+        String createBody = mockMvc.perform(post("/api/v1/assets")
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
+                .header(AUTHENTICATED_USER_HEADER, tenantAdminId)
+                .header(AUTHENTICATED_ACTOR_HEADER, "tenant-admin")
+                .header(CORRELATION_ID_HEADER, "corr-identity-create")
+                .contentType(APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(createPayload)))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.asset_tag").value("LAP-IDENTITY"))
+            .andExpect(jsonPath("$.display_name").value("Dell XPS 13"))
+            .andExpect(jsonPath("$.note").value("First deployment\nKeep charger nearby"))
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+
+        UUID assetId = UUID.fromString(objectMapper.readTree(createBody).get("id").asText());
+        assertThat(assetRow(tenantId, assetId).displayName()).isEqualTo("Dell XPS 13");
+        assertThat(assetRow(tenantId, assetId).note()).isEqualTo("First deployment\nKeep charger nearby");
+
+        mockMvc.perform(get("/api/v1/assets")
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
+                .header(AUTHENTICATED_USER_HEADER, tenantAdminId))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$[0].display_name").value("Dell XPS 13"))
+            .andExpect(jsonPath("$[0].note").value("First deployment\nKeep charger nearby"));
+
+        mockMvc.perform(get("/api/v1/assets/{id}", assetId)
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
+                .header(AUTHENTICATED_USER_HEADER, tenantAdminId))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.display_name").value("Dell XPS 13"))
+            .andExpect(jsonPath("$.note").value("First deployment\nKeep charger nearby"));
+
+        AuditRow auditRow = latestAuditRow();
+        assertThat(auditRow.actionType()).isEqualTo("CREATE");
+        assertThat(auditRow.correlationId()).isEqualTo("corr-identity-create");
+        assertThat(auditRow.changePayload())
+            .contains("\"display_name\":\"Dell XPS 13\"")
+            .contains("\"note\":\"First deployment\\nKeep charger nearby\"");
+        mockUserService.verify();
+    }
+
+    @Test
+    void createAssetNormalizesNullAndBlankIdentityFieldsToNull() throws Exception {
+        UUID tenantId = UUID.randomUUID();
+        UUID tenantAdminId = UUID.randomUUID();
+
+        expectRoleLookup(tenantId, tenantAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+        expectRoleLookup(tenantId, tenantAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+
+        Map<String, Object> nullPayload = assetPayload("LAP-NULL", "SN-NULL", "Laptop");
+        nullPayload.put("display_name", null);
+        nullPayload.put("note", null);
+        String nullBody = mockMvc.perform(post("/api/v1/assets")
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
+                .header(AUTHENTICATED_USER_HEADER, tenantAdminId)
+                .header(AUTHENTICATED_ACTOR_HEADER, "tenant-admin")
+                .contentType(APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(nullPayload)))
+            .andExpect(status().isCreated())
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+
+        JsonNode nullJson = objectMapper.readTree(nullBody);
+        UUID nullAssetId = UUID.fromString(nullJson.get("id").asText());
+        assertThat(nullJson.get("display_name").isNull()).isTrue();
+        assertThat(nullJson.get("note").isNull()).isTrue();
+        assertThat(assetRow(tenantId, nullAssetId).displayName()).isNull();
+        assertThat(assetRow(tenantId, nullAssetId).note()).isNull();
+
+        Map<String, Object> blankPayload = assetPayload("LAP-BLANK", "SN-BLANK", "Laptop");
+        blankPayload.put("display_name", "   \n  ");
+        blankPayload.put("note", "   ");
+        String blankBody = mockMvc.perform(post("/api/v1/assets")
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
+                .header(AUTHENTICATED_USER_HEADER, tenantAdminId)
+                .header(AUTHENTICATED_ACTOR_HEADER, "tenant-admin")
+                .contentType(APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(blankPayload)))
+            .andExpect(status().isCreated())
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+
+        JsonNode blankJson = objectMapper.readTree(blankBody);
+        UUID blankAssetId = UUID.fromString(blankJson.get("id").asText());
+        assertThat(blankJson.get("display_name").isNull()).isTrue();
+        assertThat(blankJson.get("note").isNull()).isTrue();
+        assertThat(assetRow(tenantId, blankAssetId).displayName()).isNull();
+        assertThat(assetRow(tenantId, blankAssetId).note()).isNull();
+        mockUserService.verify();
+    }
+
+    @Test
+    void createAssetRejectsTooLongIdentityFields() throws Exception {
+        UUID tenantId = UUID.randomUUID();
+        UUID tenantAdminId = UUID.randomUUID();
+
+        expectRoleLookup(tenantId, tenantAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+        expectRoleLookup(tenantId, tenantAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+
+        Map<String, Object> longDisplayNamePayload = assetPayload("LAP-LONG-NAME", "SN-LONG-NAME", "Laptop");
+        longDisplayNamePayload.put("display_name", "d".repeat(161));
+        mockMvc.perform(post("/api/v1/assets")
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
+                .header(AUTHENTICATED_USER_HEADER, tenantAdminId)
+                .header(AUTHENTICATED_ACTOR_HEADER, "tenant-admin")
+                .contentType(APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(longDisplayNamePayload)))
+            .andExpect(status().isBadRequest());
+
+        Map<String, Object> longNotePayload = assetPayload("LAP-LONG-NOTE", "SN-LONG-NOTE", "Laptop");
+        longNotePayload.put("note", "n".repeat(2001));
+        mockMvc.perform(post("/api/v1/assets")
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
+                .header(AUTHENTICATED_USER_HEADER, tenantAdminId)
+                .header(AUTHENTICATED_ACTOR_HEADER, "tenant-admin")
+                .contentType(APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(longNotePayload)))
+            .andExpect(status().isBadRequest());
+
+        mockUserService.verify();
+        assertThat(countRows("assets")).isEqualTo(0);
+        assertThat(countRows("local_audit_records")).isEqualTo(0);
+    }
+
+    @Test
+    void patchUpdatesPreservesAndClearsIdentityFields() throws Exception {
+        UUID tenantId = UUID.randomUUID();
+        UUID tenantAdminId = UUID.randomUUID();
+        UUID assetId = insertAsset(
+            tenantId,
+            "LAP-IDENTITY",
+            "SN-IDENTITY",
+            "Laptop",
+            AssetStatus.ACTIVE,
+            null,
+            null,
+            "Original name",
+            "Original note"
+        );
+
+        expectRoleLookup(tenantId, tenantAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+        expectRoleLookup(tenantId, tenantAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+        expectRoleLookup(tenantId, tenantAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+        expectRoleLookup(tenantId, tenantAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+        expectRoleLookup(tenantId, tenantAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+
+        Map<String, Object> displayNamePatch = assetPayload("LAP-IDENTITY", "SN-IDENTITY", "Laptop");
+        displayNamePatch.put("display_name", "  Updated\nname  ");
+        mockMvc.perform(patch("/api/v1/assets/{id}", assetId)
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
+                .header(AUTHENTICATED_USER_HEADER, tenantAdminId)
+                .header(AUTHENTICATED_ACTOR_HEADER, "tenant-admin")
+                .contentType(APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(displayNamePatch)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.display_name").value("Updated name"))
+            .andExpect(jsonPath("$.note").value("Original note"));
+
+        Map<String, Object> notePatch = assetPayload("LAP-IDENTITY", "SN-IDENTITY", "Laptop");
+        notePatch.put("note", "  Updated\nnote  ");
+        mockMvc.perform(patch("/api/v1/assets/{id}", assetId)
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
+                .header(AUTHENTICATED_USER_HEADER, tenantAdminId)
+                .header(AUTHENTICATED_ACTOR_HEADER, "tenant-admin")
+                .contentType(APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(notePatch)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.display_name").value("Updated name"))
+            .andExpect(jsonPath("$.note").value("Updated\nnote"));
+
+        Map<String, Object> nullPatch = assetPayload("LAP-IDENTITY", "SN-IDENTITY", "Laptop");
+        nullPatch.put("display_name", null);
+        nullPatch.put("note", null);
+        String nullPatchBody = mockMvc.perform(patch("/api/v1/assets/{id}", assetId)
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
+                .header(AUTHENTICATED_USER_HEADER, tenantAdminId)
+                .header(AUTHENTICATED_ACTOR_HEADER, "tenant-admin")
+                .contentType(APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(nullPatch)))
+            .andExpect(status().isOk())
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+        JsonNode nullPatchJson = objectMapper.readTree(nullPatchBody);
+        assertThat(nullPatchJson.get("display_name").isNull()).isTrue();
+        assertThat(nullPatchJson.get("note").isNull()).isTrue();
+
+        Map<String, Object> restorePatch = assetPayload("LAP-IDENTITY", "SN-IDENTITY", "Laptop");
+        restorePatch.put("display_name", "Restored name");
+        restorePatch.put("note", "Restored note");
+        mockMvc.perform(patch("/api/v1/assets/{id}", assetId)
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
+                .header(AUTHENTICATED_USER_HEADER, tenantAdminId)
+                .header(AUTHENTICATED_ACTOR_HEADER, "tenant-admin")
+                .contentType(APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(restorePatch)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.display_name").value("Restored name"))
+            .andExpect(jsonPath("$.note").value("Restored note"));
+
+        Map<String, Object> blankPatch = assetPayload("LAP-IDENTITY", "SN-IDENTITY", "Laptop");
+        blankPatch.put("display_name", "   \n ");
+        blankPatch.put("note", "   ");
+        String blankPatchBody = mockMvc.perform(patch("/api/v1/assets/{id}", assetId)
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
+                .header(AUTHENTICATED_USER_HEADER, tenantAdminId)
+                .header(AUTHENTICATED_ACTOR_HEADER, "tenant-admin")
+                .header(CORRELATION_ID_HEADER, "corr-identity-update")
+                .contentType(APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(blankPatch)))
+            .andExpect(status().isOk())
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+        JsonNode blankPatchJson = objectMapper.readTree(blankPatchBody);
+        assertThat(blankPatchJson.get("display_name").isNull()).isTrue();
+        assertThat(blankPatchJson.get("note").isNull()).isTrue();
+        assertThat(assetRow(tenantId, assetId).displayName()).isNull();
+        assertThat(assetRow(tenantId, assetId).note()).isNull();
+
+        AuditRow auditRow = latestAuditRow();
+        assertThat(auditRow.actionType()).isEqualTo("UPDATE");
+        assertThat(auditRow.correlationId()).isEqualTo("corr-identity-update");
+        assertThat(auditRow.changePayload())
+            .contains("\"display_name\":null")
+            .contains("\"note\":null");
+        mockUserService.verify();
+    }
+
+    @Test
+    void identityFieldsRemainTenantScopedForReadAndUpdate() throws Exception {
+        UUID tenantA = UUID.randomUUID();
+        UUID tenantB = UUID.randomUUID();
+        UUID tenantBAdminId = UUID.randomUUID();
+        UUID assetId = insertAsset(
+            tenantA,
+            "LAP-IDENTITY",
+            "SN-IDENTITY",
+            "Laptop",
+            AssetStatus.ACTIVE,
+            null,
+            null,
+            "Tenant A name",
+            "Tenant A note"
+        );
+
+        expectRoleLookup(tenantB, tenantBAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+        expectRoleLookup(tenantB, tenantBAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+
+        mockMvc.perform(get("/api/v1/assets/{id}", assetId)
+                .header(AUTHENTICATED_TENANT_HEADER, tenantB)
+                .header(AUTHENTICATED_USER_HEADER, tenantBAdminId))
+            .andExpect(status().isNotFound());
+
+        Map<String, Object> patchPayload = assetPayload("LAP-IDENTITY-B", "SN-IDENTITY-B", "Laptop Pro");
+        patchPayload.put("display_name", "Tenant B name");
+        patchPayload.put("note", "Tenant B note");
+        mockMvc.perform(patch("/api/v1/assets/{id}", assetId)
+                .header(AUTHENTICATED_TENANT_HEADER, tenantB)
+                .header(AUTHENTICATED_USER_HEADER, tenantBAdminId)
+                .header(AUTHENTICATED_ACTOR_HEADER, "tenant-admin")
+                .contentType(APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(patchPayload)))
+            .andExpect(status().isNotFound());
+
+        assertThat(assetRow(tenantA, assetId).displayName()).isEqualTo("Tenant A name");
+        assertThat(assetRow(tenantA, assetId).note()).isEqualTo("Tenant A note");
+        mockUserService.verify();
+    }
+
+    @Test
     void crossTenantUpdateIsRejected() throws Exception {
         UUID tenantA = UUID.randomUUID();
         UUID tenantB = UUID.randomUUID();
@@ -605,5 +892,13 @@ class AssetApiIntegrationTest extends IntegrationTestSupport {
 
         mockUserService.verify();
         assertThat(countRows("local_audit_records")).isEqualTo(0);
+    }
+
+    private Map<String, Object> assetPayload(String assetTag, String serialNumber, String assetType) {
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("asset_tag", assetTag);
+        payload.put("serial_number", serialNumber);
+        payload.put("asset_type", assetType);
+        return payload;
     }
 }
