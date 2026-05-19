@@ -833,7 +833,9 @@ function buildAssetUpsertPayload(formData) {
     const payload = {
         asset_tag: formDataValue(formData, "asset_tag"),
         serial_number: formDataValue(formData, "serial_number"),
-        asset_type: formDataValue(formData, "asset_type")
+        asset_type: formDataValue(formData, "asset_type"),
+        display_name: formDataValue(formData, "display_name") || null,
+        note: formDataValue(formData, "note") || null
     };
     validateRequiredFields(payload, {
         asset_tag: "Инвентарный тег",
@@ -857,6 +859,36 @@ function buildAdminPayload(config, formData) {
 
 function formDataValue(formData, key) {
     return String(formData.get(key) ?? "").trim();
+}
+
+function optionalAssetText(value) {
+    return String(value ?? "").trim();
+}
+
+function assetDisplayTitle(asset) {
+    const displayName = optionalAssetText(asset?.display_name);
+    if (displayName) {
+        return displayName;
+    }
+
+    const assetTag = optionalAssetText(asset?.asset_tag);
+    if (assetTag) {
+        return assetTag;
+    }
+
+    const typeSerial = [
+        optionalAssetText(asset?.asset_type),
+        optionalAssetText(asset?.serial_number)
+    ].filter(Boolean).join(" / ");
+    if (typeSerial) {
+        return typeSerial;
+    }
+
+    return shortenTechnicalValue(asset?.id || "");
+}
+
+function assetCanonicalTag(asset) {
+    return optionalAssetText(asset?.asset_tag);
 }
 
 function validateRequiredFields(payload, labels) {
@@ -1869,10 +1901,18 @@ function renderTreeNode({ type, label, meta = "", selected = false, attributes =
 function renderAssetTreeNode(asset, context = {}) {
     const selected = state.selectedTreeNode.type === TREE_NODE_TYPES.ASSET
         && state.selectedTreeNode.id === asset.id;
+    const title = assetDisplayTitle(asset);
+    const canonicalTag = assetCanonicalTag(asset);
+    const metaParts = [];
+    if (canonicalTag && canonicalTag !== title) {
+        metaParts.push(`Тег: ${canonicalTag}`);
+    }
+    metaParts.push(asset.asset_type || "-");
+    metaParts.push(String(asset.status || "UNKNOWN").toUpperCase());
     return renderTreeNode({
         type: TREE_NODE_TYPES.ASSET,
-        label: asset.asset_tag || asset.serial_number || shortenTechnicalValue(asset.id),
-        meta: `${asset.asset_type || "-"} · ${String(asset.status || "UNKNOWN").toUpperCase()}`,
+        label: title,
+        meta: metaParts.join(" · "),
         selected,
         attributes: `
             data-asset-id="${escapeAttribute(asset.id)}"
@@ -2198,10 +2238,11 @@ function renderAssetDetailPanel() {
                 <div class="asset-card-header">
                     <p class="section-kicker">Asset detail</p>
                     <div class="asset-card-title">
-                        <h2>${escapeHtml(asset.asset_tag || "-")}</h2>
+                        <h2>${escapeHtml(assetDisplayTitle(asset))}</h2>
                         ${renderStatusBadge(asset.status)}
                     </div>
                     <div class="asset-card-meta">
+                        <span class="reference-meta">Инв. тег: ${escapeHtml(assetCanonicalTag(asset) || "-")}</span>
                         <span class="reference-meta">SN: ${escapeHtml(asset.serial_number || "-")}</span>
                         <span class="reference-meta">Тип: ${escapeHtml(asset.asset_type || "-")}</span>
                         ${renderTechnicalDisclosure("ID актива", asset.id, { label: "ID актива" })}
@@ -2353,6 +2394,11 @@ function renderAssetCreatePanelMarkup() {
             <form id="asset-create-form" class="form-grid">
                 <div class="form-section-label">Основные поля</div>
                 <label class="field">
+                    <span>Название актива</span>
+                    <input name="display_name" type="text" autocomplete="off" maxlength="160">
+                    <small class="reference-meta">Необязательное название для узнавания в интерфейсе.</small>
+                </label>
+                <label class="field">
                     <span>Инвентарный тег</span>
                     <input name="asset_tag" type="text" autocomplete="off" required>
                 </label>
@@ -2363,6 +2409,11 @@ function renderAssetCreatePanelMarkup() {
                 <label class="field">
                     <span>Тип актива</span>
                     <input name="asset_type" type="text" autocomplete="off" required>
+                </label>
+                <label class="field field-wide">
+                    <span>Комментарий</span>
+                    <textarea name="note" maxlength="2000" placeholder="Необязательный рабочий комментарий"></textarea>
+                    <small class="reference-meta">Обычный текст для контекста. Не история, не вложение и не поток комментариев.</small>
                 </label>
                 <div class="button-row button-row-inline">
                     <button class="button button-primary ${isBusy("createAsset") ? "is-loading" : ""}" type="submit" ${isBusy("createAsset") ? "disabled" : ""}>
@@ -2538,7 +2589,10 @@ function getSelectedTreeNodeLabel() {
         return state.references.locations.find((item) => item.id === node.id)?.name || "Локация";
     }
     if (node.type === TREE_NODE_TYPES.ASSET) {
-        return state.selectedAsset?.asset_tag || state.assets.find((item) => item.id === node.id)?.asset_tag || "Актив";
+        const asset = state.selectedAsset?.id === node.id
+            ? state.selectedAsset
+            : state.assets.find((item) => item.id === node.id);
+        return asset ? assetDisplayTitle(asset) : "Актив";
     }
     if (node.type === TREE_NODE_TYPES.ASSET_GROUP) {
         return getAllAssetGroups().find((item) => item.key === node.group)?.label || "Все активы";
@@ -2890,7 +2944,7 @@ function renderAssetRegistryOverview() {
     const total = state.assets.length;
     const active = state.assets.filter((asset) => String(asset.status || "").toUpperCase() === "ACTIVE").length;
     const retired = state.assets.filter((asset) => String(asset.status || "").toUpperCase() === "RETIRED").length;
-    const selectedLabel = state.selectedAsset ? state.selectedAsset.asset_tag : "Актив не выбран";
+    const selectedLabel = state.selectedAsset ? assetDisplayTitle(state.selectedAsset) : "Актив не выбран";
     const selectedState = state.selectedAsset
         ? getSelectedAssetRegistrySummary(state.selectedAsset)
         : "Откройте карточку из реестра";
@@ -3002,10 +3056,11 @@ function renderAssetDetail() {
                 <div class="asset-card-header">
                     <p class="section-kicker">Карточка актива</p>
                     <div class="asset-card-title">
-                        <h3>${escapeHtml(asset.asset_tag)}</h3>
+                        <h3>${escapeHtml(assetDisplayTitle(asset))}</h3>
                         ${renderStatusBadge(asset.status)}
                     </div>
                     <div class="asset-card-meta">
+                        <span class="reference-meta">Инв. тег: ${escapeHtml(assetCanonicalTag(asset) || "-")}</span>
                         <span class="reference-meta">SN: ${escapeHtml(asset.serial_number || "-")}</span>
                         <span class="reference-meta">Тип: ${escapeHtml(asset.asset_type || "-")}</span>
                         ${renderTechnicalDisclosure("ID актива", asset.id, { label: "ID актива" })}
@@ -3065,7 +3120,7 @@ function renderAssetSectionContent(asset, canMutate, hasUsers, hasLocations, has
 }
 
 function renderAssetOverviewSection(asset, canMutate) {
-    const displayName = asset.display_name || asset.name || asset.asset_tag || "-";
+    const displayName = assetDisplayTitle(asset);
     return `
         <section class="asset-section">
             <div class="journey-banner tone-info">
@@ -3078,8 +3133,8 @@ function renderAssetOverviewSection(asset, canMutate) {
             ${renderCurrentStateStrip(asset)}
 
             <div class="asset-summary-grid">
-                ${renderSummaryCard("Инвентарный тег", escapeHtml(asset.asset_tag), "Главный пользовательский идентификатор в реестре.")}
-                ${renderSummaryCard("Display name", escapeHtml(displayName), "Используется только уже доступное поле или asset_tag как отображаемый ярлык.")}
+                ${renderSummaryCard("Инвентарный тег", escapeHtml(assetCanonicalTag(asset) || "-"), "Главный пользовательский идентификатор в реестре.")}
+                ${renderSummaryCard("Название актива", escapeHtml(displayName), "Отображаемое название для узнавания. Инвентарный тег остаётся каноническим идентификатором.")}
                 ${renderSummaryCard("Статус", renderStatusBadge(asset.status), "Не кодирует текущую ответственность.")}
                 ${renderSummaryCard("Тип", escapeHtml(asset.asset_type), "Поле карточки актива.")}
                 ${renderSummaryCard("Серийный номер", escapeHtml(asset.serial_number), "Поле карточки актива.")}
@@ -3087,12 +3142,26 @@ function renderAssetOverviewSection(asset, canMutate) {
                 ${renderSummaryCard("Локация", renderLocationReference(asset.location_id), "Текущая рабочая локация.")}
             </div>
 
+            ${renderAssetNoteBlock(asset)}
+
             <div class="button-row">
                 ${canMutate ? `<button class="button button-secondary" type="button" data-asset-section="actions">Открыть действия</button>` : ""}
                 <button class="button button-ghost" type="button" data-asset-section="history">История и аудит</button>
                 <button class="button button-ghost" type="button" data-asset-section="technical">Technical details</button>
             </div>
         </section>
+    `;
+}
+
+function renderAssetNoteBlock(asset) {
+    const note = optionalAssetText(asset?.note);
+    return `
+        <article class="asset-note-block ${note ? "" : "asset-note-empty"}">
+            <p class="metric-label">Комментарий</p>
+            ${note
+                ? `<p class="asset-note-text">${escapeHtml(note)}</p>`
+                : `<p class="reference-empty">Комментарий не добавлен</p>`}
+        </article>
     `;
 }
 
@@ -3137,6 +3206,11 @@ function renderAssetMasterSection(asset, canMutate) {
             <form id="asset-update-form" class="form-grid">
                 <div class="form-section-label">Основные поля master-record</div>
                 <label class="field">
+                    <span>Название актива</span>
+                    <input name="display_name" type="text" value="${escapeAttribute(asset.display_name || "")}" maxlength="160">
+                    <small class="reference-meta">Необязательное название для узнавания в интерфейсе.</small>
+                </label>
+                <label class="field">
                     <span>Инвентарный тег</span>
                     <input name="asset_tag" type="text" value="${escapeAttribute(asset.asset_tag)}" required>
                 </label>
@@ -3147,6 +3221,11 @@ function renderAssetMasterSection(asset, canMutate) {
                 <label class="field">
                     <span>Тип актива</span>
                     <input name="asset_type" type="text" value="${escapeAttribute(asset.asset_type)}" required>
+                </label>
+                <label class="field field-wide">
+                    <span>Комментарий</span>
+                    <textarea name="note" maxlength="2000" placeholder="Необязательный рабочий комментарий">${escapeHtml(asset.note || "")}</textarea>
+                    <small class="reference-meta">Обычный текст. Не меняет ответственность, статус или историю движения.</small>
                 </label>
                 <div class="button-row button-row-inline">
                     <button class="button button-primary ${isBusy("updateAsset") ? "is-loading" : ""}" type="submit" ${isBusy("updateAsset") ? "disabled" : ""}>${isBusy("updateAsset") ? "Сохраняем" : "Сохранить данные актива"}</button>
@@ -3521,7 +3600,8 @@ function renderReviewDetail() {
             <div class="panel-heading">
                 <div>
                     <p class="section-kicker">История и аудит</p>
-                    <h3>${escapeHtml(state.selectedAsset.asset_tag)}</h3>
+                    <h3>${escapeHtml(assetDisplayTitle(state.selectedAsset))}</h3>
+                    <span class="reference-meta">Инв. тег: ${escapeHtml(assetCanonicalTag(state.selectedAsset) || "-")}</span>
                     ${renderTechnicalDisclosure("ID актива", state.selectedAsset.id, { label: "ID актива" })}
                 </div>
                 <div class="button-row">
@@ -4075,9 +4155,12 @@ function canReferenceRead() {
 }
 
 function renderAssetIdentity(asset) {
+    const title = assetDisplayTitle(asset);
+    const canonicalTag = assetCanonicalTag(asset);
     return `
         <div class="reference-label">
-            <strong>${escapeHtml(asset.asset_tag || "-")}</strong>
+            <strong>${escapeHtml(title || "-")}</strong>
+            <span class="reference-meta">Инв. тег: ${escapeHtml(canonicalTag || "-")}</span>
             <span class="reference-meta">SN: ${escapeHtml(asset.serial_number || "-")}</span>
             ${renderTechnicalDisclosure("Служебный ID", asset.id, { label: "ID актива" })}
         </div>
@@ -4377,6 +4460,7 @@ function isServiceAuditPayloadKey(key) {
         .replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`)
         .toLowerCase();
     return normalized === "id"
+        || normalized === "note"
         || normalized === "entity_id"
         || normalized.includes("correlation")
         || normalized.includes("request")
@@ -4398,6 +4482,8 @@ function describeAuditPayloadKey(key) {
     const normalized = String(key || "").replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`).toLowerCase();
     const labels = {
         id: "ID актива",
+        display_name: "Название актива",
+        note: "Комментарий",
         asset_tag: "Инвентарный тег",
         serial_number: "Серийный номер",
         asset_type: "Тип актива",

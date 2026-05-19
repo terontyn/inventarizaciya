@@ -443,6 +443,43 @@ Not approved by this alignment:
 - attachments/documents/photos/acts;
 - Hardware Inspector parity.
 
-Next step after docs alignment:
+Implementation status:
 
-- backend/API/DB implementation planning packet for `display_name` and `note`.
+- backend/API/DB implementation completed and accepted;
+- implementation was bounded to `display_name` and `note`;
+- migration added nullable `display_name` and nullable `note`;
+- API/DTO surfaces now carry `display_name` and `note`;
+- validation/normalization handles optional, nullable, blank-to-null semantics;
+- existing asset create/update audit payloads include the new identity fields;
+- Asset API, schema constraint and full asset-service tests passed.
+
+Preserved by implementation:
+
+- `asset_tag` remains canonical inventory/business identifier;
+- `display_name` does not replace `asset_tag`;
+- `note` remains plain text only;
+- Assign / Transfer / Return remain dedicated;
+- Retire remains dedicated where currently present;
+- generic edit remains master-record-only;
+- `assigned_user_id` and `location_id` do not move into generic PATCH;
+- ordinary PATCH does not become a status-transition path.
+
+Still not approved:
+
+- frontend UI changes for displaying/editing these fields;
+- unified `Создать` launcher;
+- quick edit UI;
+- QR/barcode;
+- import/export;
+- global search;
+- Asset 360;
+- reporting/dashboard;
+- manufacturer/model;
+- condition;
+- purchase/warranty/cost;
+- attachments/documents/photos/acts;
+- Hardware Inspector parity.
+
+Next possible step:
+
+- separate frontend-only planning packet for using `display_name` and `note` in the Operational Workspace UI, if explicitly approved.

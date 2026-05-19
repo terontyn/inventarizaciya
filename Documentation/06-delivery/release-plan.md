@@ -1714,3 +1714,74 @@ Delivery interpretation:
 Implementation is not authorized by this clarification.
 
 Backend/API/DB implementation planning may proceed separately after docs alignment is accepted.
+
+## Asset Identity v1 Backend/API/DB Implementation Closeout Clarification
+
+Asset Identity v1 backend/API/DB implementation is accepted as completed.
+
+The implementation delivered the narrow Asset master-record extension approved by canon alignment:
+
+- `display_name`
+- `note`
+
+### Delivery interpretation
+
+This implementation is accepted as:
+
+**bounded backend/API/DB implementation for Asset Identity v1 fields only.**
+
+Implemented scope:
+
+- Flyway migration added nullable `display_name` and nullable `note` to `assets`;
+- Asset domain/model mapping was extended;
+- repository insert/update/read mapping was extended;
+- create/update/read API DTOs were extended;
+- validation and normalization were added;
+- existing asset create/update audit payloads include the new identity fields;
+- tests passed for Asset API, schema constraints and the full asset-service test suite.
+
+### Preserved boundaries
+
+The implementation preserved:
+
+- `asset_tag` as canonical inventory/business identifier;
+- Assign as dedicated flow;
+- Transfer as dedicated flow;
+- Return as dedicated flow;
+- Retire as dedicated flow where currently present;
+- generic edit as master-record-only;
+- `assigned_user_id` and `location_id` as not updated through generic PATCH;
+- status transition as not performed through ordinary PATCH.
+
+### Not opened
+
+This implementation did not open:
+
+- frontend/static UI changes;
+- QR/barcode/label implementation;
+- import/export;
+- global search;
+- backend search;
+- Asset 360;
+- reporting/dashboard;
+- manufacturer/model/cost/purchase/warranty/condition fields;
+- attachments/documents/photos/acts;
+- auth/IAM expansion;
+- new bounded context;
+- new Wave 2 surface;
+- Hardware Inspector parity.
+
+### Non-claim rule
+
+This closeout does not prove:
+
+- release readiness;
+- FTOV start;
+- FTOV exit;
+- production readiness;
+- real tenant validation;
+- real day-to-day operational validation.
+
+The project remains in:
+
+**Project Stabilization / First-Adopter-Gated Hold**

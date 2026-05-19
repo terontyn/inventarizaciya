@@ -250,6 +250,10 @@ code {
     gap: 0.42rem;
 }
 
+.field-wide {
+    grid-column: 1 / -1;
+}
+
 .field span {
     font-size: 0.9rem;
     font-weight: 600;
@@ -940,7 +944,8 @@ code {
 .metric-card,
 .workspace-area-card,
 .action-card,
-.setup-card {
+.setup-card,
+.asset-note-block {
     padding: 1rem;
     border: 1px solid var(--line);
     border-radius: var(--radius-md);
@@ -951,8 +956,27 @@ code {
 .metric-card p,
 .workspace-area-card p,
 .action-card p,
-.setup-card p {
+.setup-card p,
+.asset-note-block p {
     margin: 0;
+}
+
+.asset-note-block {
+    display: grid;
+    gap: 0.55rem;
+    background: rgba(255, 255, 255, 0.64);
+}
+
+.asset-note-empty {
+    background: rgba(255, 255, 255, 0.46);
+}
+
+.asset-note-text {
+    max-height: 12rem;
+    overflow: auto;
+    color: var(--ink);
+    line-height: 1.55;
+    white-space: pre-wrap;
 }
 
 .workspace-area-card {

@@ -1103,3 +1103,54 @@ This canon alignment does not open:
 - Hardware Inspector parity.
 
 This does not prove release readiness, FTOV start, FTOV exit, production readiness, real tenant validation or real day-to-day operational validation.
+
+## Current Baseline Update — Asset Identity v1 Backend/API/DB Implementation Closeout
+
+Asset Identity v1 backend/API/DB implementation has been completed and accepted as a bounded Asset master-record extension.
+
+Implemented fields:
+
+- `display_name`
+- `note`
+
+Implementation interpretation:
+
+- `display_name` is an optional nullable human-readable Asset title;
+- `note` is an optional nullable plain-text operational note;
+- `asset_tag` remains the canonical inventory/business identifier;
+- Assign / Transfer / Return remain dedicated responsibility flows;
+- Retire remains dedicated where currently present;
+- generic edit remains master-record-only;
+- `assigned_user_id` and `location_id` do not move into generic PATCH;
+- ordinary PATCH remains outside status-transition semantics.
+
+Implementation scope:
+
+- backend/API/DB only;
+- Flyway migration added nullable `display_name` and nullable `note`;
+- Asset model, repository, DTO/API response, validation/normalization and audit payload were updated;
+- tests passed for Asset API, schema constraints and the full asset-service test suite.
+
+This implementation did not open:
+
+- frontend/static UI changes;
+- Documentation changes as part of Codex implementation;
+- QR/barcode;
+- import/export;
+- global search;
+- Asset 360;
+- reporting/dashboard;
+- manufacturer/model/cost fields;
+- attachments/documents/photos/acts;
+- Hardware Inspector parity.
+
+This remains internally validated implementation evidence only.
+
+It does not prove:
+
+- release readiness;
+- FTOV start;
+- FTOV exit;
+- production readiness;
+- real tenant validation;
+- real day-to-day operational validation.
