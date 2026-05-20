@@ -2,7 +2,7 @@
 
 Status: approved
 Owner: product
-Last Updated: 2026-05-19
+Last Updated: 2026-05-20
 
 ## MVP Timeline
 Срок MVP: 6–8 недель
@@ -1935,6 +1935,83 @@ Recommended next product decision:
 Non-claim rule:
 
 This planning-candidate update does not prove release readiness, FTOV start, FTOV exit, production readiness, real tenant validation or real day-to-day operational validation.
+
+The project remains in:
+
+**Project Stabilization / First-Adopter-Gated Hold**
+
+## Unified Create Launcher Implementation Closeout Clarification
+
+Operational Workspace / Unified Create Launcher is accepted as implemented.
+
+### Delivery interpretation
+
+This implementation is accepted as:
+
+**bounded frontend-only UX/navigation shortcut over existing Operational Workspace creation surfaces.**
+
+Implemented scope:
+
+- one compact `Создать` launcher was added;
+- launcher entries are:
+  - `Актив / устройство`;
+  - `Пользователь`;
+  - `Подразделение`;
+  - `Филиал`;
+  - `Локация`;
+- each entry routes or focuses an existing create surface;
+- asset creation reuses the existing asset create form;
+- user, department, branch and location creation reuse existing Setup/Admin create states;
+- static UI smoke coverage was updated.
+
+### Preserved boundaries
+
+The implementation preserved:
+
+- Assign as dedicated flow;
+- Transfer as dedicated flow;
+- Return as dedicated flow;
+- Retire as dedicated flow where currently present;
+- generic edit as master-record-only;
+- asset create as not assign;
+- asset create as not create-and-assign;
+- Setup/Admin ownership for reference data.
+
+### Not opened
+
+This implementation did not open:
+
+- backend/API changes;
+- DB changes;
+- migrations;
+- new endpoints;
+- DTO/read-model changes;
+- BFF/UI backend;
+- auth/IAM expansion;
+- new role model;
+- new permission model;
+- new entity family;
+- new master-data module;
+- quick edit redesign;
+- Delete / Archive implementation;
+- End-User Asset Information View;
+- Search v1 implementation;
+- QR/barcode implementation;
+- import/export;
+- Asset 360;
+- reporting/dashboard;
+- Hardware Inspector parity.
+
+### Non-claim rule
+
+This closeout does not prove:
+
+- release readiness;
+- FTOV start;
+- FTOV exit;
+- production readiness;
+- real tenant validation;
+- real day-to-day operational validation.
 
 The project remains in:
 

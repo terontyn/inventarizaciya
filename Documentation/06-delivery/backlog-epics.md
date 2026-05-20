@@ -2,7 +2,7 @@
 
 Status: approved
 Owner: product
-Last Updated: 2026-05-19
+Last Updated: 2026-05-20
 
 ## Wave 1 Epics
 
@@ -497,9 +497,10 @@ Still not approved for implementation by Asset Identity v1:
 - note threads;
 - Hardware Inspector parity.
 
+
 Next possible step:
 
-- separate product decision for unified creation / quick edit / broader asset identity UX, only if explicitly approved.
+- continue with remaining owner-approved planning candidates after Unified Create Launcher closeout.
 
 ### Owner-approved future planning candidates after Asset Identity v1
 
@@ -511,7 +512,7 @@ This section does not authorize implementation, Codex work, backend/API changes,
 
 #### 1. Unified Create Launcher
 
-Status: approved as future UX planning candidate.
+Status: implemented and accepted as bounded frontend-only UX/navigation shortcut.
 
 Purpose:
 
@@ -536,9 +537,30 @@ Boundary:
 - it must not mix Asset creation with Assign / Transfer / Return;
 - Assign / Transfer / Return remain dedicated responsibility flows.
 
-Required next step:
+Implementation status:
 
-- `Operational Workspace / Unified Create Launcher Direction Gate`.
+- completed and accepted;
+- implemented as one compact `Создать` launcher;
+- launcher entries:
+  - `Актив / устройство`;
+  - `Пользователь`;
+  - `Подразделение`;
+  - `Филиал`;
+  - `Локация`;
+- reuses existing creation forms/surfaces;
+- asset creation remains master-record create only;
+- setup creation remains inside existing Setup/Admin surfaces;
+- static UI smoke coverage was updated.
+
+Preserved:
+
+- Assign / Transfer / Return remain dedicated;
+- Retire remains dedicated where currently present;
+- generic edit remains master-record-only;
+- asset create does not become assign;
+- asset create does not become create-and-assign;
+- no backend/API/DB changes were opened;
+- no auth/IAM changes were opened.
 
 #### 2. Simplified Asset Actions UX
 
@@ -740,18 +762,21 @@ Not approved by this note:
 - Hardware Inspector parity;
 - Astra Configuration Manager parity.
 
-### Planning priority after Asset Identity v1
 
-Recommended owner-priority order:
 
-1. Unified Create Launcher.
-2. Simplified Asset Actions UX.
-3. Delete / Archive Semantics.
-4. End-User Asset Information View.
-5. Search v1.
-6. QR Lite.
-7. Asset Type-Specific Technical Attributes.
+### Planning priority after Unified Create Launcher
+
+Unified Create Launcher is now implemented and accepted.
+
+Remaining recommended owner-priority order:
+
+1. Simplified Asset Actions UX.
+2. Delete / Archive Semantics.
+3. End-User Asset Information View.
+4. Search v1.
+5. QR Lite.
+6. Asset Type-Specific Technical Attributes.
 
 The first recommended next stage is:
 
-`Operational Workspace / Unified Create Launcher Direction Gate`
+`Operational Workspace / Simplified Asset Actions UX Direction Gate`

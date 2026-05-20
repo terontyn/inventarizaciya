@@ -3313,22 +3313,23 @@ function renderAssetMasterSection(asset, canMutate) {
         <section class="asset-section">
             <div class="panel-heading">
                 <div>
-                    <p class="section-kicker">Данные актива</p>
-                    <h3>Редактировать данные актива</h3>
+                    <p class="section-kicker">Описание актива</p>
+                    <h3>Редактировать описание актива</h3>
                 </div>
-                <span class="summary-pill">Только данные актива</span>
+                <span class="summary-pill">только карточка</span>
             </div>
 
             <details class="form-support-disclosure">
                 <summary>Граница редактирования</summary>
                 <p>
-                    Эта форма управляет только инвентарным тегом, серийным номером и типом. Ответственность и текущая
-                    локация меняются только через отдельные действия assign / transfer / return.
+                    Эта форма управляет только описанием и идентификацией актива: названием, инвентарным тегом,
+                    серийным номером, типом и комментарием. Ответственность, текущая локация, выдача, перемещение
+                    и возврат остаются отдельными действиями.
                 </p>
             </details>
 
             <form id="asset-update-form" class="form-grid">
-                <div class="form-section-label">Основные поля master-record</div>
+                <div class="form-section-label">Поля описания актива</div>
                 <label class="field">
                     <span>Название актива</span>
                     <input name="display_name" type="text" value="${escapeAttribute(asset.display_name || "")}" maxlength="160">
@@ -3352,7 +3353,7 @@ function renderAssetMasterSection(asset, canMutate) {
                     <small class="reference-meta">Обычный текст. Не меняет ответственность, статус или историю движения.</small>
                 </label>
                 <div class="button-row button-row-inline">
-                    <button class="button button-primary ${isBusy("updateAsset") ? "is-loading" : ""}" type="submit" ${isBusy("updateAsset") ? "disabled" : ""}>${isBusy("updateAsset") ? "Сохраняем" : "Сохранить данные актива"}</button>
+                    <button class="button button-primary ${isBusy("updateAsset") ? "is-loading" : ""}" type="submit" ${isBusy("updateAsset") ? "disabled" : ""}>${isBusy("updateAsset") ? "Сохраняем" : "Сохранить описание"}</button>
                 </div>
             </form>
         </section>
@@ -3397,29 +3398,60 @@ function renderAssetActionsSection(asset, canMutate, hasUsers, hasLocations, has
         <section class="asset-section">
             <div class="panel-heading">
                 <div>
-                    <p class="section-kicker">Отдельные действия</p>
-                    <h3>Actions</h3>
+                    <p class="section-kicker">Действия с выбранным активом</p>
+                    <h3>Что сделать с активом</h3>
                 </div>
                 <span class="summary-pill">${escapeHtml(hasCurrentUser ? "Есть текущий пользователь" : "Нет текущего пользователя")}</span>
             </div>
 
-            <p class="muted-note">Основные ежедневные действия — выдать, переместить или вернуть актив. Редактирование ниже меняет только master-record.</p>
+            <p class="muted-note">Основные действия остаются отдельными: ответственность меняется через выдачу, перемещение и возврат; описание актива редактируется отдельно.</p>
 
-            <div class="action-grid action-grid-primary">
-                ${renderAssignCard(hasUsers, hasCurrentUser)}
-                ${renderTransferCard(hasUsers, hasLocations, hasCurrentUser)}
-                ${renderReturnCard(hasCurrentUser)}
+            <div class="asset-action-group">
+                <div class="asset-action-group-header">
+                    <div>
+                        <p class="section-kicker">Ответственность</p>
+                        <h4 class="asset-action-group-title">Выдать, переместить или вернуть</h4>
+                    </div>
+                    <span class="summary-pill">${escapeHtml(getResponsibilityActionStateLabel(hasCurrentUser))}</span>
+                </div>
+                <p class="asset-action-group-note">${escapeHtml(getResponsibilityActionGuidance(hasCurrentUser))}</p>
+                <div class="action-grid action-grid-primary asset-action-grid">
+                    ${renderAssignCard(hasUsers, hasCurrentUser)}
+                    ${renderTransferCard(hasUsers, hasLocations, hasCurrentUser)}
+                    ${renderReturnCard(hasCurrentUser)}
+                </div>
             </div>
 
-            <details class="progressive-panel secondary-action-panel">
-                <summary>
-                    <span>Редактировать данные актива</span>
-                    <span class="summary-pill">master-record</span>
-                </summary>
-                ${renderAssetMasterSection(asset, canMutate)}
-            </details>
+            <div class="asset-action-group asset-action-group-secondary">
+                <div class="asset-action-group-header">
+                    <div>
+                        <p class="section-kicker">Описание актива</p>
+                        <h4 class="asset-action-group-title">Редактировать описание актива</h4>
+                    </div>
+                    <span class="summary-pill">только карточка</span>
+                </div>
+                <p class="asset-action-group-note">Здесь меняются только поля описания и идентификации актива. Ответственность, локация и возврат остаются в отдельных действиях выше.</p>
+                <details class="progressive-panel secondary-action-panel">
+                    <summary>
+                        <span>Редактировать описание</span>
+                        <span class="summary-pill">master-record</span>
+                    </summary>
+                    ${renderAssetMasterSection(asset, canMutate)}
+                </details>
+            </div>
         </section>
     `;
+}
+
+function getResponsibilityActionStateLabel(hasCurrentUser) {
+    return hasCurrentUser ? "ответственный назначен" : "сначала выдача";
+}
+
+function getResponsibilityActionGuidance(hasCurrentUser) {
+    if (!hasCurrentUser) {
+        return "У актива нет текущего ответственного пользователя. Для первого закрепления используйте «Выдать сотруднику»; перемещение без пользователя применяйте только для локации.";
+    }
+    return "У актива уже есть ответственный пользователь. Для смены пользователя или локации используйте «Переместить», для завершения текущей ответственности — «Вернуть».";
 }
 
 function renderAssetHistoryAuditSection() {
@@ -3493,27 +3525,27 @@ function renderAssignCard(hasUsers, hasCurrentUser) {
     const busy = isBusy("assignAsset");
     const disabled = !hasUsers || hasCurrentUser || busy ? "disabled" : "";
     return `
-        <article class="action-card action-card-daily">
+        <article class="action-card action-card-daily ${!hasCurrentUser ? "asset-action-recommended" : ""}">
             <div class="action-card-header">
-                <p class="section-kicker">Assign</p>
-                <h4>Первичное назначение</h4>
+                <p class="section-kicker">Ответственность</p>
+                <h4>Выдать сотруднику</h4>
             </div>
             <details class="form-support-disclosure">
-                <summary>Когда использовать assign</summary>
-                <p>Используйте assign для явного назначения ответственного пользователя. Если у актива уже есть ответственность, переходите в transfer.</p>
+                <summary>Когда использовать выдачу</summary>
+                <p>Используйте это действие для первого ответственного пользователя. Если пользователь уже назначен, смена пользователя выполняется через «Переместить».</p>
             </details>
-            ${!hasUsers ? `<p class="inline-warning">Для assign нужен хотя бы один пользователь в справочнике.</p>` : ""}
-            ${hasCurrentUser ? `<p class="inline-warning">В карточке уже есть текущий пользователь. Для смены пользователя используйте transfer.</p>` : ""}
+            ${!hasUsers ? `<p class="inline-warning">Для выдачи нужен хотя бы один пользователь в справочнике.</p>` : ""}
+            ${hasCurrentUser ? `<p class="inline-warning">В карточке уже есть текущий пользователь. Для смены пользователя используйте «Переместить».</p>` : ""}
             <form id="asset-assign-form" class="form-grid">
                 <label class="field">
-                    <span>Назначить пользователю</span>
+                    <span>Выдать пользователю</span>
                     <select name="target_user_id" required ${disabled}>
                         <option value="">Выберите пользователя</option>
                         ${buildUserOptions()}
                     </select>
                 </label>
                 <div class="button-row button-row-inline">
-                    <button class="button button-primary ${busy ? "is-loading" : ""}" type="submit" ${disabled}>${busy ? "Выполняем" : "Выполнить assign"}</button>
+                    <button class="button button-primary ${busy ? "is-loading" : ""}" type="submit" ${disabled}>${busy ? "Выдаём" : "Выдать сотруднику"}</button>
                 </div>
             </form>
         </article>
@@ -3525,20 +3557,20 @@ function renderTransferCard(hasUsers, hasLocations, hasCurrentUser) {
     const busy = isBusy("transferAsset");
     const disabled = blockedByReferences || busy ? "disabled" : "";
     const warning = blockedByReferences
-            ? "Для transfer нужен хотя бы один пользователь или локация в справочнике."
+            ? "Для перемещения нужен хотя бы один пользователь или локация в справочнике."
             : !hasCurrentUser
-                ? "Без текущего пользователя transfer допустим только для смены локации. Первое назначение пользователя выполняется через assign."
-            : "";
+                ? "Без текущего пользователя перемещение допустимо только для смены локации. Первое назначение пользователя выполняется через «Выдать сотруднику»."
+                : "";
 
     return `
-        <article class="action-card action-card-daily">
+        <article class="action-card action-card-daily ${hasCurrentUser ? "asset-action-recommended" : ""}">
             <div class="action-card-header">
-                <p class="section-kicker">Transfer</p>
-                <h4>Передача ответственности</h4>
+                <p class="section-kicker">Ответственность</p>
+                <h4>Переместить</h4>
             </div>
             <details class="form-support-disclosure">
-                <summary>Когда использовать transfer</summary>
-                <p>Transfer меняет пользователя и/или локацию отдельным действием. Редактирование данных актива не участвует.</p>
+                <summary>Когда использовать перемещение</summary>
+                <p>Это отдельное действие меняет ответственного пользователя и/или рабочую локацию. Редактирование описания актива в этом не участвует.</p>
             </details>
             ${warning ? `<p class="inline-warning">${escapeHtml(warning)}</p>` : ""}
             <form id="asset-transfer-form" class="form-grid">
@@ -3557,7 +3589,7 @@ function renderTransferCard(hasUsers, hasLocations, hasCurrentUser) {
                     </select>
                 </label>
                 <div class="button-row button-row-inline">
-                    <button class="button button-primary ${busy ? "is-loading" : ""}" type="submit" ${disabled}>${busy ? "Выполняем" : "Выполнить transfer"}</button>
+                    <button class="button button-primary ${busy ? "is-loading" : ""}" type="submit" ${disabled}>${busy ? "Перемещаем" : "Переместить"}</button>
                 </div>
             </form>
         </article>
@@ -3568,19 +3600,19 @@ function renderReturnCard(hasCurrentUser) {
     const busy = isBusy("returnAsset");
     const disabled = hasCurrentUser && !busy ? "" : "disabled";
     return `
-        <article class="action-card action-card-daily">
+        <article class="action-card action-card-daily ${hasCurrentUser ? "asset-action-recommended" : ""}">
             <div class="action-card-header">
-                <p class="section-kicker">Return</p>
-                <h4>Возврат из ответственности</h4>
+                <p class="section-kicker">Ответственность</p>
+                <h4>Вернуть</h4>
             </div>
             <details class="form-support-disclosure">
-                <summary>Когда использовать return</summary>
-                <p>Return остаётся отдельным действием и не трактуется как перемещение или редактирование данных актива.</p>
+                <summary>Когда использовать возврат</summary>
+                <p>Возврат завершает текущую пользовательскую ответственность. Запись актива и её история остаются доступны.</p>
             </details>
-            ${!hasCurrentUser ? `<p class="inline-warning">В карточке нет текущего назначенного пользователя, поэтому return сейчас недоступен.</p>` : ""}
+            ${!hasCurrentUser ? `<p class="inline-warning">В карточке нет текущего назначенного пользователя, поэтому возврат сейчас недоступен.</p>` : ""}
             <form id="asset-return-form" class="form-grid">
                 <div class="button-row button-row-inline">
-                    <button class="button button-secondary ${busy ? "is-loading" : ""}" type="submit" ${disabled}>${busy ? "Выполняем" : "Выполнить return"}</button>
+                    <button class="button button-secondary ${busy ? "is-loading" : ""}" type="submit" ${disabled}>${busy ? "Возвращаем" : "Вернуть"}</button>
                 </div>
             </form>
         </article>

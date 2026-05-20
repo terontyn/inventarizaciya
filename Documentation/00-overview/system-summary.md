@@ -2,7 +2,7 @@
 
 Status: approved
 Owner: project
-Last Updated: 2026-05-19
+Last Updated: 2026-05-20
 
 ## Purpose
 IT Asset Management SaaS для учета активов, оргструктуры, ответственности за технику и истории критических изменений.
@@ -1265,6 +1265,67 @@ Recommended next decision:
 `Operational Workspace / Unified Create Launcher Direction Gate`
 
 This baseline remains internally validated only.
+
+It does not prove:
+
+- release readiness;
+- FTOV start;
+- FTOV exit;
+- production readiness;
+- real tenant validation;
+- real day-to-day operational validation.
+
+## Current Baseline Update — Unified Create Launcher Closeout
+
+Operational Workspace / Unified Create Launcher has been implemented and accepted as a bounded frontend-only UX/navigation shortcut over existing creation surfaces.
+
+Implemented launcher:
+
+- `Актив / устройство`;
+- `Пользователь`;
+- `Подразделение`;
+- `Филиал`;
+- `Локация`.
+
+Implementation interpretation:
+
+- one visible `Создать` entry point was added to the existing Operational Workspace shell;
+- launcher routes/focuses existing create forms and setup surfaces;
+- it does not create a new object-builder module;
+- it does not create a new master-data module;
+- it does not add new entity families;
+- it does not change backend/API/DB behavior.
+
+Preserved boundaries:
+
+- Assign remains dedicated;
+- Transfer remains dedicated;
+- Return remains dedicated;
+- Retire remains dedicated where currently present;
+- asset create does not become assign;
+- asset create does not become create-and-assign;
+- generic edit remains master-record-only;
+- Setup/Admin remains owner for users, departments, branches and locations.
+
+This implementation did not open:
+
+- backend/API changes;
+- DB changes;
+- new endpoints;
+- DTO/read-model changes;
+- BFF/UI backend;
+- auth/IAM expansion;
+- quick edit redesign;
+- Delete / Archive;
+- End-User Asset Information View;
+- Search v1;
+- QR/barcode;
+- import/export;
+- Asset 360;
+- reporting/dashboard;
+- Hardware Inspector parity.
+
+This remains internally validated implementation evidence only.
 
 It does not prove:
 

@@ -87,6 +87,15 @@ class MinimalPilotUiSmokeTest {
             .andExpect(content().string(containsString("name=\"note\"")))
             .andExpect(content().string(containsString("renderContextualFeedback")))
             .andExpect(content().string(containsString("openCreateTarget")))
+            .andExpect(result -> {
+                String body = new String(result.getResponse().getContentAsByteArray(), StandardCharsets.UTF_8);
+                assertThat(body, containsString("Ответственность"));
+                assertThat(body, containsString("Описание актива"));
+                assertThat(body, containsString("Редактировать описание"));
+                assertThat(body, containsString("Выдать сотруднику"));
+                assertThat(body, containsString("Переместить"));
+                assertThat(body, containsString("Вернуть"));
+            })
             .andExpect(content().string(containsString("renderAuditDetails")))
             .andExpect(content().string(containsString("/api/v1/users")))
             .andExpect(content().string(containsString("/api/v1/roles")))
