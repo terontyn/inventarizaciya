@@ -2,7 +2,7 @@
 
 Status: approved
 Owner: architecture
-Last Updated: 2026-05-19
+Last Updated: 2026-05-20
 
 ## Scope
 Asset Domain реализуется внутри asset-service.
@@ -125,13 +125,38 @@ CRUD v1 не включает:
 - dedicated command APIs для responsibility flows в этом документе;
 - DELETE /api/v1/assets/{id}.
 
-## Delete
-Delete semantics пока не утверждена.
-До ADR-0005 удаление остается open question.
+## Delete / Archive Semantics
+
+Asset delete semantics are accepted by ADR-0005.
+
+Canonical rules:
+
+- `DELETE /api/v1/assets/{id}` is not part of Asset CRUD v1.
+- Public hard delete is rejected for the current stage.
+- Retire is the canonical safe lifecycle removal semantics.
+- `RETIRED` means the Asset is removed from active operational use, but the Asset record, audit and responsibility history remain preserved.
+- Retire is not hard delete.
+- Retire is not Archive / Hide.
+- Retire is not Correction Delete.
+- Retire must not be performed through ordinary generic PATCH.
+- Existing backend `/retire` route remains blocked / not product-exposed until separately approved for exposure.
+- Archive / Hide remains deferred visibility semantics and requires separate decision.
+- Correction Delete remains a future candidate only for mistaken records with strict no-history constraints.
+- Correction Delete is not approved for implementation now.
+
+This domain decision does not authorize:
+
+- unlocking `/retire`;
+- exposing Retire in UI;
+- adding Archive / Hide;
+- adding Correction Delete;
+- adding hard delete;
+- adding DB migrations;
+- changing role/IAM behavior.
 
 ## Open Questions
-- final delete semantics: hard delete / soft delete / no delete / retire only;
-- когда именно появляются отдельные command endpoints для AssetAssignment / AssetTransfer / AssetReturn / AssetRetirement;
+- exact product exposure / eligibility rules for Retire remain not approved;
+- Archive / Hide and Correction Delete require separate API/domain decisions.
 - какая модель хранения history будет финальной после MVP.
 
 ## Related Workflow Docs
@@ -165,7 +190,6 @@ Retirement не является delete workflow и не должен маски
 - Return + Assign следует использовать только тогда, когда бизнес-процесс требует двух отдельных доменных фактов в истории: сначала завершение текущей ответственности, затем новое назначение.
 - Если бизнес-намерение состоит в непрерывной передаче актива другому пользователю и/или в другую локацию без промежуточной фиксации отдельного факта возврата, следует использовать Transfer.
 - Return и Retirement не совпадают: Return завершает текущую пользовательскую ответственность, а Retirement завершает эксплуатационное использование Asset.
-- Обязательность Return перед Retirement пока не канонизирована и остается open decision.
 - `Return` завершает текущую пользовательскую ответственность и не канонизирует relocation.
 - Relocation после `Return` должен трактоваться как отдельный доменный факт, а не как неявная часть `Return`.
 - `Transfer` является единым каноническим flow с допустимыми вариантами: user-only, location-only, combined user + location.

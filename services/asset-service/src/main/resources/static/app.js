@@ -2199,6 +2199,7 @@ function renderUserDetail(userId) {
                 ${renderSummaryCard("Назначенные активы", escapeHtml(String(assets.length)), "Активы, где этот пользователь указан ответственным.")}
                 ${renderSummaryCard("Служебный ID", renderTechnicalValue(user.id, { copy: true }), "Техническое значение доступно для поддержки.")}
             </div>
+            ${renderEmployeeInfoSheet(user, assets, departmentName)}
             ${canTenantAdmin() ? renderUserRoleBinding(user) : `
                 <div class="journey-banner tone-readonly">
                     <div class="journey-copy">
@@ -2218,6 +2219,89 @@ function renderUserDetail(userId) {
                 ${renderAssetList(assets, { empty: "На пользователя не назначены активы из загруженного реестра.", source: "user", parentId: userId })}
             </section>
         </div>
+    `;
+}
+
+function renderEmployeeInfoSheet(user, assets, departmentName) {
+    const employeeName = optionalAssetText(user?.name) || shortenTechnicalValue(user?.id);
+    const departmentCopy = departmentName && departmentName !== "-" ? departmentName : "Подразделение не указано";
+
+    return `
+        <section class="employee-info-sheet" aria-label="Информационный лист сотрудника">
+            <div class="employee-info-header">
+                <div>
+                    <p class="section-kicker">Сотрудник</p>
+                    <h3>Информационный лист сотрудника</h3>
+                    <p class="employee-info-subtitle">${escapeHtml(employeeName)}</p>
+                    <p class="employee-device-meta">${escapeHtml(departmentCopy)}</p>
+                </div>
+                <span class="employee-info-badge">Только для чтения</span>
+            </div>
+            <p class="employee-info-note">
+                Сформировано в рабочем пространстве учёта. Этот лист доступен только внутри управляемого рабочего пространства для авторизованных ролей: Администратор, Оператор учёта, Наблюдатель / Аудитор. Это не открытый поиск, не персональный кабинет и не самостоятельный сервис сотрудника.
+            </p>
+            <div class="employee-info-roles" aria-label="Авторизованные роли рабочего пространства">
+                <span>Администратор</span>
+                <span>Оператор учёта</span>
+                <span>Наблюдатель / Аудитор</span>
+            </div>
+            <section class="employee-devices-section" aria-label="Закреплённые устройства">
+                <div class="panel-heading employee-devices-heading">
+                    <div>
+                        <p class="section-kicker">Устройства сотрудника</p>
+                        <h4>Закреплённые устройства</h4>
+                    </div>
+                    <span class="summary-pill">${escapeHtml(String(assets.length))}</span>
+                </div>
+                ${renderEmployeeDeviceList(assets)}
+            </section>
+        </section>
+    `;
+}
+
+function renderEmployeeDeviceList(assets) {
+    if (assets.length === 0) {
+        return `
+            <div class="employee-info-empty">
+                <strong>Устройства не закреплены</strong>
+                <p>На сотрудника не закреплены устройства из загруженного реестра.</p>
+            </div>
+        `;
+    }
+
+    return `
+        <div class="employee-device-list">
+            ${assets.map((asset) => renderEmployeeDeviceCard(asset)).join("")}
+        </div>
+    `;
+}
+
+function renderEmployeeDeviceCard(asset) {
+    return `
+        <article class="employee-device-card">
+            <div>
+                <strong>${escapeHtml(assetDisplayTitle(asset))}</strong>
+                <div class="employee-device-meta">Инв. тег: ${escapeHtml(assetCanonicalTag(asset) || "-")}</div>
+            </div>
+            <dl class="employee-device-fields">
+                <div>
+                    <dt>Тип</dt>
+                    <dd>${escapeHtml(asset.asset_type || "-")}</dd>
+                </div>
+                <div>
+                    <dt>Серийный номер</dt>
+                    <dd>${escapeHtml(asset.serial_number || "-")}</dd>
+                </div>
+                <div>
+                    <dt>Статус</dt>
+                    <dd>${renderStatusBadge(asset.status)}</dd>
+                </div>
+                <div>
+                    <dt>Локация</dt>
+                    <dd>${renderLocationReference(asset.location_id)}</dd>
+                </div>
+            </dl>
+        </article>
     `;
 }
 

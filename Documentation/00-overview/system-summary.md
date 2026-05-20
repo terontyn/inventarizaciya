@@ -60,6 +60,7 @@ MVP должен позволять одному tenant:
 - ADR-0002 Role / permission model: tenant-scoped RBAC; User ↔ Role is many-to-many; permissions are attached to roles only.
 - ADR-0003 Org hierarchy: no separate Org entity; Department is managerial dimension; Branch / Location are physical dimensions; Location belongs to Branch.
 - ADR-0004 Asset CRUD vs history: generic CRUD manages only Asset master record; responsibility-changing operations use dedicated flows.
+- ADR-0005 Asset delete semantics: public hard delete is rejected for the current stage; `DELETE /api/v1/assets/{id}` remains unsupported; Retire is the canonical safe lifecycle removal semantics; Archive / Hide and Correction Delete remain deferred decisions.
 - ADR-0007 Audit contract: critical writes produce durable local audit records and are delivered asynchronously to central audit storage.
 - ADR-0009 Inventory-to-assign handoff semantics: successful assign in `asset-service` is the canonical trigger point for inventory-side storage custody consumption; handoff is internal-only asynchronous; assign success does not require synchronous inventory completion; eventual consistency is accepted for the first contour.
 
@@ -73,7 +74,6 @@ MVP должен позволять одному tenant:
 - важные архитектурные решения фиксируются в ADR.
 
 ## Open ADR Backlog
-- asset delete semantics
 - service integration pattern
 
 ## Current Implementation Baseline
@@ -1260,9 +1260,17 @@ Approved future planning candidates:
   - useful for future planning only;
   - no agent/discovery/remote-control/deployment/patch-management/parity scope approved.
 
-Recommended next decision:
+Current recommended next decision:
 
-`Operational Workspace / Unified Create Launcher Direction Gate`
+`End-User Asset Information View Direction Gate`
+
+Optional branch:
+
+If the owner explicitly wants to expose Retire before continuing product planning, open:
+
+`Retire Exposure / Unlock Planning Packet`
+
+This optional branch must remain separate from Delete / Archive / Correction Delete implementation.
 
 This baseline remains internally validated only.
 
@@ -1326,6 +1334,120 @@ This implementation did not open:
 - Hardware Inspector parity.
 
 This remains internally validated implementation evidence only.
+
+It does not prove:
+
+- release readiness;
+- FTOV start;
+- FTOV exit;
+- production readiness;
+- real tenant validation;
+- real day-to-day operational validation.
+
+## Current Baseline Update — Simplified Asset Actions UX Closeout
+
+Operational Workspace / Simplified Asset Actions UX has been implemented and accepted as a bounded frontend-only refinement over existing selected-asset action surfaces.
+
+Implemented UX refinement:
+
+- selected Asset Actions tab now has clearer grouping;
+- responsibility actions are grouped under `Ответственность`;
+- master-record editing is grouped under `Описание актива`;
+- user-facing action labels were clarified:
+  - `Выдать сотруднику`;
+  - `Переместить`;
+  - `Вернуть`;
+  - `Редактировать описание актива`;
+- existing Overview `Открыть действия` behavior remains a lightweight hint and does not host duplicated action forms;
+- state-aware guidance uses only existing selected Asset state.
+
+Implementation interpretation:
+
+- this is visual/action-orientation refinement only;
+- existing forms and submit handlers remain in use;
+- existing Assign / Transfer / Return endpoints and flows remain dedicated;
+- generic edit remains master-record-only;
+- no universal action endpoint was created.
+
+Preserved boundaries:
+
+- Assign remains dedicated;
+- Transfer remains dedicated;
+- Return remains dedicated;
+- Retire remains unchanged where currently present;
+- no Retire action was added;
+- no `/retire` surface was added;
+- asset create does not become assign;
+- asset create does not become create-and-assign;
+- Unified `Создать` remains creation-only;
+- Assign / Transfer / Return do not move into `Создать`;
+- `assigned_user_id` does not move into generic edit;
+- `location_id` does not move into generic edit where current boundary forbids it;
+- status transition does not move into ordinary PATCH.
+
+This implementation did not open:
+
+- backend/API changes;
+- DB changes;
+- migrations;
+- new endpoints;
+- DTO/read-model changes;
+- BFF/UI backend;
+- auth/IAM expansion;
+- Delete / Archive;
+- hard delete;
+- archive implementation;
+- correction delete;
+- Retire action;
+- QR/barcode;
+- import/export;
+- Search v1;
+- Asset 360;
+- reporting/dashboard;
+- Asset Type-Specific Technical Attributes;
+- Hardware Inspector parity.
+
+This remains internally validated implementation evidence only.
+
+It does not prove:
+
+- release readiness;
+- FTOV start;
+- FTOV exit;
+- production readiness;
+- real tenant validation;
+- real day-to-day operational validation.
+
+## Current Baseline Update — ADR-0005 Asset Delete Semantics Acceptance
+
+ADR-0005 Asset Delete Semantics is accepted.
+
+Canonical asset delete semantics are now:
+
+- public hard delete is rejected for the current stage;
+- `DELETE /api/v1/assets/{id}` remains unsupported;
+- Retire is the canonical safe lifecycle removal semantics;
+- Retire preserves the Asset record, audit and responsibility history;
+- Retire is not hard delete;
+- Retire is not Archive / Hide;
+- Retire is not Correction Delete;
+- Retire is not ordinary generic PATCH;
+- existing backend `/retire` route remains blocked / not product-exposed until separately approved for exposure;
+- Archive / Hide remains deferred visibility semantics;
+- Correction Delete remains a future candidate only for mistaken records with strict no-history constraints;
+- Correction Delete is not approved for implementation now.
+
+This ADR acceptance does not authorize:
+
+- unlocking `/retire`;
+- exposing Retire in UI;
+- adding Archive / Hide;
+- adding Correction Delete;
+- adding hard delete;
+- adding DB migrations;
+- changing role/IAM behavior.
+
+This remains a docs/ADR semantics acceptance only.
 
 It does not prove:
 

@@ -95,6 +95,19 @@ class MinimalPilotUiSmokeTest {
                 assertThat(body, containsString("Выдать сотруднику"));
                 assertThat(body, containsString("Переместить"));
                 assertThat(body, containsString("Вернуть"));
+                assertThat(body, containsString("Информационный лист сотрудника"));
+                assertThat(body, containsString("Закреплённые устройства"));
+                assertThat(body, containsString("Только для чтения"));
+                assertThat(body, containsString("Сформировано в рабочем пространстве учёта"));
+                assertThat(body, containsString("Администратор"));
+                assertThat(body, containsString("Оператор учёта"));
+                assertThat(body, containsString("Наблюдатель"));
+                assertThat(body, containsString("Аудитор"));
+                assertThat(body, not(containsString("Личный кабинет")));
+                assertThat(body, not(containsString("Портал сотрудника")));
+                assertThat(body, not(containsString("Самообслуживание")));
+                assertThat(body, not(containsString("публичный поиск")));
+                assertThat(body, not(containsString("поиск по ФИО")));
             })
             .andExpect(content().string(containsString("renderAuditDetails")))
             .andExpect(content().string(containsString("/api/v1/users")))
@@ -110,6 +123,14 @@ class MinimalPilotUiSmokeTest {
             .andExpect(content().string(not(containsString("/api/v1/software/"))))
             .andExpect(content().string(not(containsString("/api/v1/tickets/"))))
             .andExpect(content().string(not(containsString("/api/v1/reporting/"))))
+            .andExpect(content().string(not(containsString("full-name lookup"))))
+            .andExpect(content().string(not(containsString("QR"))))
+            .andExpect(content().string(not(containsString("export"))))
+            .andExpect(content().string(not(containsString("PDF"))))
+            .andExpect(content().string(not(containsString("Excel"))))
+            .andExpect(content().string(not(containsString("print"))))
+            .andExpect(content().string(not(containsString("/archive"))))
+            .andExpect(content().string(not(containsString("/delete"))))
             .andExpect(content().string(not(containsString("Generic PATCH only"))))
             .andExpect(content().string(not(containsString("Mutate path"))))
             .andExpect(content().string(not(containsString("Master data"))))

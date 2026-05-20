@@ -1928,9 +1928,17 @@ Approved future planning candidates:
    - useful ideas may inform future planning;
    - no endpoint agent, auto-discovery, remote control, deployment, patch management or parity scope is approved.
 
-Recommended next product decision:
+Current recommended next decision:
 
-`Operational Workspace / Unified Create Launcher Direction Gate`
+`End-User Asset Information View Direction Gate`
+
+Optional branch:
+
+If the owner explicitly wants to expose Retire before continuing product planning, open:
+
+`Retire Exposure / Unlock Planning Packet`
+
+This optional branch must remain separate from Delete / Archive / Correction Delete implementation.
 
 Non-claim rule:
 
@@ -2001,6 +2009,154 @@ This implementation did not open:
 - Asset 360;
 - reporting/dashboard;
 - Hardware Inspector parity.
+
+### Non-claim rule
+
+This closeout does not prove:
+
+- release readiness;
+- FTOV start;
+- FTOV exit;
+- production readiness;
+- real tenant validation;
+- real day-to-day operational validation.
+
+The project remains in:
+
+**Project Stabilization / First-Adopter-Gated Hold**
+
+## Simplified Asset Actions UX Implementation Closeout Clarification
+
+Operational Workspace / Simplified Asset Actions UX is accepted as implemented.
+
+### Delivery interpretation
+
+This implementation is accepted as:
+
+**bounded frontend-only selected-asset action orientation refinement over existing Operational Workspace surfaces.**
+
+Implemented scope:
+
+- existing selected Asset Actions tab was reorganized into clearer groups;
+- responsibility actions are grouped under `Ответственность`;
+- master-record edit is grouped under `Описание актива`;
+- user-facing labels were clarified:
+  - `Выдать сотруднику`;
+  - `Переместить`;
+  - `Вернуть`;
+  - `Редактировать описание актива`;
+- Overview action hint remains lightweight and does not duplicate action forms;
+- existing forms and submit handlers remain in use;
+- static UI smoke coverage was updated.
+
+### Preserved boundaries
+
+The implementation preserved:
+
+- Assign as dedicated flow;
+- Transfer as dedicated flow;
+- Return as dedicated flow;
+- Retire as unchanged where currently present;
+- generic edit as master-record-only;
+- selected-asset grouping as not a universal action endpoint;
+- asset create as not assign;
+- asset create as not create-and-assign;
+- Unified `Создать` as creation-only;
+- Assign / Transfer / Return as not moved into `Создать`;
+- status transition as not performed through ordinary PATCH.
+
+### Not opened
+
+This implementation did not open:
+
+- backend/API changes;
+- DB changes;
+- migrations;
+- new endpoints;
+- DTO/read-model changes;
+- BFF/UI backend;
+- auth/IAM expansion;
+- new role model;
+- new permission model;
+- generic action endpoint;
+- universal update form;
+- drag-and-drop transfer;
+- create-and-assign workflow;
+- Delete / Archive implementation;
+- hard delete;
+- archive implementation;
+- correction delete;
+- Retire action;
+- `/retire` surface;
+- Search v1 implementation;
+- QR/barcode implementation;
+- import/export;
+- Asset 360;
+- reporting/dashboard;
+- Asset Type-Specific Technical Attributes;
+- Hardware Inspector parity.
+
+### Non-claim rule
+
+This closeout does not prove:
+
+- release readiness;
+- FTOV start;
+- FTOV exit;
+- production readiness;
+- real tenant validation;
+- real day-to-day operational validation.
+
+The project remains in:
+
+**Project Stabilization / First-Adopter-Gated Hold**
+
+## ADR-0005 Asset Delete Semantics Acceptance Clarification
+
+ADR-0005 Asset Delete Semantics is accepted.
+
+### Delivery interpretation
+
+This acceptance is a docs/ADR semantics decision only.
+
+It establishes the canonical product/domain interpretation of Asset delete behavior:
+
+- public hard delete is rejected for the current stage;
+- `DELETE /api/v1/assets/{id}` remains unsupported;
+- Retire is the canonical safe lifecycle removal semantics;
+- existing backend `/retire` route remains blocked / not product-exposed until separately approved for exposure;
+- Archive / Hide remains deferred visibility semantics;
+- Correction Delete remains a future candidate only for mistaken records with strict no-history constraints.
+
+### Preserved boundaries
+
+The accepted semantics preserve:
+
+- Asset record retention;
+- audit visibility;
+- responsibility history preservation;
+- Assign as dedicated flow;
+- Transfer as dedicated flow;
+- Return as dedicated flow;
+- Retire as dedicated lifecycle command if exposed later;
+- generic edit as master-record-only;
+- ordinary PATCH as not a status-transition, delete, archive or retire path.
+
+### Not opened
+
+This acceptance does not open:
+
+- backend/API changes;
+- DB changes;
+- migrations;
+- new endpoints;
+- Retire unlock;
+- Retire UI action;
+- Archive / Hide implementation;
+- Correction Delete implementation;
+- hard delete implementation;
+- role/IAM changes;
+- Codex implementation.
 
 ### Non-claim rule
 

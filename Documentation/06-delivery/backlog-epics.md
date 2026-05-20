@@ -564,7 +564,7 @@ Preserved:
 
 #### 2. Simplified Asset Actions UX
 
-Status: approved as future UX planning candidate.
+Status: implemented and accepted as bounded frontend-only selected-asset action orientation refinement.
 
 Purpose:
 
@@ -588,14 +588,41 @@ Boundary:
 - `location_id` does not move into generic edit where current boundary forbids it;
 - status transition does not move into ordinary PATCH.
 
-Required next step:
+Implementation status:
 
-- can be planned together with Unified Create Launcher only if scope remains frontend-only;
-- otherwise split into separate UX direction gate.
+- completed and accepted;
+- implemented as frontend-only refinement over existing selected Asset Actions tab;
+- existing action surfaces were grouped more clearly;
+- responsibility actions are grouped under `Ответственность`;
+- master-record edit is grouped under `Описание актива`;
+- user-facing labels were clarified:
+  - `Выдать сотруднику`;
+  - `Переместить`;
+  - `Вернуть`;
+  - `Редактировать описание актива`;
+- Overview `Открыть действия` remains a lightweight hint only;
+- existing forms and submit handlers remain in use;
+- static UI smoke coverage was updated.
+
+Preserved:
+
+- Assign / Transfer / Return remain dedicated;
+- Retire remains unchanged where currently present;
+- no Retire action was added;
+- no `/retire` surface was added;
+- generic edit remains master-record-only;
+- selected-asset grouping does not create a universal action endpoint;
+- asset create does not become assign;
+- asset create does not become create-and-assign;
+- Unified `Создать` remains creation-only;
+- Assign / Transfer / Return do not move into `Создать`;
+- no backend/API/DB changes were opened;
+- no auth/IAM changes were opened.
+
 
 #### 3. Delete / Archive Semantics
 
-Status: approved as future product decision candidate.
+Status: accepted as ADR/product semantics decision; implementation not approved.
 
 Purpose:
 
@@ -615,9 +642,33 @@ Boundary:
 - deletion must not erase responsibility history by default;
 - implementation requires separate product decision and likely backend/API/DB planning.
 
+ADR/product semantics status:
+
+- ADR-0005 Asset Delete Semantics is accepted;
+- public hard delete is rejected for the current stage;
+- `DELETE /api/v1/assets/{id}` remains unsupported;
+- Retire is the canonical safe lifecycle removal semantics;
+- existing backend `/retire` route remains blocked / not product-exposed until separately approved for exposure;
+- Archive / Hide remains deferred visibility semantics;
+- Correction Delete remains a future candidate only for mistaken records with strict no-history constraints;
+- Correction Delete is not approved for implementation now.
+
+This decision does not authorize:
+
+- unlocking `/retire`;
+- exposing Retire in UI;
+- adding Archive / Hide;
+- adding Correction Delete;
+- adding hard delete;
+- adding DB migrations;
+- changing role/IAM behavior;
+- Codex implementation.
+
 Required next step:
 
-- `Asset Delete / Archive Semantics Decision Gate`.
+- no implementation step is opened by this ADR/product semantics decision;
+- if owner explicitly wants to expose Retire, open `Retire Exposure / Unlock Planning Packet`;
+- otherwise continue to the next owner-approved planning candidate.
 
 #### 4. End-User Asset Information View
 
@@ -764,19 +815,29 @@ Not approved by this note:
 
 
 
-### Planning priority after Unified Create Launcher
+### Planning priority after ADR-0005 Asset Delete Semantics Acceptance
 
-Unified Create Launcher is now implemented and accepted.
+Unified Create Launcher and Simplified Asset Actions UX are implemented and accepted.
+
+ADR-0005 Asset Delete Semantics is accepted as ADR/product semantics decision.
+
+Delete / Archive implementation is not approved.
 
 Remaining recommended owner-priority order:
 
-1. Simplified Asset Actions UX.
-2. Delete / Archive Semantics.
-3. End-User Asset Information View.
-4. Search v1.
-5. QR Lite.
-6. Asset Type-Specific Technical Attributes.
+1. End-User Asset Information View.
+2. Search v1.
+3. QR Lite.
+4. Asset Type-Specific Technical Attributes.
 
 The first recommended next stage is:
 
-`Operational Workspace / Simplified Asset Actions UX Direction Gate`
+`End-User Asset Information View Direction Gate`
+
+Optional branch:
+
+If the owner explicitly wants to expose Retire before continuing product planning, open:
+
+`Retire Exposure / Unlock Planning Packet`
+
+This optional branch must remain separate from Delete / Archive / Correction Delete implementation.

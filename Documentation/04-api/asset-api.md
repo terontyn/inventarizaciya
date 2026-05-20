@@ -2,7 +2,7 @@
 
 Status: draft
 Owner: architecture
-Last Updated: 2026-05-19
+Last Updated: 2026-05-20
 
 ## Purpose
 Минимальный API-контракт Foundation Slice для asset-service.
@@ -194,20 +194,43 @@ asset-service в Foundation Slice v1 владеет:
 - generic PATCH не используется для responsibility-changing operations;
 - `assigned_user_id` и `location_id` не меняются через generic PATCH.
 
+## Delete / Archive Semantics
+
+Asset delete semantics are governed by ADR-0005.
+
+Canonical API rules:
+
+- `DELETE /api/v1/assets/{id}` remains unsupported.
+- Public hard delete is rejected for the current stage.
+- Generic `PATCH /api/v1/assets/{id}` must not perform delete, archive, retire or status-transition behavior.
+- Retire, if product-exposed later, remains a dedicated command flow and not ordinary PATCH.
+- Existing backend `/retire` route presence does not mean current product exposure.
+- Existing `/retire` remains blocked / not product-exposed until separately approved for exposure.
+- Archive / Hide endpoints are not approved.
+- Correction Delete endpoint is not approved.
+- Hard Delete endpoint is not approved.
+
+Any future exposure of Retire, Archive / Hide or Correction Delete requires separate planning, access rules, audit semantics and tests.
+
 ## Not Fixed In This Document
 Намеренно не фиксируются:
 - full request body schema;
 - full response body schema;
 - error model;
 - pagination/filter parameter names;
-- delete semantics;
+- Archive / Hide endpoint semantics;
+- Correction Delete endpoint semantics;
+- Retire exposure / access rules;
 - final history storage schema;
 - отдельная canonical entity/table `AssetReturn`;
 - event contract;
 - audit payload format beyond already accepted minimal audit envelope.
 
 ## Out of Scope
-- delete workflow
+- hard delete workflow
+- Archive / Hide workflow
+- Correction Delete workflow
+- Retire exposure unless separately approved
 - bulk command APIs
 - attachment API
 - barcode / QR workflows

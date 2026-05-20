@@ -2,7 +2,7 @@
 
 Status: draft
 Owner: architecture
-Last Updated: 2026-04-01
+Last Updated: 2026-05-20
 
 ## Purpose
 Описать доменный flow вывода актива из эксплуатации с сохранением audit и истории.
@@ -19,6 +19,22 @@ Last Updated: 2026-04-01
 Retirement не является частью generic PATCH Asset.
 Retirement также не должен трактоваться как delete workflow.
 
+## ADR-0005 Alignment
+
+Retirement is the canonical safe lifecycle removal semantics for Asset.
+
+Rules:
+
+- Retirement preserves the Asset record.
+- Retirement preserves audit.
+- Retirement preserves responsibility history.
+- Retirement sets Asset lifecycle state to `RETIRED` when exposed by an approved command flow.
+- Retirement is not hard delete.
+- Retirement is not Archive / Hide.
+- Retirement is not Correction Delete.
+- Retirement must not be performed through ordinary generic PATCH.
+- Existing backend `/retire` route remains blocked / not product-exposed until separately approved for exposure.
+
 ## Boundary Clarifying Note
 `Retirement` не совпадает с `return`.
 
@@ -31,7 +47,7 @@ Retirement также не должен трактоваться как delete w
 
 `Retirement` не канонизирует обязательное изменение `location_id`.
 
-Конкретное retirement-related значение `status` в текущем каноне не зафиксировано.
+Каноническое retirement-related значение `status` для accepted MVP vocabulary: `RETIRED`.
 
 ## Preconditions
 - Asset существует.
@@ -72,6 +88,7 @@ Retirement также не должен трактоваться как delete w
 
 ## Open Decisions / STOP
 - Не зафиксированы точные доменные условия eligibility для `retirement`.
-- Конкретное retirement-related значение `status` не канонизировано.
+- Exact eligibility rules for exposing `/retire` to product roles remain not approved.
+- Current `/retire` exposure remains blocked until separately approved.
 - Финальная physical history model для retirement-related facts остается open decision.
 - Public API для `retirement` не канонизирован в этом документе.
