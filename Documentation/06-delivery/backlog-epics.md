@@ -453,33 +453,305 @@ Implementation status:
 - existing asset create/update audit payloads include the new identity fields;
 - Asset API, schema constraint and full asset-service tests passed.
 
-Preserved by implementation:
+Frontend usage status:
 
-- `asset_tag` remains canonical inventory/business identifier;
-- `display_name` does not replace `asset_tag`;
-- `note` remains plain text only;
+- frontend usage implementation completed and accepted;
+- implementation was bounded to existing Operational Workspace static UI;
+- create Asset form now includes optional `display_name` and `note`;
+- master-record edit form now includes optional `display_name` and `note`;
+- create/edit payloads carry `display_name` and `note`;
+- UI title fallback uses:
+  - `display_name`;
+  - `asset_tag`;
+  - `asset_type` / `serial_number`;
+  - shortened Asset ID only as last resort;
+- `asset_tag` remains visible as canonical inventory/business identifier;
+- `note` is shown only as optional plain-text operational context in selected Asset detail / Overview;
+- static UI smoke marker coverage was updated.
+
+Preserved by frontend usage implementation:
+
 - Assign / Transfer / Return remain dedicated;
 - Retire remains dedicated where currently present;
 - generic edit remains master-record-only;
-- `assigned_user_id` and `location_id` do not move into generic PATCH;
-- ordinary PATCH does not become a status-transition path.
+- `assigned_user_id` does not move into generic edit;
+- `location_id` does not move into generic edit where current boundary forbids it;
+- ordinary PATCH does not become a status-transition path;
+- `note` does not become rich text, attachment, document, act, comment thread or history stream.
 
-Still not approved:
+Still not approved for implementation by Asset Identity v1:
 
-- frontend UI changes for displaying/editing these fields;
-- unified `Создать` launcher;
-- quick edit UI;
+
+- quick edit redesign;
+- context connect screen redesign;
 - QR/barcode;
 - import/export;
-- global search;
+- global/backend search;
 - Asset 360;
 - reporting/dashboard;
 - manufacturer/model;
 - condition;
 - purchase/warranty/cost;
 - attachments/documents/photos/acts;
+- rich text notes;
+- note threads;
 - Hardware Inspector parity.
 
 Next possible step:
 
-- separate frontend-only planning packet for using `display_name` and `note` in the Operational Workspace UI, if explicitly approved.
+- separate product decision for unified creation / quick edit / broader asset identity UX, only if explicitly approved.
+
+### Owner-approved future planning candidates after Asset Identity v1
+
+Status: approved as future planning candidates only.
+
+These items are approved for future product decision / planning work.
+
+This section does not authorize implementation, Codex work, backend/API changes, database changes, frontend changes, Documentation canon changes, release-ready claim, FTOV start, FTOV exit, production readiness or real tenant validation.
+
+#### 1. Unified Create Launcher
+
+Status: approved as future UX planning candidate.
+
+Purpose:
+
+- provide one clear `Создать` entry point instead of forcing the operator to search for creation forms across different menus;
+- reduce confusion when creating common operational records.
+
+Approved launcher entries for planning:
+
+- `Актив / устройство`;
+- `Пользователь`;
+- `Подразделение`;
+- `Филиал`;
+- `Локация`.
+
+Boundary:
+
+- this is a UX/navigation simplification over existing creation surfaces;
+- it must not create a new master-data module;
+- it must not add new entity families;
+- it must not add backend/API/DB behavior by default;
+- it must not replace existing setup/admin ownership rules;
+- it must not mix Asset creation with Assign / Transfer / Return;
+- Assign / Transfer / Return remain dedicated responsibility flows.
+
+Required next step:
+
+- `Operational Workspace / Unified Create Launcher Direction Gate`.
+
+#### 2. Simplified Asset Actions UX
+
+Status: approved as future UX planning candidate.
+
+Purpose:
+
+- reduce confusion around current action placement;
+- make common selected-asset actions easier to understand.
+
+Candidate action grouping:
+
+- edit asset description / master record;
+- assign;
+- transfer;
+- return;
+- retire / archive only if separately approved.
+
+Boundary:
+
+- visual grouping may be simplified;
+- responsibility-changing operations must remain dedicated flows;
+- generic edit remains master-record-only;
+- `assigned_user_id` does not move into generic edit;
+- `location_id` does not move into generic edit where current boundary forbids it;
+- status transition does not move into ordinary PATCH.
+
+Required next step:
+
+- can be planned together with Unified Create Launcher only if scope remains frontend-only;
+- otherwise split into separate UX direction gate.
+
+#### 3. Delete / Archive Semantics
+
+Status: approved as future product decision candidate.
+
+Purpose:
+
+- define safe removal / hiding semantics for wrong or obsolete asset records.
+
+Candidate options to evaluate:
+
+- retire;
+- archive / hide from active lists;
+- correction delete for mistakenly created records with no responsibility history;
+- hard delete only if explicitly approved later.
+
+Boundary:
+
+- hard delete is not approved by this candidate note;
+- audit/history preservation must be protected;
+- deletion must not erase responsibility history by default;
+- implementation requires separate product decision and likely backend/API/DB planning.
+
+Required next step:
+
+- `Asset Delete / Archive Semantics Decision Gate`.
+
+#### 4. End-User Asset Information View
+
+Status: approved as future product decision candidate.
+
+Purpose:
+
+- provide a simple read-only information screen for ordinary users or controlled lookup scenarios.
+
+Candidate user-facing information:
+
+- employee full name / identity context;
+- assigned devices;
+- asset title / `display_name`;
+- inventory tag / `asset_tag`;
+- serial number where appropriate;
+- device type;
+- QR if separately approved;
+- simple operational note if appropriate.
+
+Boundary:
+
+- must be access-controlled;
+- entering only full name must not expose other employees’ devices without a separate access/security decision;
+- this is not self-service onboarding by default;
+- this is not auth/IAM expansion by default;
+- no assign / transfer / return actions for ordinary users by default.
+
+Required next step:
+
+- `End-User Asset Information View Direction Gate`.
+
+#### 5. Search v1
+
+Status: approved as future product decision candidate.
+
+Purpose:
+
+- allow users/operators to quickly find employees and devices without navigating long trees.
+
+Candidate searchable values:
+
+- employee name;
+- asset tag / inventory number;
+- `display_name`;
+- serial number;
+- device type;
+- later technical attributes if separately approved.
+
+Boundary:
+
+- this is not the existing local tree filter;
+- backend/API search is likely required;
+- no Elasticsearch/global search platform is approved by this note;
+- no saved views or advanced filtering are approved by this note.
+
+Required next step:
+
+- `Operational Search v1 Decision Gate`.
+
+#### 6. QR Lite / Derived Asset Identifier
+
+Status: approved as future product decision candidate.
+
+Purpose:
+
+- show or export a QR representation for an asset / information sheet.
+
+Candidate interpretation:
+
+- QR should be derived from existing approved asset identity;
+- QR should not become a separate canonical asset identifier by default.
+
+Boundary:
+
+- no barcode/scanner platform is approved;
+- no printer integration is approved;
+- no bulk label printing is approved;
+- no mobile scanning workflow is approved;
+- no new `qr_code` / `barcode` canonical DB field is approved by this candidate note.
+
+Required next step:
+
+- `Asset QR Lite / Derived Identifier Decision Gate`.
+
+#### 7. Asset Type-Specific Technical Attributes
+
+Status: approved as future product decision candidate.
+
+Purpose:
+
+- support useful technical fields that differ by device type.
+
+Candidate examples:
+
+- PC / laptop:
+  - hostname;
+  - AnyDesk ID;
+  - IP address;
+  - MAC address.
+- stationary phone:
+  - phone IP;
+  - extension number;
+  - SIP / line identifier.
+- printer:
+  - IP address;
+  - network name;
+  - placement note.
+
+Boundary:
+
+- do not add many type-specific columns directly to `assets` by default;
+- schema approach requires separate decision;
+- no automatic discovery agent is approved;
+- no Astra Configuration Manager / Hardware Inspector parity is approved;
+- no import/export/search over attributes is approved by this candidate note.
+
+Required next step:
+
+- `Asset Type-Specific Technical Attributes v1 Decision Gate`.
+
+#### 8. Configuration Manager-inspired candidates
+
+Status: approved as analysis input only.
+
+Useful ideas to evaluate for this project:
+
+- clearer device identity;
+- technical attributes by device type;
+- employee/device information view;
+- search by employee/device/inventory values;
+- QR-lite for identification.
+
+Not approved by this note:
+
+- endpoint agent;
+- automatic hardware/software discovery;
+- remote control;
+- patch management;
+- OS/software deployment;
+- full configuration-management platform;
+- Hardware Inspector parity;
+- Astra Configuration Manager parity.
+
+### Planning priority after Asset Identity v1
+
+Recommended owner-priority order:
+
+1. Unified Create Launcher.
+2. Simplified Asset Actions UX.
+3. Delete / Archive Semantics.
+4. End-User Asset Information View.
+5. Search v1.
+6. QR Lite.
+7. Asset Type-Specific Technical Attributes.
+
+The first recommended next stage is:
+
+`Operational Workspace / Unified Create Launcher Direction Gate`

@@ -1785,3 +1785,157 @@ This closeout does not prove:
 The project remains in:
 
 **Project Stabilization / First-Adopter-Gated Hold**
+
+
+## Asset Identity v1 Frontend Usage Implementation Closeout Clarification
+
+Asset Identity v1 frontend usage is accepted as completed inside the existing Operational Workspace UI.
+
+The implementation consumed the already implemented backend/API fields:
+
+- `display_name`
+- `note`
+
+### Delivery interpretation
+
+This implementation is accepted as:
+
+**bounded frontend-only usage of Asset Identity v1 fields inside the existing Operational Workspace Tree-and-Detail UI.**
+
+Implemented scope:
+
+- create Asset form now exposes optional `display_name` and `note`;
+- master-record edit form now exposes optional `display_name` and `note`;
+- create/edit payloads include `display_name` and `note`;
+- Asset title rendering uses a centralized fallback:
+  - `display_name`;
+  - `asset_tag`;
+  - `asset_type` / `serial_number`;
+  - shortened Asset ID only as last resort;
+- `asset_tag` remains visible as canonical inventory/business identifier;
+- `note` is displayed only as optional plain-text operational context in selected Asset detail / Overview;
+- static UI smoke coverage was updated.
+
+### Preserved boundaries
+
+The implementation preserved:
+
+- Assign as dedicated flow;
+- Transfer as dedicated flow;
+- Return as dedicated flow;
+- Retire as dedicated flow where currently present;
+- generic edit as master-record-only;
+- `assigned_user_id` as not edited through generic edit;
+- `location_id` as not edited through generic edit where current boundary forbids it;
+- status transition as not performed through ordinary PATCH.
+
+### Not opened
+
+This implementation did not open:
+
+- backend/API changes;
+- DB changes;
+- migrations;
+- new endpoints;
+- Documentation update as part of Codex implementation;
+- BFF/UI backend;
+- new frontend framework/router/microfrontend;
+- unified `Создать` launcher;
+- quick edit redesign;
+- context connect screen redesign;
+- QR/barcode/label implementation;
+- import/export;
+- global/backend search;
+- Asset 360;
+- reporting/dashboard;
+- manufacturer/model/cost/purchase/warranty/condition fields;
+- attachments/documents/photos/acts;
+- rich text note editor;
+- note thread/history stream;
+- auth/IAM expansion;
+- new bounded context;
+- new Wave 2 surface;
+- Hardware Inspector parity.
+
+### Non-claim rule
+
+This closeout does not prove:
+
+- release readiness;
+- FTOV start;
+- FTOV exit;
+- production readiness;
+- real tenant validation;
+- real day-to-day operational validation.
+
+The project remains in:
+
+**Project Stabilization / First-Adopter-Gated Hold**
+
+
+## Owner-Approved Future Planning Candidates After Asset Identity v1
+
+After Asset Identity v1 backend/API/DB and frontend usage closeout, the owner approved several future planning candidates.
+
+These candidates are approved for product decision / planning only.
+
+They do not authorize implementation, Codex, backend/API changes, DB changes, frontend changes, Documentation canon changes, release readiness, FTOV start, FTOV exit, production readiness or real tenant validation.
+
+Approved future planning candidates:
+
+1. Unified Create Launcher
+   - one `Создать` entry point;
+   - planned entries:
+     - Asset / device;
+     - User;
+     - Department;
+     - Branch;
+     - Location;
+   - must use existing creation semantics where possible;
+   - must not become a new master-data module by default.
+
+2. Simplified Asset Actions UX
+   - simplify selected-asset action orientation;
+   - preserve Assign / Transfer / Return as dedicated flows;
+   - keep generic edit master-record-only.
+
+3. Delete / Archive Semantics
+   - define safe delete / archive / correction-delete behavior;
+   - hard delete is not approved by default;
+   - audit/history preservation must remain protected.
+
+4. End-User Asset Information View
+   - simple read-only information view for employee/device ownership;
+   - must be access-controlled;
+   - must not expose other employees’ assets based only on full name without separate approval.
+
+5. Search v1
+   - search by employee / asset tag / display name / serial number;
+   - not the same as local tree filter;
+   - requires separate backend/API decision if server-side search is needed.
+
+6. QR Lite / Derived Asset Identifier
+   - derived QR for asset identification / information sheet;
+   - no scanner/printer/barcode platform by default.
+
+7. Asset Type-Specific Technical Attributes
+   - PC fields such as AnyDesk ID / hostname / IP / MAC;
+   - phone fields such as IP / extension;
+   - printer fields such as IP / network name;
+   - requires separate schema/API/UI decision.
+
+8. Configuration Manager-inspired analysis candidates
+   - useful ideas may inform future planning;
+   - no endpoint agent, auto-discovery, remote control, deployment, patch management or parity scope is approved.
+
+Recommended next product decision:
+
+`Operational Workspace / Unified Create Launcher Direction Gate`
+
+Non-claim rule:
+
+This planning-candidate update does not prove release readiness, FTOV start, FTOV exit, production readiness, real tenant validation or real day-to-day operational validation.
+
+The project remains in:
+
+**Project Stabilization / First-Adopter-Gated Hold**

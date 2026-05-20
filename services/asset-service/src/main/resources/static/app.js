@@ -62,6 +62,14 @@ const ASSET_GROUPS = {
     RETIRED: "retired"
 };
 
+const CREATE_TARGETS = {
+    asset: { label: "Актив / устройство" },
+    user: { label: "Пользователь", resource: "users" },
+    department: { label: "Подразделение", resource: "departments" },
+    branch: { label: "Филиал", resource: "branches" },
+    location: { label: "Локация", resource: "locations" }
+};
+
 const SETUP_SEQUENCE = [
     {
         key: "roles",
@@ -295,6 +303,7 @@ const state = {
     selectedTreeNode: { type: TREE_NODE_TYPES.WORKSPACE },
     expandedTreeNodes: new Set(),
     treeFilter: "",
+    createLauncherOpen: false,
     lastRoleAssignment: null,
     lastFeedback: null
 };
@@ -325,6 +334,9 @@ function cacheElements() {
     ui.roleSummaryBadge = document.getElementById("role-summary-badge");
     ui.activeScreenLabel = document.getElementById("active-screen-label");
     ui.flashStack = document.getElementById("flash-stack");
+    ui.createLauncher = document.getElementById("create-launcher");
+    ui.createLauncherToggle = document.getElementById("create-launcher-toggle");
+    ui.createLauncherMenu = document.getElementById("create-launcher-menu");
     ui.workspaceTree = document.getElementById("workspace-tree");
     ui.treeFilter = document.getElementById("tree-filter");
     ui.treeFilterStatus = document.getElementById("tree-filter-status");
@@ -361,6 +373,10 @@ function bindStaticEvents() {
     ui.sessionForm.addEventListener("submit", onSessionSubmit);
     ui.userServiceBaseUrl.addEventListener("input", renderUserServiceUrlPreview);
     document.addEventListener("click", onCopyClick, true);
+    document.addEventListener("click", onCreateLauncherOutsideClick);
+    document.addEventListener("keydown", onCreateLauncherKeydown);
+    ui.createLauncherToggle?.addEventListener("click", onCreateLauncherToggle);
+    ui.createLauncherMenu?.addEventListener("click", onCreateLauncherMenuClick);
     ui.refreshAll.addEventListener("click", onRefreshAllClick);
     ui.clearSession.addEventListener("click", clearSession);
     ui.refreshAssets?.addEventListener("click", onRefreshAssetsClick);
@@ -384,6 +400,49 @@ function bindStaticEvents() {
     ui.adminTableBody?.addEventListener("click", onAdminTableClick);
     ui.adminEditorPanel?.addEventListener("submit", onAdminEditorSubmit);
     ui.adminEditorPanel?.addEventListener("click", onAdminEditorClick);
+}
+
+function onCreateLauncherToggle() {
+    setCreateLauncherOpen(!state.createLauncherOpen);
+}
+
+function onCreateLauncherMenuClick(event) {
+    const item = event.target.closest("[data-create-target]");
+    if (!item) {
+        return;
+    }
+
+    setCreateLauncherOpen(false);
+    openCreateTarget(item.dataset.createTarget);
+}
+
+function onCreateLauncherOutsideClick(event) {
+    if (!state.createLauncherOpen || ui.createLauncher?.contains(event.target)) {
+        return;
+    }
+    setCreateLauncherOpen(false);
+}
+
+function onCreateLauncherKeydown(event) {
+    if (event.key !== "Escape" || !state.createLauncherOpen) {
+        return;
+    }
+    setCreateLauncherOpen(false);
+    ui.createLauncherToggle?.focus();
+}
+
+function setCreateLauncherOpen(open) {
+    state.createLauncherOpen = Boolean(open);
+    renderCreateLauncherState();
+}
+
+function renderCreateLauncherState() {
+    if (!ui.createLauncherToggle || !ui.createLauncherMenu) {
+        return;
+    }
+
+    ui.createLauncherToggle.setAttribute("aria-expanded", String(state.createLauncherOpen));
+    ui.createLauncherMenu.hidden = !state.createLauncherOpen;
 }
 
 function restoreContext() {
@@ -1100,8 +1159,9 @@ function onAssetInteractionClick(event) {
     }
 
     const createButton = event.target.closest("[data-focus-create]");
-    if (createButton && !ui.assetCreatePanel.hidden) {
-        scrollToElement(ui.assetCreatePanel);
+    const assetCreatePanel = document.getElementById("asset-create-panel");
+    if (createButton && assetCreatePanel) {
+        scrollToElement(assetCreatePanel);
         return;
     }
 
@@ -1114,6 +1174,69 @@ function onAssetInteractionClick(event) {
     const cardButton = event.target.closest("[data-focus-card]");
     if (cardButton) {
         scrollToElement(ui.assetDetailPanel);
+    }
+}
+
+function openCreateTarget(target) {
+    const config = CREATE_TARGETS[target];
+    if (!config) {
+        showFlash("Цель создания не найдена.", "warning");
+        return;
+    }
+
+    if (target === "asset") {
+        openAssetCreateTarget();
+        return;
+    }
+
+    openSetupCreateTarget(config.resource, config.label);
+}
+
+function openAssetCreateTarget() {
+    state.selectedTreeNode = { type: TREE_NODE_TYPES.ASSET_GROUP, group: ASSET_GROUPS.UNASSIGNED };
+    state.expandedTreeNodes.add(TREE_GROUPS.ALL_ASSETS);
+    render();
+
+    const createPanel = document.getElementById("asset-create-panel");
+    scrollToElement(createPanel || ui.workspaceDetail);
+
+    if (!canAssetMutate()) {
+        showFlash("Создание актива доступно роли с mutate-доступом к активам.", "warning");
+        return;
+    }
+
+    focusFirstFormControl("asset-create-form");
+}
+
+function openSetupCreateTarget(resourceKey, label) {
+    const resource = ADMIN_RESOURCES[resourceKey];
+    if (!resource) {
+        showFlash("Раздел настройки не найден.", "warning");
+        return;
+    }
+
+    state.activeAdminResource = resource.key;
+    state.selectedAdminItemId = null;
+    state.selectedTreeNode = { type: TREE_NODE_TYPES.SETUP, resource: resource.key };
+    state.expandedTreeNodes.add(TREE_GROUPS.SETUP);
+    render();
+
+    const editorPanel = document.getElementById("admin-resource-form")?.closest(".panel");
+    scrollToElement(editorPanel || ui.workspaceDetail);
+
+    if (!canTenantAdmin()) {
+        showFlash(`Создание записи «${label || resource.label}» доступно Tenant Admin.`, "warning");
+        return;
+    }
+
+    focusFirstFormControl("admin-resource-form");
+}
+
+function focusFirstFormControl(formId) {
+    const form = document.getElementById(formId);
+    const control = form?.querySelector("input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled])");
+    if (control && typeof control.focus === "function") {
+        control.focus({ preventScroll: true });
     }
 }
 
@@ -1466,6 +1589,7 @@ function render() {
     renderConnectionStatusBadge();
     renderRoleSummary();
     renderTreeWorkspace();
+    renderCreateLauncherState();
     syncStaticActionControls();
     renderUserServiceUrlPreview();
     renderContextTechnicalSummary();
@@ -2384,7 +2508,7 @@ function renderAssetList(assets, options = {}) {
 
 function renderAssetCreatePanelMarkup() {
     return `
-        <section class="panel panel-tight">
+        <section id="asset-create-panel" class="panel panel-tight">
             <div class="panel-heading">
                 <div>
                     <p class="section-kicker">Create</p>

@@ -1154,3 +1154,123 @@ It does not prove:
 - production readiness;
 - real tenant validation;
 - real day-to-day operational validation.
+
+## Current Baseline Update — Asset Identity v1 Frontend Usage Implementation Closeout
+
+Asset Identity v1 frontend usage has been implemented and accepted inside the existing Operational Workspace Tree-and-Detail UI.
+
+Implemented UI usage:
+
+- `display_name` is used as the human-readable Asset title where available;
+- `asset_tag` remains visible as the canonical inventory/business identifier;
+- fallback title logic is centralized:
+  - `display_name`;
+  - `asset_tag`;
+  - `asset_type` / `serial_number`;
+  - shortened Asset ID only as last resort;
+- `note` is available as optional plain-text operational context in the selected Asset Overview;
+- create Asset form includes optional `display_name` and `note`;
+- master-record edit form includes optional `display_name` and `note`;
+- create/edit payloads send `display_name` and `note` as Asset master-record fields.
+
+Preserved boundaries:
+
+- Assign remains dedicated;
+- Transfer remains dedicated;
+- Return remains dedicated;
+- Retire remains dedicated where currently present;
+- generic edit remains master-record-only;
+- `assigned_user_id` does not move into generic edit;
+- `location_id` does not move into generic edit where current boundary forbids it;
+- ordinary PATCH remains outside status-transition semantics.
+
+Implementation scope:
+
+- frontend-only;
+- existing static Operational Workspace UI only;
+- no backend/API/DB changes;
+- no Documentation changes as part of Codex implementation;
+- no new endpoint;
+- no BFF/UI backend;
+- no new frontend framework/router/microfrontend.
+
+This implementation did not open:
+
+- unified `Создать` launcher;
+- quick edit redesign;
+- context connect screen redesign;
+- QR/barcode;
+- import/export;
+- global/backend search;
+- Asset 360;
+- reporting/dashboard;
+- manufacturer/model/cost fields;
+- attachments/documents/photos/acts;
+- rich text notes;
+- note threads;
+- Hardware Inspector parity.
+
+This remains internally validated implementation evidence only.
+
+It does not prove:
+
+- release readiness;
+- FTOV start;
+- FTOV exit;
+- production readiness;
+- real tenant validation;
+- real day-to-day operational validation.
+
+## Current Baseline Update — Owner-Approved Future Planning Candidates
+
+After Asset Identity v1 closeout, the owner approved several future planning candidates.
+
+These are planning candidates only.
+
+They do not authorize implementation, Codex, backend/API changes, DB changes, frontend changes, new endpoints, new bounded contexts, new Wave 2 surfaces, release readiness, FTOV start, FTOV exit, production readiness or real tenant validation.
+
+Approved future planning candidates:
+
+- Unified Create Launcher:
+  - one `Создать` entry point for:
+    - Asset / device;
+    - User;
+    - Department;
+    - Branch;
+    - Location.
+- Simplified Asset Actions UX:
+  - clearer selected-asset action orientation;
+  - Assign / Transfer / Return remain dedicated.
+- Delete / Archive Semantics:
+  - separate safe decision for retire / archive / correction delete;
+  - hard delete not approved by default.
+- End-User Asset Information View:
+  - simple read-only employee/device information surface;
+  - access-control decision required.
+- Search v1:
+  - employee / asset tag / display name / serial search;
+  - not local tree filter.
+- QR Lite:
+  - derived QR only;
+  - no scanner/printer/barcode platform by default.
+- Asset Type-Specific Technical Attributes:
+  - examples include AnyDesk ID, phone IP, extension, printer IP;
+  - schema/API/UI decision required.
+- Configuration Manager-inspired analysis:
+  - useful for future planning only;
+  - no agent/discovery/remote-control/deployment/patch-management/parity scope approved.
+
+Recommended next decision:
+
+`Operational Workspace / Unified Create Launcher Direction Gate`
+
+This baseline remains internally validated only.
+
+It does not prove:
+
+- release readiness;
+- FTOV start;
+- FTOV exit;
+- production readiness;
+- real tenant validation;
+- real day-to-day operational validation.

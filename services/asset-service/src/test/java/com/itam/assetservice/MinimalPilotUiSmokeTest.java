@@ -1,11 +1,14 @@
 package com.itam.assetservice;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.not;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.forwardedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import java.nio.charset.StandardCharsets;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,7 +45,16 @@ class MinimalPilotUiSmokeTest {
             .andExpect(content().string(containsString("id=\"workspace-tree\"")))
             .andExpect(content().string(containsString("id=\"tree-filter\"")))
             .andExpect(content().string(containsString("id=\"workspace-tree-body\"")))
-            .andExpect(content().string(containsString("id=\"workspace-detail\"")));
+            .andExpect(content().string(containsString("id=\"workspace-detail\"")))
+            .andExpect(result -> {
+                String body = new String(result.getResponse().getContentAsByteArray(), StandardCharsets.UTF_8);
+                assertThat(body, containsString("Создать"));
+                assertThat(body, containsString("Актив / устройство"));
+                assertThat(body, containsString("Пользователь"));
+                assertThat(body, containsString("Подразделение"));
+                assertThat(body, containsString("Филиал"));
+                assertThat(body, containsString("Локация"));
+            });
     }
 
     @Test
@@ -74,6 +86,7 @@ class MinimalPilotUiSmokeTest {
             .andExpect(content().string(containsString("display_name")))
             .andExpect(content().string(containsString("name=\"note\"")))
             .andExpect(content().string(containsString("renderContextualFeedback")))
+            .andExpect(content().string(containsString("openCreateTarget")))
             .andExpect(content().string(containsString("renderAuditDetails")))
             .andExpect(content().string(containsString("/api/v1/users")))
             .andExpect(content().string(containsString("/api/v1/roles")))

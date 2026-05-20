@@ -26,6 +26,32 @@
                     создание и редактирование данных актива, отдельные assign / transfer / return, историю и аудит
                     и настройку справочников tenant.
                 </p>
+
+                <div class="create-launcher" id="create-launcher">
+                    <button
+                        class="button button-primary create-launcher-toggle"
+                        id="create-launcher-toggle"
+                        type="button"
+                        aria-haspopup="menu"
+                        aria-expanded="false"
+                        aria-controls="create-launcher-menu"
+                    >
+                        Создать
+                    </button>
+                    <div
+                        class="create-launcher-menu"
+                        id="create-launcher-menu"
+                        role="menu"
+                        aria-label="Создать запись"
+                        hidden
+                    >
+                        <button class="create-launcher-item" type="button" role="menuitem" data-create-target="asset">Актив / устройство</button>
+                        <button class="create-launcher-item" type="button" role="menuitem" data-create-target="user">Пользователь</button>
+                        <button class="create-launcher-item" type="button" role="menuitem" data-create-target="department">Подразделение</button>
+                        <button class="create-launcher-item" type="button" role="menuitem" data-create-target="branch">Филиал</button>
+                        <button class="create-launcher-item" type="button" role="menuitem" data-create-target="location">Локация</button>
+                    </div>
+                </div>
             </div>
 
             <form id="session-form" class="session-card">

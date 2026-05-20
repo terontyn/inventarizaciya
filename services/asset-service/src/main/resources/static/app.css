@@ -142,6 +142,56 @@ code {
     line-height: 1.6;
 }
 
+.create-launcher {
+    position: relative;
+    width: fit-content;
+    margin-top: 1.25rem;
+}
+
+.create-launcher-toggle {
+    min-width: 8.5rem;
+}
+
+.create-launcher-menu {
+    position: absolute;
+    z-index: 90;
+    left: 0;
+    top: calc(100% + 0.45rem);
+    width: min(18rem, calc(100vw - 3rem));
+    padding: 0.45rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    background: var(--panel);
+    box-shadow: 0 18px 42px rgba(15, 23, 42, 0.18);
+}
+
+.create-launcher-item {
+    display: flex;
+    width: 100%;
+    min-height: 2.75rem;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 0.7rem 0.85rem;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--ink);
+    font-weight: 700;
+    text-align: left;
+    cursor: pointer;
+}
+
+.create-launcher-item:hover,
+.create-launcher-item:focus-visible {
+    background: rgba(15, 118, 110, 0.09);
+    color: var(--accent-ink);
+}
+
+.create-launcher-item:focus-visible {
+    outline: 3px solid rgba(15, 118, 110, 0.28);
+    outline-offset: 2px;
+}
+
 .session-card {
     padding: 1.5rem;
 }
@@ -1454,6 +1504,17 @@ code {
     .session-card,
     .panel {
         border-radius: var(--radius-lg);
+    }
+
+    .create-launcher,
+    .create-launcher-toggle {
+        width: 100%;
+    }
+
+    .create-launcher-menu {
+        position: static;
+        width: 100%;
+        margin-top: 0.45rem;
     }
 
     .field-grid,
