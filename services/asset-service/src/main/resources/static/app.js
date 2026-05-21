@@ -72,6 +72,14 @@ const CREATE_TARGETS = {
 
 const QUICK_FIND_MIN_LENGTH = 2;
 const QUICK_FIND_RESULT_LIMIT = 6;
+const QR_LITE_VERSIONS = [
+    { version: 1, dataCodewords: 19, eccCodewords: 7, alignment: [] },
+    { version: 2, dataCodewords: 34, eccCodewords: 10, alignment: [6, 18] },
+    { version: 3, dataCodewords: 55, eccCodewords: 15, alignment: [6, 22] },
+    { version: 4, dataCodewords: 80, eccCodewords: 20, alignment: [6, 26] },
+    { version: 5, dataCodewords: 108, eccCodewords: 26, alignment: [6, 30] }
+];
+const QR_LITE_FORMAT_BITS_LOW_MASK_0 = 0b111011111000100;
 
 const SETUP_SEQUENCE = [
     {
@@ -3818,6 +3826,7 @@ function renderAssetTechnicalSection(asset) {
             <p class="muted-note">
                 Технические значения доступны для поддержки и сверки. Они не являются основной рабочей навигацией.
             </p>
+            ${renderAssetQrLiteBlock(asset)}
             <details class="technical-disclosure-panel">
                 <summary>Показать служебные идентификаторы</summary>
                 <div class="asset-summary-grid technical-grid-muted">
@@ -3835,6 +3844,349 @@ function renderAssetTechnicalSection(asset) {
             </details>
         </section>
     `;
+}
+
+function renderAssetQrLiteBlock(asset) {
+    const payload = assetCanonicalTag(asset);
+    if (!payload) {
+        return `
+            <section class="asset-qr-lite asset-qr-lite-empty" aria-label="QR Lite">
+                <div class="asset-qr-lite-header">
+                    <div>
+                        <p class="section-kicker">QR Lite</p>
+                        <h4>QR по инвентарному номеру</h4>
+                    </div>
+                    <span class="summary-pill">Производный QR</span>
+                </div>
+                <p class="asset-qr-lite-help">QR недоступен: у актива нет инвентарного тега.</p>
+            </section>
+        `;
+    }
+
+    const qrSvg = renderQrLiteSvg(payload);
+    if (!qrSvg) {
+        return `
+            <section class="asset-qr-lite asset-qr-lite-empty" aria-label="QR Lite">
+                <div class="asset-qr-lite-header">
+                    <div>
+                        <p class="section-kicker">QR Lite</p>
+                        <h4>QR по инвентарному номеру</h4>
+                    </div>
+                    <span class="summary-pill">Производный QR</span>
+                </div>
+                <p class="asset-qr-lite-help">QR недоступен: инвентарный тег слишком длинный для QR Lite.</p>
+            </section>
+        `;
+    }
+
+    return `
+        <section class="asset-qr-lite" aria-label="QR Lite">
+            <div class="asset-qr-lite-header">
+                <div>
+                    <p class="section-kicker">QR Lite</p>
+                    <h4>QR по инвентарному номеру</h4>
+                </div>
+                <span class="summary-pill">Производный QR</span>
+            </div>
+            <div class="asset-qr-lite-body">
+                <div class="asset-qr-lite-visual" aria-hidden="true">${qrSvg}</div>
+                <div class="asset-qr-lite-content">
+                    <p class="asset-qr-lite-payload">
+                        <span>Инвентарный тег:</span>
+                        <code>${escapeHtml(payload)}</code>
+                    </p>
+                    <p class="asset-qr-lite-help">
+                        Сформирован из существующего идентификатора актива. QR не является отдельным идентификатором и не открывает публичный доступ.
+                    </p>
+                    <div class="asset-qr-lite-boundaries" aria-label="Границы QR Lite">
+                        <span>Не является отдельным идентификатором</span>
+                        <span>Не открывает публичный доступ</span>
+                    </div>
+                    <dl class="asset-qr-lite-context">
+                        <div>
+                            <dt>Название</dt>
+                            <dd>${escapeHtml(assetDisplayTitle(asset) || "-")}</dd>
+                        </div>
+                        <div>
+                            <dt>Тип</dt>
+                            <dd>${escapeHtml(optionalAssetText(asset?.asset_type) || "-")}</dd>
+                        </div>
+                        <div>
+                            <dt>Серийный номер</dt>
+                            <dd>${escapeHtml(optionalAssetText(asset?.serial_number) || "-")}</dd>
+                        </div>
+                    </dl>
+                </div>
+            </div>
+        </section>
+    `;
+}
+
+function renderQrLiteSvg(payload) {
+    const matrix = buildQrLiteMatrix(payload);
+    if (!matrix) {
+        return "";
+    }
+
+    const quietZone = 4;
+    const viewSize = matrix.length + quietZone * 2;
+    const path = [];
+    matrix.forEach((row, y) => {
+        row.forEach((dark, x) => {
+            if (dark) {
+                path.push(`M${x + quietZone},${y + quietZone}h1v1h-1z`);
+            }
+        });
+    });
+
+    return `
+        <svg
+            class="asset-qr-lite-svg"
+            viewBox="0 0 ${viewSize} ${viewSize}"
+            role="img"
+            aria-label="${escapeAttribute(`QR Lite: ${payload}`)}"
+            shape-rendering="crispEdges"
+        >
+            <rect width="${viewSize}" height="${viewSize}" fill="#fff"></rect>
+            <path d="${path.join("")}" fill="currentColor"></path>
+        </svg>
+    `;
+}
+
+function buildQrLiteMatrix(payload) {
+    const bytes = encodeQrLitePayload(payload);
+    const versionSpec = QR_LITE_VERSIONS.find((candidate) => (4 + 8 + bytes.length * 8) <= candidate.dataCodewords * 8);
+    if (!versionSpec) {
+        return null;
+    }
+
+    const size = versionSpec.version * 4 + 17;
+    const modules = Array.from({ length: size }, () => Array(size).fill(false));
+    const reserved = Array.from({ length: size }, () => Array(size).fill(false));
+    const setModule = (x, y, dark, isReserved = true) => {
+        if (x < 0 || y < 0 || x >= size || y >= size) {
+            return;
+        }
+        modules[y][x] = Boolean(dark);
+        if (isReserved) {
+            reserved[y][x] = true;
+        }
+    };
+
+    drawQrLiteFunctionPatterns(versionSpec, size, setModule);
+    reserveQrLiteFormatAreas(size, setModule);
+    setModule(8, size - 8, true);
+
+    const dataCodewords = buildQrLiteDataCodewords(bytes, versionSpec.dataCodewords);
+    const eccCodewords = buildQrLiteErrorCodewords(dataCodewords, versionSpec.eccCodewords);
+    placeQrLiteDataBits(modules, reserved, dataCodewords.concat(eccCodewords));
+    drawQrLiteFormatBits(size, setModule);
+
+    return modules;
+}
+
+function encodeQrLitePayload(payload) {
+    if (typeof TextEncoder !== "undefined") {
+        return [...new TextEncoder().encode(payload)];
+    }
+    return [...unescape(encodeURIComponent(payload))].map((character) => character.charCodeAt(0));
+}
+
+function buildQrLiteDataCodewords(bytes, dataCodewordCount) {
+    const bits = [];
+    appendQrLiteBits(bits, 0b0100, 4);
+    appendQrLiteBits(bits, bytes.length, 8);
+    bytes.forEach((byte) => appendQrLiteBits(bits, byte, 8));
+
+    const capacity = dataCodewordCount * 8;
+    const terminatorLength = Math.min(4, capacity - bits.length);
+    appendQrLiteBits(bits, 0, terminatorLength);
+    while (bits.length % 8 !== 0) {
+        bits.push(0);
+    }
+
+    const codewords = [];
+    for (let index = 0; index < bits.length; index += 8) {
+        codewords.push(bits.slice(index, index + 8).reduce((value, bit) => (value << 1) | bit, 0));
+    }
+
+    let padIndex = 0;
+    while (codewords.length < dataCodewordCount) {
+        codewords.push(padIndex % 2 === 0 ? 0xec : 0x11);
+        padIndex += 1;
+    }
+    return codewords;
+}
+
+function appendQrLiteBits(bits, value, length) {
+    for (let index = length - 1; index >= 0; index -= 1) {
+        bits.push((value >>> index) & 1);
+    }
+}
+
+function drawQrLiteFunctionPatterns(versionSpec, size, setModule) {
+    drawQrLiteFinder(0, 0, setModule);
+    drawQrLiteFinder(size - 7, 0, setModule);
+    drawQrLiteFinder(0, size - 7, setModule);
+
+    for (let index = 8; index < size - 8; index += 1) {
+        const dark = index % 2 === 0;
+        setModule(6, index, dark);
+        setModule(index, 6, dark);
+    }
+
+    versionSpec.alignment.forEach((x) => {
+        versionSpec.alignment.forEach((y) => {
+            const overlapsFinder = (x < 9 && y < 9) || (x > size - 10 && y < 9) || (x < 9 && y > size - 10);
+            if (!overlapsFinder) {
+                drawQrLiteAlignment(x, y, setModule);
+            }
+        });
+    });
+}
+
+function drawQrLiteFinder(left, top, setModule) {
+    for (let dy = -1; dy <= 7; dy += 1) {
+        for (let dx = -1; dx <= 7; dx += 1) {
+            const x = left + dx;
+            const y = top + dy;
+            const inFinder = dx >= 0 && dx <= 6 && dy >= 0 && dy <= 6;
+            const dark = inFinder && (dx === 0 || dx === 6 || dy === 0 || dy === 6 || (dx >= 2 && dx <= 4 && dy >= 2 && dy <= 4));
+            setModule(x, y, dark);
+        }
+    }
+}
+
+function drawQrLiteAlignment(centerX, centerY, setModule) {
+    for (let dy = -2; dy <= 2; dy += 1) {
+        for (let dx = -2; dx <= 2; dx += 1) {
+            setModule(centerX + dx, centerY + dy, Math.max(Math.abs(dx), Math.abs(dy)) !== 1);
+        }
+    }
+}
+
+function reserveQrLiteFormatAreas(size, setModule) {
+    for (let index = 0; index <= 8; index += 1) {
+        if (index !== 6) {
+            setModule(8, index, false);
+            setModule(index, 8, false);
+        }
+    }
+    for (let index = size - 8; index < size; index += 1) {
+        setModule(8, index, false);
+        setModule(index, 8, false);
+    }
+}
+
+function placeQrLiteDataBits(modules, reserved, codewords) {
+    const size = modules.length;
+    const bits = codewords.flatMap((codeword) => {
+        const codewordBits = [];
+        appendQrLiteBits(codewordBits, codeword, 8);
+        return codewordBits;
+    });
+    let bitIndex = 0;
+    let upward = true;
+
+    for (let right = size - 1; right >= 1; right -= 2) {
+        if (right === 6) {
+            right -= 1;
+        }
+        for (let rowOffset = 0; rowOffset < size; rowOffset += 1) {
+            const y = upward ? size - 1 - rowOffset : rowOffset;
+            for (let dx = 0; dx < 2; dx += 1) {
+                const x = right - dx;
+                if (reserved[y][x]) {
+                    continue;
+                }
+                const bit = bitIndex < bits.length ? bits[bitIndex] === 1 : false;
+                modules[y][x] = qrLiteMask(x, y) ? !bit : bit;
+                bitIndex += 1;
+            }
+        }
+        upward = !upward;
+    }
+}
+
+function qrLiteMask(x, y) {
+    return (x + y) % 2 === 0;
+}
+
+function drawQrLiteFormatBits(size, setModule) {
+    const bit = (index) => ((QR_LITE_FORMAT_BITS_LOW_MASK_0 >>> index) & 1) === 1;
+    for (let index = 0; index <= 5; index += 1) {
+        setModule(8, index, bit(index));
+    }
+    setModule(8, 7, bit(6));
+    setModule(8, 8, bit(7));
+    setModule(7, 8, bit(8));
+    for (let index = 9; index < 15; index += 1) {
+        setModule(14 - index, 8, bit(index));
+    }
+    for (let index = 0; index < 8; index += 1) {
+        setModule(size - 1 - index, 8, bit(index));
+    }
+    for (let index = 8; index < 15; index += 1) {
+        setModule(8, size - 15 + index, bit(index));
+    }
+    setModule(8, size - 8, true);
+}
+
+function buildQrLiteErrorCodewords(dataCodewords, degree) {
+    const generator = buildQrLiteGenerator(degree);
+    const remainder = Array(degree).fill(0);
+    dataCodewords.forEach((codeword) => {
+        const factor = codeword ^ remainder.shift();
+        remainder.push(0);
+        generator.forEach((coefficient, index) => {
+            remainder[index] ^= multiplyQrLiteGalois(coefficient, factor);
+        });
+    });
+    return remainder;
+}
+
+function buildQrLiteGenerator(degree) {
+    let coefficients = [1];
+    for (let index = 0; index < degree; index += 1) {
+        const next = Array(coefficients.length + 1).fill(0);
+        coefficients.forEach((coefficient, coefficientIndex) => {
+            next[coefficientIndex] ^= multiplyQrLiteGalois(coefficient, 1);
+            next[coefficientIndex + 1] ^= multiplyQrLiteGalois(coefficient, QR_LITE_EXP[index]);
+        });
+        coefficients = next;
+    }
+    return coefficients.slice(1);
+}
+
+const QR_LITE_EXP = (() => {
+    const values = Array(512).fill(0);
+    let value = 1;
+    for (let index = 0; index < 255; index += 1) {
+        values[index] = value;
+        value <<= 1;
+        if (value & 0x100) {
+            value ^= 0x11d;
+        }
+    }
+    for (let index = 255; index < values.length; index += 1) {
+        values[index] = values[index - 255];
+    }
+    return values;
+})();
+
+const QR_LITE_LOG = (() => {
+    const values = Array(256).fill(0);
+    for (let index = 0; index < 255; index += 1) {
+        values[QR_LITE_EXP[index]] = index;
+    }
+    return values;
+})();
+
+function multiplyQrLiteGalois(left, right) {
+    if (left === 0 || right === 0) {
+        return 0;
+    }
+    return QR_LITE_EXP[QR_LITE_LOG[left] + QR_LITE_LOG[right]];
 }
 
 function renderAssignCard(hasUsers, hasCurrentUser) {

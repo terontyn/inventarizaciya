@@ -757,7 +757,7 @@ Required next step:
 
 #### 5. Search v1
 
-Status: approved as future product decision candidate.
+Status: first bounded implementation accepted as frontend-only controlled quick find; Backend/API Search v1 remains deferred.
 
 Purpose:
 
@@ -778,10 +778,95 @@ Boundary:
 - backend/API search is likely required;
 - no Elasticsearch/global search platform is approved by this note;
 - no saved views or advanced filtering are approved by this note.
+Implementation status:
+
+- first bounded implementation completed and accepted;
+- implemented as `Быстрый поиск`;
+- implemented inside existing Operational Workspace;
+- placed near the left tree / navigation area;
+- visually separated from existing `Фильтр дерева`;
+- implementation is frontend-only;
+- uses already loaded authorized frontend state only;
+- no backend/API/DB changes were made;
+- no new endpoint was added;
+- no auth/IAM change was made.
+
+Data sources:
+
+- `state.assets`;
+- `state.references.users`;
+- `state.references.departments`;
+- `state.references.branches`;
+- `state.references.locations`.
+
+Searchable values:
+
+- employee / user name;
+- `asset_tag`;
+- `display_name`;
+- `serial_number`;
+- `asset_type`.
+
+Result groups:
+
+- `Сотрудники`;
+- `Активы / устройства`.
+
+Result behavior:
+
+- employee result opens existing selected user detail;
+- asset result opens existing selected asset detail;
+- result rows are read-only navigation rows;
+- no action buttons are present in result rows.
+
+Preserved distinction:
+
+- existing `Фильтр дерева` remains a local visible/open tree filter;
+- `Быстрый поиск` searches already loaded authorized workspace state;
+- this is not backend search;
+- this is not global search;
+- this is not advanced filtering.
+
+Preserved boundaries:
+
+- no backend/API Search v1;
+- no server-side filtering;
+- no pagination/limits;
+- no new endpoint;
+- no DB migration;
+- no auth/IAM expansion;
+- no ordinary employee role;
+- no employee self-search;
+- no public search;
+- no full-name-only lookup;
+- no `note` search;
+- no audit/history search;
+- no technical attributes search;
+- no QR/export/PDF/print;
+- no Asset 360;
+- no reporting/dashboard;
+- no Elasticsearch/global search;
+- no saved views;
+- no advanced filters.
+
+Deferred:
+
+- Backend/API Search v1;
+- server-side filtering;
+- pagination/limits;
+- larger tenant scale handling;
+- ordinary employee self-search;
+- search over future technical attributes;
+- QR/export/PDF;
+- Asset 360/reporting.
+
+
 
 Required next step:
 
-- `Operational Search v1 Decision Gate`.
+- no further Search v1 implementation is opened by this closeout;
+- if owner wants server-side search, open `Backend/API Search v1 Planning Packet`;
+- otherwise continue to the next owner-approved planning candidate.
 
 #### 6. QR Lite / Derived Asset Identifier
 
@@ -869,27 +954,34 @@ Not approved by this note:
 
 
 
-### Planning priority after Controlled Employee Asset Information Sheet
+### Planning priority after Operational Search v1 Frontend Quick Find
 
-Unified Create Launcher, Simplified Asset Actions UX, ADR-0005 Asset Delete Semantics, and Controlled Employee Asset Information Sheet are implemented/accepted at their approved scope levels.
+Unified Create Launcher, Simplified Asset Actions UX, ADR-0005 Asset Delete Semantics, Controlled Employee Asset Information Sheet, and Operational Search v1 Frontend Quick Find are implemented/accepted at their approved scope levels.
 
-End-User Asset Information View first bounded implementation is accepted as controlled read-only employee/device information sheet.
+Operational Search v1 first bounded implementation is accepted as frontend-only controlled quick find.
 
-Employee self-view remains deferred as a separate access/security decision.
+Backend/API Search v1 remains deferred as a separate planning track.
 
 Remaining recommended owner-priority order:
 
-1. Search v1.
-2. QR Lite.
-3. Asset Type-Specific Technical Attributes.
+1. QR Lite.
+2. Asset Type-Specific Technical Attributes.
 
 The first recommended next stage is:
 
-`Operational Search v1 Decision Gate`
+`Asset QR Lite / Derived Identifier Decision Gate`
 
 Optional branch:
 
-If the owner explicitly wants ordinary employee self-view before Search v1, open:
+If the owner explicitly wants server-side search before QR Lite, open:
+
+`Backend/API Search v1 Planning Packet`
+
+This optional branch must remain separate from frontend quick find, employee self-search, public search, saved views, advanced filters, Elasticsearch/global search and reporting/dashboard.
+
+Optional branch:
+
+If the owner explicitly wants ordinary employee self-view before QR Lite, open:
 
 `Employee Self-View Access Decision Gate`
 

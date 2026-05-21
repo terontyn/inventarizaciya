@@ -1930,23 +1930,23 @@ Approved future planning candidates:
 
 Current recommended next decision:
 
-`Operational Search v1 Decision Gate`
+`Asset QR Lite / Derived Identifier Decision Gate`
 
 Optional branch:
 
-If the owner explicitly wants ordinary employee self-view before Search v1, open:
+If the owner explicitly wants Backend/API Search v1 before QR Lite, open:
+
+`Backend/API Search v1 Planning Packet`
+
+This optional branch must remain separate from frontend quick find, employee self-search, public search, saved views, advanced filters, Elasticsearch/global search and reporting/dashboard.
+
+Optional branch:
+
+If the owner explicitly wants ordinary employee self-view before QR Lite, open:
 
 `Employee Self-View Access Decision Gate`
 
 This optional branch must remain separate from public lookup, full-name-only lookup, QR/export/PDF, Asset 360 and reporting/dashboard.
-
-Optional branch:
-
-If the owner explicitly wants to expose Retire before continuing product planning, open:
-
-`Retire Exposure / Unlock Planning Packet`
-
-This optional branch must remain separate from Delete / Archive / Correction Delete implementation.
 
 Non-claim rule:
 
@@ -2257,6 +2257,110 @@ Deferred to separate future decisions:
 - public lookup remains rejected;
 - QR/export/PDF remains separate;
 - Search v1 remains separate.
+
+### Non-claim rule
+
+This closeout does not prove:
+
+- release readiness;
+- FTOV start;
+- FTOV exit;
+- production readiness;
+- real tenant validation;
+- real day-to-day operational validation.
+
+The project remains in:
+
+**Project Stabilization / First-Adopter-Gated Hold**
+
+## Operational Search v1 Frontend Quick Find Implementation Closeout Clarification
+
+Operational Search v1 first bounded implementation is accepted as completed.
+
+### Delivery interpretation
+
+This implementation is accepted as:
+
+**bounded frontend-only controlled quick find inside the existing Operational Workspace.**
+
+Implemented scope:
+
+- `Быстрый поиск`;
+- compact quick find near the left tree / navigation area;
+- visual separation from existing `Фильтр дерева`;
+- search over already loaded frontend state only;
+- grouped results:
+  - `Сотрудники`;
+  - `Активы / устройства`;
+- employee result opens existing selected user detail;
+- asset result opens existing selected asset detail;
+- result rows are read-only navigation rows.
+
+### Searchable values
+
+Implemented matching is limited to:
+
+- employee / user name;
+- `asset_tag`;
+- `display_name`;
+- `serial_number`;
+- `asset_type`.
+
+### Preserved boundaries
+
+The implementation preserved:
+
+- existing Operational Workspace shell;
+- existing Tree-and-Detail navigation;
+- existing selected user / selected asset detail behavior;
+- existing `Фильтр дерева` as local visible/open tree filter;
+- Assign as dedicated flow;
+- Transfer as dedicated flow;
+- Return as dedicated flow;
+- Retire as not surfaced;
+- generic edit as master-record-only.
+
+### Not opened
+
+This implementation did not open:
+
+- backend/API Search v1;
+- backend/API changes;
+- DB changes;
+- migrations;
+- new endpoints;
+- DTO/read-model changes;
+- server-side filtering;
+- pagination/limits;
+- auth/IAM expansion;
+- new role model;
+- ordinary employee role;
+- employee self-search;
+- public search;
+- full-name-only lookup;
+- `note` search;
+- audit/history search;
+- AnyDesk/IP/MAC/extension search;
+- QR/barcode search;
+- export/PDF/Excel/print;
+- Asset 360;
+- reporting/dashboard;
+- Elasticsearch/global search;
+- saved views;
+- advanced filters.
+
+### Deferred
+
+Deferred to separate future decisions:
+
+- Backend/API Search v1;
+- server-side filtering;
+- pagination/limits;
+- larger-tenant scale handling;
+- ordinary employee self-search;
+- technical attributes search;
+- QR/export/PDF;
+- Asset 360/reporting.
 
 ### Non-claim rule
 

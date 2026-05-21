@@ -111,6 +111,13 @@ class MinimalPilotUiSmokeTest {
                 assertThat(body, containsString("Без поиска на сервере"));
                 assertThat(body, containsString("Поиск: сотрудник, инвентарный номер, название, серийный номер"));
                 assertThat(body, containsString("Можно искать сотрудника, инвентарный номер, название актива, серийный номер или тип устройства"));
+                assertThat(body, containsString("QR Lite"));
+                assertThat(body, containsString("QR по инвентарному номеру"));
+                assertThat(body, containsString("Производный QR"));
+                assertThat(body, containsString("Сформирован из существующего идентификатора актива"));
+                assertThat(body, containsString("Не является отдельным идентификатором"));
+                assertThat(body, containsString("Не открывает публичный доступ"));
+                assertThat(body, containsString("Инвентарный тег"));
                 assertThat(body, not(containsString("Личный кабинет")));
                 assertThat(body, not(containsString("Портал сотрудника")));
                 assertThat(body, not(containsString("Самообслуживание")));
@@ -138,7 +145,17 @@ class MinimalPilotUiSmokeTest {
             .andExpect(content().string(not(containsString("employee self-service"))))
             .andExpect(content().string(not(containsString("note search"))))
             .andExpect(content().string(not(containsString("audit/history search"))))
-            .andExpect(content().string(not(containsString("QR"))))
+            .andExpect(content().string(not(containsString("scanner"))))
+            .andExpect(content().string(not(containsString("scan"))))
+            .andExpect(content().string(not(containsString("camera"))))
+            .andExpect(content().string(not(containsString("mobile scan"))))
+            .andExpect(content().string(not(containsString("public lookup"))))
+            .andExpect(content().string(not(containsString("public URL"))))
+            .andExpect(content().string(not(containsString("qr_code"))))
+            .andExpect(content().string(not(containsString("barcode"))))
+            .andExpect(content().string(not(containsString("inventory_number"))))
+            .andExpect(content().string(not(containsString("remote QR service"))))
+            .andExpect(content().string(not(containsString("QR search"))))
             .andExpect(content().string(not(containsString("export"))))
             .andExpect(content().string(not(containsString("PDF"))))
             .andExpect(content().string(not(containsString("Excel"))))
