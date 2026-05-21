@@ -1930,7 +1930,15 @@ Approved future planning candidates:
 
 Current recommended next decision:
 
-`End-User Asset Information View Direction Gate`
+`Operational Search v1 Decision Gate`
+
+Optional branch:
+
+If the owner explicitly wants ordinary employee self-view before Search v1, open:
+
+`Employee Self-View Access Decision Gate`
+
+This optional branch must remain separate from public lookup, full-name-only lookup, QR/export/PDF, Asset 360 and reporting/dashboard.
 
 Optional branch:
 
@@ -2157,6 +2165,98 @@ This acceptance does not open:
 - hard delete implementation;
 - role/IAM changes;
 - Codex implementation.
+
+### Non-claim rule
+
+This closeout does not prove:
+
+- release readiness;
+- FTOV start;
+- FTOV exit;
+- production readiness;
+- real tenant validation;
+- real day-to-day operational validation.
+
+The project remains in:
+
+**Project Stabilization / First-Adopter-Gated Hold**
+
+## Controlled Employee Asset Information Sheet Implementation Closeout Clarification
+
+Controlled Employee Asset Information Sheet is accepted as implemented.
+
+### Delivery interpretation
+
+This implementation is accepted as:
+
+**bounded frontend-only controlled read-only employee/device information sheet inside the existing Operational Workspace.**
+
+Implemented scope:
+
+- `Информационный лист сотрудника`;
+- selected employee / user detail entry point;
+- employee header;
+- assigned devices section;
+- read-only badge and access boundary copy;
+- user-facing role labels:
+  - `Администратор`;
+  - `Оператор учёта`;
+  - `Наблюдатель / Аудитор`;
+  - `Сотрудник`;
+- assigned device fields:
+  - asset title / `display_name`;
+  - `asset_tag`;
+  - `asset_type`;
+  - `serial_number`;
+  - `status`;
+  - location only if already resolvable.
+
+### Preserved boundaries
+
+The implementation preserved:
+
+- existing Operational Workspace shell;
+- existing Tree-and-Detail selected user context;
+- existing frontend state usage only;
+- read-only behavior;
+- Assign as dedicated flow;
+- Transfer as dedicated flow;
+- Return as dedicated flow;
+- Retire as not surfaced;
+- generic edit as master-record-only.
+
+### Not opened
+
+This implementation did not open:
+
+- backend/API changes;
+- DB changes;
+- migrations;
+- new endpoints;
+- DTO/read-model changes;
+- auth/IAM expansion;
+- new role model;
+- ordinary employee role;
+- employee self-service;
+- public lookup;
+- full-name-only lookup;
+- employee portal / personal cabinet;
+- QR implementation;
+- export/PDF/Excel/print;
+- Asset 360;
+- reporting/dashboard;
+- Delete / Archive / Retire implementation.
+
+### Deferred
+
+Deferred to separate future decisions:
+
+- authenticated `Сотрудник self-view`;
+- server-side self-only scoped read endpoint;
+- auth/IAM/session model;
+- public lookup remains rejected;
+- QR/export/PDF remains separate;
+- Search v1 remains separate.
 
 ### Non-claim rule
 

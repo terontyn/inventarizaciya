@@ -70,6 +70,9 @@ const CREATE_TARGETS = {
     location: { label: "Локация", resource: "locations" }
 };
 
+const QUICK_FIND_MIN_LENGTH = 2;
+const QUICK_FIND_RESULT_LIMIT = 6;
+
 const SETUP_SEQUENCE = [
     {
         key: "roles",
@@ -303,6 +306,7 @@ const state = {
     selectedTreeNode: { type: TREE_NODE_TYPES.WORKSPACE },
     expandedTreeNodes: new Set(),
     treeFilter: "",
+    quickFindQuery: "",
     createLauncherOpen: false,
     lastRoleAssignment: null,
     lastFeedback: null
@@ -312,6 +316,7 @@ document.addEventListener("DOMContentLoaded", initialize);
 
 function initialize() {
     cacheElements();
+    ensureQuickFindUi();
     bindStaticEvents();
     restoreContext();
     render();
@@ -340,6 +345,8 @@ function cacheElements() {
     ui.workspaceTree = document.getElementById("workspace-tree");
     ui.treeFilter = document.getElementById("tree-filter");
     ui.treeFilterStatus = document.getElementById("tree-filter-status");
+    ui.quickFindInput = document.getElementById("quick-find-input");
+    ui.quickFindPanel = document.getElementById("quick-find-panel");
     ui.workspaceTreeBody = document.getElementById("workspace-tree-body");
     ui.workspaceDetail = document.getElementById("workspace-detail");
     ui.screenNav = document.getElementById("screen-nav");
@@ -369,6 +376,46 @@ function cacheElements() {
     ui.refreshAdminResource = document.getElementById("refresh-admin-resource");
 }
 
+function ensureQuickFindUi() {
+    if (!ui.workspaceTree || document.getElementById("quick-find-input")) {
+        ui.quickFindInput = document.getElementById("quick-find-input");
+        ui.quickFindPanel = document.getElementById("quick-find-panel");
+        return;
+    }
+
+    const anchor = ui.treeFilter?.closest(".tree-filter") || ui.workspaceTreeBody;
+    const markup = `
+        <section class="quick-find" aria-label="Быстрый поиск">
+            <div class="quick-find-heading">
+                <p class="section-kicker">Поиск</p>
+                <strong>Быстрый поиск</strong>
+            </div>
+            <label class="field quick-find-field">
+                <span class="sr-only">Поиск</span>
+                <input
+                    id="quick-find-input"
+                    class="quick-find-input"
+                    type="text"
+                    autocomplete="off"
+                    placeholder="Поиск: сотрудник, инвентарный номер, название, серийный номер"
+                    aria-describedby="quick-find-help"
+                >
+                <small id="quick-find-help" class="quick-find-help">По загруженным данным рабочего пространства. Без поиска на сервере.</small>
+            </label>
+            <div id="quick-find-panel" class="quick-find-panel" aria-live="polite"></div>
+        </section>
+    `;
+
+    if (anchor) {
+        anchor.insertAdjacentHTML("beforebegin", markup);
+    } else {
+        ui.workspaceTree.insertAdjacentHTML("beforeend", markup);
+    }
+
+    ui.quickFindInput = document.getElementById("quick-find-input");
+    ui.quickFindPanel = document.getElementById("quick-find-panel");
+}
+
 function bindStaticEvents() {
     ui.sessionForm.addEventListener("submit", onSessionSubmit);
     ui.userServiceBaseUrl.addEventListener("input", renderUserServiceUrlPreview);
@@ -381,6 +428,8 @@ function bindStaticEvents() {
     ui.clearSession.addEventListener("click", clearSession);
     ui.refreshAssets?.addEventListener("click", onRefreshAssetsClick);
     ui.refreshAdminResource?.addEventListener("click", onRefreshAdminResourceClick);
+    ui.quickFindInput?.addEventListener("input", onQuickFindInput);
+    ui.quickFindPanel?.addEventListener("click", onQuickFindPanelClick);
     ui.treeFilter?.addEventListener("input", onTreeFilterInput);
     ui.workspaceTreeBody?.addEventListener("click", onTreeClick);
     ui.workspaceDetail?.addEventListener("click", onWorkspaceDetailClick);
@@ -1390,6 +1439,33 @@ function onTreeFilterInput(event) {
     applyTreeFilter();
 }
 
+function onQuickFindInput(event) {
+    state.quickFindQuery = event.target.value || "";
+    renderQuickFind();
+}
+
+function onQuickFindPanelClick(event) {
+    const result = event.target.closest("[data-quick-find-type]");
+    if (!result) {
+        return;
+    }
+
+    if (result.dataset.quickFindType === "user") {
+        const userId = result.dataset.userId || "";
+        if (!userId) {
+            return;
+        }
+        state.selectedTreeNode = { type: TREE_NODE_TYPES.USER, id: userId };
+        render();
+        scrollToElement(ui.workspaceDetail);
+        return;
+    }
+
+    if (result.dataset.quickFindType === "asset") {
+        selectAssetNode(result.dataset.assetId, { source: "all" });
+    }
+}
+
 function onWorkspaceDetailClick(event) {
     const toggle = event.target.closest("[data-tree-toggle]");
     if (toggle) {
@@ -1677,9 +1753,165 @@ function renderTreeWorkspace() {
         return;
     }
 
+    renderQuickFind();
     renderTreeNavigation();
     renderTreeDetail();
     applyTreeFilter();
+}
+
+function renderQuickFind() {
+    if (!ui.quickFindInput || !ui.quickFindPanel) {
+        return;
+    }
+
+    if (ui.quickFindInput.value !== state.quickFindQuery) {
+        ui.quickFindInput.value = state.quickFindQuery;
+    }
+
+    ui.quickFindPanel.innerHTML = renderQuickFindPanel();
+}
+
+function renderQuickFindPanel() {
+    const rawQuery = state.quickFindQuery || "";
+    const query = normalizeQuickFindQuery(rawQuery);
+
+    if (!rawQuery.trim()) {
+        return renderQuickFindEmpty("Быстрый поиск", "Можно искать сотрудника, инвентарный номер, название актива, серийный номер или тип устройства.");
+    }
+
+    if (query.length < QUICK_FIND_MIN_LENGTH) {
+        return renderQuickFindEmpty("Слишком короткий запрос", "Введите минимум 2 символа для поиска по загруженным данным.");
+    }
+
+    if (!hasResolvedProfile() || (!canAssetRead() && !canReferenceRead())) {
+        return renderQuickFindEmpty("Данные ещё не загружены", "Сначала подключите контекст и обновите данные рабочего пространства.");
+    }
+
+    const results = buildQuickFindResults(query);
+    if (results.users.total === 0 && results.assets.total === 0) {
+        return renderQuickFindEmpty("Ничего не найдено", "Ничего не найдено в загруженных данных рабочего пространства.");
+    }
+
+    return `
+        <div class="quick-find-results">
+            ${renderQuickFindGroup("Сотрудники", results.users, renderQuickFindUserResult)}
+            ${renderQuickFindGroup("Активы / устройства", results.assets, renderQuickFindAssetResult)}
+        </div>
+    `;
+}
+
+function buildQuickFindResults(query) {
+    const users = canReferenceRead()
+        ? state.references.users.filter((user) => matchesQuickFind(query, [user.name]))
+        : [];
+    const assets = canAssetRead()
+        ? state.assets.filter((asset) => matchesQuickFind(query, [
+            asset.asset_tag,
+            asset.display_name,
+            asset.serial_number,
+            asset.asset_type
+        ]))
+        : [];
+
+    return {
+        users: {
+            total: users.length,
+            items: users.slice(0, QUICK_FIND_RESULT_LIMIT)
+        },
+        assets: {
+            total: assets.length,
+            items: assets.slice(0, QUICK_FIND_RESULT_LIMIT)
+        }
+    };
+}
+
+function renderQuickFindGroup(label, group, renderItem) {
+    const hasItems = group.items.length > 0;
+    const moreCount = Math.max(group.total - group.items.length, 0);
+    return `
+        <section class="quick-find-group" aria-label="${escapeAttribute(label)}">
+            <div class="quick-find-group-header">
+                <span>${escapeHtml(label)}</span>
+                <span class="summary-pill">${escapeHtml(String(group.total))}</span>
+            </div>
+            ${hasItems ? group.items.map(renderItem).join("") : `<p class="quick-find-empty">Нет совпадений в этой группе.</p>`}
+            ${moreCount > 0 ? `<p class="quick-find-more">Показаны первые ${escapeHtml(String(group.items.length))} из ${escapeHtml(String(group.total))} по загруженным данным.</p>` : ""}
+        </section>
+    `;
+}
+
+function renderQuickFindUserResult(user) {
+    const departmentName = resolveDepartmentName(user.department_id);
+    const assetCount = getAssetsForUser(user.id).length;
+    return `
+        <button class="quick-find-result" type="button" data-quick-find-type="user" data-user-id="${escapeAttribute(user.id)}">
+            <span class="quick-find-title">${escapeHtml(user.name || shortenTechnicalValue(user.id))}</span>
+            <span class="quick-find-meta">${escapeHtml(departmentName)} · ${escapeHtml(formatTreeCount(assetCount, ["актив", "актива", "активов"], "нет закреплённых активов"))}</span>
+        </button>
+    `;
+}
+
+function renderQuickFindAssetResult(asset) {
+    const meta = [
+        assetCanonicalTag(asset) ? `Инв. тег: ${assetCanonicalTag(asset)}` : "",
+        asset.asset_type ? `Тип: ${asset.asset_type}` : "",
+        asset.serial_number ? `SN: ${asset.serial_number}` : "",
+        asset.status ? `Статус: ${asset.status}` : ""
+    ].filter(Boolean).join(" · ");
+    const responsibility = [
+        getQuickFindUserLabel(asset.assigned_user_id),
+        getQuickFindLocationLabel(asset.location_id)
+    ].filter(Boolean).join(" · ");
+
+    return `
+        <button class="quick-find-result" type="button" data-quick-find-type="asset" data-asset-id="${escapeAttribute(asset.id)}">
+            <span class="quick-find-title">${escapeHtml(assetDisplayTitle(asset))}</span>
+            <span class="quick-find-meta">${escapeHtml(meta || "Данные актива")}</span>
+            ${responsibility ? `<span class="quick-find-meta">${escapeHtml(responsibility)}</span>` : ""}
+        </button>
+    `;
+}
+
+function renderQuickFindEmpty(title, copy) {
+    return `
+        <div class="quick-find-empty">
+            <strong>${escapeHtml(title)}</strong>
+            <p>${escapeHtml(copy)}</p>
+        </div>
+    `;
+}
+
+function getQuickFindUserLabel(userId) {
+    if (!userId) {
+        return "Ответственный не назначен";
+    }
+    const user = canReferenceRead()
+        ? state.references.users.find((item) => item.id === userId)
+        : null;
+    return `Ответственный: ${user?.name || shortenTechnicalValue(userId)}`;
+}
+
+function getQuickFindLocationLabel(locationId) {
+    if (!locationId) {
+        return "Локация не указана";
+    }
+    if (!canReferenceRead()) {
+        return "Локация: служебное значение";
+    }
+    const location = state.references.locations.find((item) => item.id === locationId);
+    if (!location) {
+        return "Локация: служебное значение";
+    }
+    const branchName = resolveBranchName(location.branch_id);
+    return `Локация: ${location.name || shortenTechnicalValue(location.id)}${branchName && branchName !== "-" ? `, ${branchName}` : ""}`;
+}
+
+function matchesQuickFind(query, values) {
+    return values.some((value) => normalizeQuickFindQuery(value).includes(query));
+}
+
+function normalizeQuickFindQuery(value) {
+    return String(value || "").trim().toLocaleLowerCase("ru-RU");
 }
 
 function renderTreeNavigation() {

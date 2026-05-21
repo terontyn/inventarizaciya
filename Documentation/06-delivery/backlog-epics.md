@@ -672,7 +672,7 @@ Required next step:
 
 #### 4. End-User Asset Information View
 
-Status: approved as future product decision candidate.
+Status: first bounded implementation accepted as controlled read-only employee/device information sheet; employee self-view remains deferred.
 
 Purpose:
 
@@ -697,9 +697,63 @@ Boundary:
 - this is not auth/IAM expansion by default;
 - no assign / transfer / return actions for ordinary users by default.
 
+Implementation status:
+
+- first bounded implementation completed and accepted;
+- implemented as `Информационный лист сотрудника`;
+- implemented inside existing Operational Workspace;
+- primary entry is selected employee / user detail context;
+- implementation is frontend-only;
+- sheet is read-only;
+- uses existing loaded frontend state only;
+- shows employee identity context and assigned devices;
+- assigned devices show:
+  - asset title / `display_name`;
+  - `asset_tag`;
+  - `asset_type`;
+  - `serial_number`;
+  - `status`;
+  - location only if already resolvable;
+- `note` is hidden by default;
+- audit/history are not shown in the sheet;
+- raw technical IDs are not primary content.
+
+User-facing terminology:
+
+- `Администратор`;
+- `Оператор учёта`;
+- `Наблюдатель / Аудитор`;
+- `Сотрудник`.
+
+Preserved:
+
+- no backend/API/DB changes;
+- no new endpoint;
+- no auth/IAM expansion;
+- no ordinary employee role;
+- no employee self-view;
+- no public full-name lookup;
+- no Assign / Transfer / Return actions inside the sheet;
+- no Edit / Delete / Archive / Retire actions inside the sheet;
+- no QR/export/PDF/print;
+- no Asset 360;
+- no reporting/dashboard.
+
+Deferred:
+
+- authenticated `Сотрудник self-view`;
+- server-side self-only scoping;
+- backend scoped endpoint if later needed;
+- auth/IAM/session decision;
+- public lookup remains rejected.
+
 Required next step:
 
-- `End-User Asset Information View Direction Gate`.
+- no further implementation is opened by this closeout;
+- if owner wants ordinary employee self-view, open `Employee Self-View Access Decision Gate`;
+- otherwise continue to the next owner-approved planning candidate.
+
+
 
 #### 5. Search v1
 
@@ -815,29 +869,28 @@ Not approved by this note:
 
 
 
-### Planning priority after ADR-0005 Asset Delete Semantics Acceptance
+### Planning priority after Controlled Employee Asset Information Sheet
 
-Unified Create Launcher and Simplified Asset Actions UX are implemented and accepted.
+Unified Create Launcher, Simplified Asset Actions UX, ADR-0005 Asset Delete Semantics, and Controlled Employee Asset Information Sheet are implemented/accepted at their approved scope levels.
 
-ADR-0005 Asset Delete Semantics is accepted as ADR/product semantics decision.
+End-User Asset Information View first bounded implementation is accepted as controlled read-only employee/device information sheet.
 
-Delete / Archive implementation is not approved.
+Employee self-view remains deferred as a separate access/security decision.
 
 Remaining recommended owner-priority order:
 
-1. End-User Asset Information View.
-2. Search v1.
-3. QR Lite.
-4. Asset Type-Specific Technical Attributes.
+1. Search v1.
+2. QR Lite.
+3. Asset Type-Specific Technical Attributes.
 
 The first recommended next stage is:
 
-`End-User Asset Information View Direction Gate`
+`Operational Search v1 Decision Gate`
 
 Optional branch:
 
-If the owner explicitly wants to expose Retire before continuing product planning, open:
+If the owner explicitly wants ordinary employee self-view before Search v1, open:
 
-`Retire Exposure / Unlock Planning Packet`
+`Employee Self-View Access Decision Gate`
 
-This optional branch must remain separate from Delete / Archive / Correction Delete implementation.
+This optional branch must remain separate from public lookup, full-name-only lookup, QR/export/PDF, Asset 360 and reporting/dashboard.

@@ -103,9 +103,18 @@ class MinimalPilotUiSmokeTest {
                 assertThat(body, containsString("Оператор учёта"));
                 assertThat(body, containsString("Наблюдатель"));
                 assertThat(body, containsString("Аудитор"));
+                assertThat(body, containsString("Быстрый поиск"));
+                assertThat(body, containsString("Поиск"));
+                assertThat(body, containsString("Сотрудники"));
+                assertThat(body, containsString("Активы / устройства"));
+                assertThat(body, containsString("По загруженным данным рабочего пространства"));
+                assertThat(body, containsString("Без поиска на сервере"));
+                assertThat(body, containsString("Поиск: сотрудник, инвентарный номер, название, серийный номер"));
+                assertThat(body, containsString("Можно искать сотрудника, инвентарный номер, название актива, серийный номер или тип устройства"));
                 assertThat(body, not(containsString("Личный кабинет")));
                 assertThat(body, not(containsString("Портал сотрудника")));
                 assertThat(body, not(containsString("Самообслуживание")));
+                assertThat(body, not(containsString("самообслуживание")));
                 assertThat(body, not(containsString("публичный поиск")));
                 assertThat(body, not(containsString("поиск по ФИО")));
             })
@@ -123,7 +132,12 @@ class MinimalPilotUiSmokeTest {
             .andExpect(content().string(not(containsString("/api/v1/software/"))))
             .andExpect(content().string(not(containsString("/api/v1/tickets/"))))
             .andExpect(content().string(not(containsString("/api/v1/reporting/"))))
+            .andExpect(content().string(not(containsString("/search"))))
+            .andExpect(content().string(not(containsString("public search"))))
             .andExpect(content().string(not(containsString("full-name lookup"))))
+            .andExpect(content().string(not(containsString("employee self-service"))))
+            .andExpect(content().string(not(containsString("note search"))))
+            .andExpect(content().string(not(containsString("audit/history search"))))
             .andExpect(content().string(not(containsString("QR"))))
             .andExpect(content().string(not(containsString("export"))))
             .andExpect(content().string(not(containsString("PDF"))))
@@ -139,6 +153,8 @@ class MinimalPilotUiSmokeTest {
             .andExpect(content().string(not(containsString("dashboard"))))
             .andExpect(content().string(not(containsString("search"))))
             .andExpect(content().string(not(containsString("Asset 360"))))
-            .andExpect(content().string(not(containsString("Elasticsearch"))));
+            .andExpect(content().string(not(containsString("Elasticsearch"))))
+            .andExpect(content().string(not(containsString("global search"))))
+            .andExpect(content().string(not(containsString("advanced filters"))));
     }
 }

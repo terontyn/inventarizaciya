@@ -1262,7 +1262,15 @@ Approved future planning candidates:
 
 Current recommended next decision:
 
-`End-User Asset Information View Direction Gate`
+`Operational Search v1 Decision Gate`
+
+Optional branch:
+
+If the owner explicitly wants ordinary employee self-view before Search v1, open:
+
+`Employee Self-View Access Decision Gate`
+
+This optional branch must remain separate from public lookup, full-name-only lookup, QR/export/PDF, Asset 360 and reporting/dashboard.
 
 Optional branch:
 
@@ -1448,6 +1456,92 @@ This ADR acceptance does not authorize:
 - changing role/IAM behavior.
 
 This remains a docs/ADR semantics acceptance only.
+
+It does not prove:
+
+- release readiness;
+- FTOV start;
+- FTOV exit;
+- production readiness;
+- real tenant validation;
+- real day-to-day operational validation.
+
+## Current Baseline Update — Controlled Employee Asset Information Sheet Closeout
+
+Controlled Employee Asset Information Sheet has been implemented and accepted as the first safe bounded implementation of the End-User Asset Information View direction.
+
+User-facing feature name:
+
+`Информационный лист сотрудника`
+
+Implementation interpretation:
+
+- implemented inside the existing Operational Workspace;
+- available from selected employee / user detail context;
+- read-only only;
+- uses existing loaded frontend state;
+- shows employee identity context and assigned devices;
+- remains inside managed authorized workspace;
+- does not create public lookup;
+- does not create employee self-service.
+
+Displayed information:
+
+- employee name;
+- department when already resolvable;
+- assigned devices;
+- asset title / `display_name`;
+- inventory tag / `asset_tag`;
+- asset type;
+- serial number;
+- status;
+- location only when already resolvable from existing frontend state.
+
+Hidden or excluded by default:
+
+- `note`;
+- audit/history;
+- raw technical UUIDs as primary content;
+- service/correlation IDs;
+- QR;
+- export/PDF/Excel/print actions.
+
+User-facing role labels introduced for product/UX copy:
+
+- `Администратор`;
+- `Оператор учёта`;
+- `Наблюдатель / Аудитор`;
+- `Сотрудник`.
+
+Technical role constants remain unchanged.
+
+Preserved boundaries:
+
+- no backend/API changes;
+- no DB changes;
+- no migrations;
+- no new endpoint;
+- no auth/IAM expansion;
+- no new role model;
+- no ordinary employee role;
+- no employee self-view;
+- no public full-name lookup;
+- no Assign / Transfer / Return actions inside the sheet;
+- no Edit / Delete / Archive / Retire actions inside the sheet;
+- no QR/export/PDF/print implementation;
+- no Asset 360;
+- no reporting/dashboard.
+
+Deferred:
+
+- authenticated employee self-view;
+- public lookup remains rejected;
+- backend scoped endpoint for self-view;
+- auth/IAM expansion;
+- QR/export/PDF;
+- broader employee portal / personal cabinet.
+
+This remains internally validated implementation evidence only.
 
 It does not prove:
 
