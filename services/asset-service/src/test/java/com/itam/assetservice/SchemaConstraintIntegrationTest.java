@@ -131,4 +131,76 @@ class SchemaConstraintIntegrationTest extends IntegrationTestSupport {
             )
         ).isInstanceOf(DataIntegrityViolationException.class);
     }
+
+    @Test
+    void technicalAttributesTableEnforcesTenantAssetKeyAndValueConstraints() {
+        UUID tenantA = UUID.randomUUID();
+        UUID tenantB = UUID.randomUUID();
+        UUID assetId = insertAsset(tenantA, "LAP-TECH", "SN-TECH", "Laptop", AssetStatus.ACTIVE, null, null);
+
+        assertThat(countRows("asset_technical_attributes")).isZero();
+
+        assertThatThrownBy(() ->
+            jdbcTemplate.update(
+                "INSERT INTO asset_technical_attributes ("
+                    + "asset_id, attribute_key, attribute_value, created_at, updated_at"
+                    + ") VALUES (?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
+                assetId,
+                "hostname",
+                "host-01"
+            )
+        ).isInstanceOf(DataIntegrityViolationException.class);
+
+        assertThatThrownBy(() ->
+            jdbcTemplate.update(
+                "INSERT INTO asset_technical_attributes ("
+                    + "tenant_id, attribute_key, attribute_value, created_at, updated_at"
+                    + ") VALUES (?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
+                tenantA,
+                "hostname",
+                "host-01"
+            )
+        ).isInstanceOf(DataIntegrityViolationException.class);
+
+        assertThatThrownBy(() ->
+            jdbcTemplate.update(
+                "INSERT INTO asset_technical_attributes ("
+                    + "tenant_id, asset_id, attribute_value, created_at, updated_at"
+                    + ") VALUES (?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
+                tenantA,
+                assetId,
+                "host-01"
+            )
+        ).isInstanceOf(DataIntegrityViolationException.class);
+
+        assertThatThrownBy(() ->
+            jdbcTemplate.update(
+                "INSERT INTO asset_technical_attributes ("
+                    + "tenant_id, asset_id, attribute_key, created_at, updated_at"
+                    + ") VALUES (?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
+                tenantA,
+                assetId,
+                "hostname"
+            )
+        ).isInstanceOf(DataIntegrityViolationException.class);
+
+        insertTechnicalAttribute(tenantA, assetId, "hostname", "host-01");
+        assertThat(technicalAttributeValue(tenantA, assetId, "hostname")).isEqualTo("host-01");
+
+        assertThatThrownBy(() ->
+            insertTechnicalAttribute(tenantA, assetId, "hostname", "host-02")
+        ).isInstanceOf(DataIntegrityViolationException.class);
+
+        assertThatThrownBy(() ->
+            insertTechnicalAttribute(tenantA, UUID.randomUUID(), "ip_address", "10.0.0.25")
+        ).isInstanceOf(DataIntegrityViolationException.class);
+
+        assertThatThrownBy(() ->
+            insertTechnicalAttribute(tenantB, assetId, "ip_address", "10.0.0.25")
+        ).isInstanceOf(DataIntegrityViolationException.class);
+
+        assertThatThrownBy(() ->
+            insertTechnicalAttribute(tenantA, assetId, "anydesk_id", "a".repeat(513))
+        ).isInstanceOf(DataIntegrityViolationException.class);
+    }
 }

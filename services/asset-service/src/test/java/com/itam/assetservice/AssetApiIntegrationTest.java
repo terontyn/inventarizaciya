@@ -9,6 +9,7 @@ import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -859,6 +860,393 @@ class AssetApiIntegrationTest extends IntegrationTestSupport {
 
         assertThat(assetRow(tenantA, assetId).displayName()).isEqualTo("Tenant A name");
         assertThat(assetRow(tenantA, assetId).note()).isEqualTo("Tenant A note");
+        mockUserService.verify();
+    }
+
+    @Test
+    void technicalAttributesDetailReadUpdateAndAuditForPcLaptopProfile() throws Exception {
+        UUID tenantId = UUID.randomUUID();
+        UUID tenantAdminId = UUID.randomUUID();
+        UUID assetId = insertAsset(
+            tenantId,
+            "LAP-TECH",
+            "SN-TECH",
+            "  laptop  ",
+            AssetStatus.ACTIVE,
+            null,
+            null
+        );
+
+        expectRoleLookup(tenantId, tenantAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+        expectRoleLookup(tenantId, tenantAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+        expectRoleLookup(tenantId, tenantAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+        expectRoleLookup(tenantId, tenantAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+
+        mockMvc.perform(get("/api/v1/assets/{id}", assetId)
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
+                .header(AUTHENTICATED_USER_HEADER, tenantAdminId))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.technical_attributes.profile").value("PC_LAPTOP"))
+            .andExpect(jsonPath("$.technical_attributes.values").isEmpty());
+
+        Map<String, Object> values = new LinkedHashMap<>();
+        values.put("hostname", "  host-01  ");
+        values.put("anydesk_id", "123456789");
+        values.put("ip_address", "10.0.0.25");
+        values.put("mac_address", "AA:BB:CC:DD:EE:FF");
+        mockMvc.perform(put("/api/v1/assets/{id}/technical-attributes", assetId)
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
+                .header(AUTHENTICATED_USER_HEADER, tenantAdminId)
+                .header(AUTHENTICATED_ACTOR_HEADER, "tenant-admin")
+                .header(CORRELATION_ID_HEADER, "corr-tech-update")
+                .contentType(APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(Map.of("values", values))))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.asset_id").value(assetId.toString()))
+            .andExpect(jsonPath("$.asset_tag").value("LAP-TECH"))
+            .andExpect(jsonPath("$.profile").value("PC_LAPTOP"))
+            .andExpect(jsonPath("$.values.hostname").value("host-01"))
+            .andExpect(jsonPath("$.values.anydesk_id").value("123456789"))
+            .andExpect(jsonPath("$.values.ip_address").value("10.0.0.25"))
+            .andExpect(jsonPath("$.values.mac_address").value("AA:BB:CC:DD:EE:FF"));
+
+        mockMvc.perform(get("/api/v1/assets/{id}", assetId)
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
+                .header(AUTHENTICATED_USER_HEADER, tenantAdminId))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.technical_attributes.profile").value("PC_LAPTOP"))
+            .andExpect(jsonPath("$.technical_attributes.values.hostname").value("host-01"))
+            .andExpect(jsonPath("$.technical_attributes.values.anydesk_id").value("123456789"))
+            .andExpect(jsonPath("$.technical_attributes.values.ip_address").value("10.0.0.25"))
+            .andExpect(jsonPath("$.technical_attributes.values.mac_address").value("AA:BB:CC:DD:EE:FF"));
+
+        mockMvc.perform(get("/api/v1/assets")
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
+                .header(AUTHENTICATED_USER_HEADER, tenantAdminId))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$[0].technical_attributes").doesNotExist());
+
+        assertThat(technicalAttributeValue(tenantId, assetId, "hostname")).isEqualTo("host-01");
+        assertThat(countRows("local_audit_records")).isEqualTo(1);
+        AuditRow auditRow = latestAuditRow();
+        assertThat(auditRow.actionType()).isEqualTo("ASSET_TECHNICAL_ATTRIBUTES_UPDATED");
+        assertThat(auditRow.correlationId()).isEqualTo("corr-tech-update");
+        JsonNode payload = objectMapper.readTree(auditRow.changePayload());
+        assertThat(payload.get("asset_id").asText()).isEqualTo(assetId.toString());
+        assertThat(payload.get("asset_tag").asText()).isEqualTo("LAP-TECH");
+        assertThat(payload.get("profile").asText()).isEqualTo("PC_LAPTOP");
+        assertThat(payload.get("changed_keys").toString())
+            .contains("hostname")
+            .contains("anydesk_id")
+            .contains("ip_address")
+            .contains("mac_address");
+        assertThat(payload.get("before").get("hostname").isNull()).isTrue();
+        assertThat(payload.get("after").get("hostname").asText()).isEqualTo("host-01");
+        assertThat(payload.get("sensitivity_note").asText()).contains("operational network");
+        mockUserService.verify();
+    }
+
+    @Test
+    void technicalAttributesSupportPhoneAndPrinterProfiles() throws Exception {
+        UUID tenantId = UUID.randomUUID();
+        UUID tenantAdminId = UUID.randomUUID();
+        UUID phoneAssetId = insertAsset(
+            tenantId,
+            "PHONE-TECH",
+            "SN-PHONE",
+            "  IP PHONE  ",
+            AssetStatus.ACTIVE,
+            null,
+            null
+        );
+        UUID printerAssetId = insertAsset(
+            tenantId,
+            "PRINT-TECH",
+            "SN-PRINT",
+            "mFp",
+            AssetStatus.ACTIVE,
+            null,
+            null
+        );
+
+        expectRoleLookup(tenantId, tenantAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+        expectRoleLookup(tenantId, tenantAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+
+        mockMvc.perform(put("/api/v1/assets/{id}/technical-attributes", phoneAssetId)
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
+                .header(AUTHENTICATED_USER_HEADER, tenantAdminId)
+                .header(AUTHENTICATED_ACTOR_HEADER, "tenant-admin")
+                .contentType(APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(Map.of("values", Map.of(
+                    "phone_ip", "10.10.0.15",
+                    "extension_number", "210",
+                    "sip_line_id", "sip-line-210"
+                )))))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.profile").value("STATIONARY_PHONE"))
+            .andExpect(jsonPath("$.values.phone_ip").value("10.10.0.15"))
+            .andExpect(jsonPath("$.values.extension_number").value("210"))
+            .andExpect(jsonPath("$.values.sip_line_id").value("sip-line-210"));
+
+        mockMvc.perform(put("/api/v1/assets/{id}/technical-attributes", printerAssetId)
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
+                .header(AUTHENTICATED_USER_HEADER, tenantAdminId)
+                .header(AUTHENTICATED_ACTOR_HEADER, "tenant-admin")
+                .contentType(APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(Map.of("values", Map.of(
+                    "printer_ip", "10.20.0.40",
+                    "printer_network_name", "floor-2-mfp",
+                    "printer_placement_note", "near reception"
+                )))))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.profile").value("PRINTER"))
+            .andExpect(jsonPath("$.values.printer_ip").value("10.20.0.40"))
+            .andExpect(jsonPath("$.values.printer_network_name").value("floor-2-mfp"))
+            .andExpect(jsonPath("$.values.printer_placement_note").value("near reception"));
+
+        mockUserService.verify();
+    }
+
+    @Test
+    void technicalAttributesRejectInvalidKeysProfilesAndValues() throws Exception {
+        UUID tenantId = UUID.randomUUID();
+        UUID tenantAdminId = UUID.randomUUID();
+        UUID laptopAssetId = insertAsset(
+            tenantId,
+            "LAP-TECH",
+            "SN-TECH",
+            "Laptop",
+            AssetStatus.ACTIVE,
+            null,
+            null
+        );
+        UUID genericAssetId = insertAsset(
+            tenantId,
+            "ROUTER-TECH",
+            "SN-ROUTER",
+            "Router",
+            AssetStatus.ACTIVE,
+            null,
+            null
+        );
+
+        expectRoleLookup(tenantId, tenantAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+        expectRoleLookup(tenantId, tenantAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+        expectRoleLookup(tenantId, tenantAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+        expectRoleLookup(tenantId, tenantAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+
+        mockMvc.perform(put("/api/v1/assets/{id}/technical-attributes", laptopAssetId)
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
+                .header(AUTHENTICATED_USER_HEADER, tenantAdminId)
+                .header(AUTHENTICATED_ACTOR_HEADER, "tenant-admin")
+                .contentType(APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(Map.of("values", Map.of("unknown_key", "value")))))
+            .andExpect(status().isBadRequest());
+
+        mockMvc.perform(put("/api/v1/assets/{id}/technical-attributes", laptopAssetId)
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
+                .header(AUTHENTICATED_USER_HEADER, tenantAdminId)
+                .header(AUTHENTICATED_ACTOR_HEADER, "tenant-admin")
+                .contentType(APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(Map.of("values", Map.of("phone_ip", "10.0.0.10")))))
+            .andExpect(status().isBadRequest());
+
+        mockMvc.perform(put("/api/v1/assets/{id}/technical-attributes", genericAssetId)
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
+                .header(AUTHENTICATED_USER_HEADER, tenantAdminId)
+                .header(AUTHENTICATED_ACTOR_HEADER, "tenant-admin")
+                .contentType(APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(Map.of("values", Map.of("hostname", "router-01")))))
+            .andExpect(status().isBadRequest());
+
+        mockMvc.perform(put("/api/v1/assets/{id}/technical-attributes", laptopAssetId)
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
+                .header(AUTHENTICATED_USER_HEADER, tenantAdminId)
+                .header(AUTHENTICATED_ACTOR_HEADER, "tenant-admin")
+                .contentType(APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(Map.of("values", Map.of("hostname", "h".repeat(513))))))
+            .andExpect(status().isBadRequest());
+
+        mockUserService.verify();
+        assertThat(countRows("asset_technical_attributes")).isZero();
+        assertThat(countRows("local_audit_records")).isZero();
+    }
+
+    @Test
+    void technicalAttributesReplaceSemanticsNormalizeBlankAndSkipNoopAudit() throws Exception {
+        UUID tenantId = UUID.randomUUID();
+        UUID tenantAdminId = UUID.randomUUID();
+        UUID assetId = insertAsset(
+            tenantId,
+            "LAP-TECH",
+            "SN-TECH",
+            "Laptop",
+            AssetStatus.ACTIVE,
+            null,
+            null
+        );
+
+        expectRoleLookup(tenantId, tenantAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+        expectRoleLookup(tenantId, tenantAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+        expectRoleLookup(tenantId, tenantAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+
+        mockMvc.perform(put("/api/v1/assets/{id}/technical-attributes", assetId)
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
+                .header(AUTHENTICATED_USER_HEADER, tenantAdminId)
+                .header(AUTHENTICATED_ACTOR_HEADER, "tenant-admin")
+                .contentType(APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(Map.of("values", Map.of(
+                    "hostname", "host-01",
+                    "anydesk_id", "123456789"
+                )))))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.values.hostname").value("host-01"))
+            .andExpect(jsonPath("$.values.anydesk_id").value("123456789"));
+
+        Map<String, Object> replaceValues = new LinkedHashMap<>();
+        replaceValues.put("hostname", "   ");
+        replaceValues.put("ip_address", " 10.0.0.25 ");
+        mockMvc.perform(put("/api/v1/assets/{id}/technical-attributes", assetId)
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
+                .header(AUTHENTICATED_USER_HEADER, tenantAdminId)
+                .header(AUTHENTICATED_ACTOR_HEADER, "tenant-admin")
+                .contentType(APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(Map.of("values", replaceValues))))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.values.hostname").doesNotExist())
+            .andExpect(jsonPath("$.values.anydesk_id").doesNotExist())
+            .andExpect(jsonPath("$.values.ip_address").value("10.0.0.25"));
+
+        assertThat(technicalAttributeValue(tenantId, assetId, "hostname")).isNull();
+        assertThat(technicalAttributeValue(tenantId, assetId, "anydesk_id")).isNull();
+        assertThat(technicalAttributeValue(tenantId, assetId, "ip_address")).isEqualTo("10.0.0.25");
+        assertThat(countRows("asset_technical_attributes")).isEqualTo(1);
+        assertThat(countRows("local_audit_records")).isEqualTo(2);
+
+        mockMvc.perform(put("/api/v1/assets/{id}/technical-attributes", assetId)
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
+                .header(AUTHENTICATED_USER_HEADER, tenantAdminId)
+                .header(AUTHENTICATED_ACTOR_HEADER, "tenant-admin")
+                .contentType(APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(Map.of("values", Map.of(
+                    "ip_address", "10.0.0.25"
+                )))))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.values.ip_address").value("10.0.0.25"));
+
+        assertThat(countRows("local_audit_records")).isEqualTo(2);
+        mockUserService.verify();
+    }
+
+    @Test
+    void technicalAttributesUseExistingReadMutateRolesAndTenantIsolation() throws Exception {
+        UUID tenantA = UUID.randomUUID();
+        UUID tenantB = UUID.randomUUID();
+        UUID assetId = insertAsset(
+            tenantA,
+            "LAP-TECH",
+            "SN-TECH",
+            "Laptop",
+            AssetStatus.ACTIVE,
+            null,
+            null
+        );
+        insertTechnicalAttribute(tenantA, assetId, "hostname", "host-01");
+        UUID assetOperatorId = UUID.randomUUID();
+        UUID supportReviewerId = UUID.randomUUID();
+        UUID tenantBAdminId = UUID.randomUUID();
+
+        expectRoleLookup(tenantA, assetOperatorId, List.of(PilotRoleNames.ASSET_OPERATOR));
+        expectRoleLookup(tenantA, assetOperatorId, List.of(PilotRoleNames.ASSET_OPERATOR));
+        expectRoleLookup(tenantA, supportReviewerId, List.of(PilotRoleNames.SUPPORT_REVIEWER));
+        expectRoleLookup(tenantA, supportReviewerId, List.of(PilotRoleNames.SUPPORT_REVIEWER));
+        expectRoleLookup(tenantB, tenantBAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+        expectRoleLookup(tenantB, tenantBAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+
+        mockMvc.perform(get("/api/v1/assets/{id}", assetId)
+                .header(AUTHENTICATED_TENANT_HEADER, tenantA)
+                .header(AUTHENTICATED_USER_HEADER, assetOperatorId))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.technical_attributes.values.hostname").value("host-01"));
+
+        mockMvc.perform(put("/api/v1/assets/{id}/technical-attributes", assetId)
+                .header(AUTHENTICATED_TENANT_HEADER, tenantA)
+                .header(AUTHENTICATED_USER_HEADER, assetOperatorId)
+                .header(AUTHENTICATED_ACTOR_HEADER, "asset-operator")
+                .contentType(APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(Map.of("values", Map.of("hostname", "host-02")))))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.values.hostname").value("host-02"));
+
+        mockMvc.perform(get("/api/v1/assets/{id}", assetId)
+                .header(AUTHENTICATED_TENANT_HEADER, tenantA)
+                .header(AUTHENTICATED_USER_HEADER, supportReviewerId))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.technical_attributes.values.hostname").value("host-02"));
+
+        mockMvc.perform(put("/api/v1/assets/{id}/technical-attributes", assetId)
+                .header(AUTHENTICATED_TENANT_HEADER, tenantA)
+                .header(AUTHENTICATED_USER_HEADER, supportReviewerId)
+                .header(AUTHENTICATED_ACTOR_HEADER, "support-reviewer")
+                .contentType(APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(Map.of("values", Map.of("hostname", "host-03")))))
+            .andExpect(status().isForbidden());
+
+        mockMvc.perform(get("/api/v1/assets/{id}", assetId)
+                .header(AUTHENTICATED_TENANT_HEADER, tenantB)
+                .header(AUTHENTICATED_USER_HEADER, tenantBAdminId))
+            .andExpect(status().isNotFound());
+
+        mockMvc.perform(put("/api/v1/assets/{id}/technical-attributes", assetId)
+                .header(AUTHENTICATED_TENANT_HEADER, tenantB)
+                .header(AUTHENTICATED_USER_HEADER, tenantBAdminId)
+                .header(AUTHENTICATED_ACTOR_HEADER, "tenant-admin")
+                .contentType(APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(Map.of("values", Map.of("hostname", "tenant-b-host")))))
+            .andExpect(status().isNotFound());
+
+        mockMvc.perform(put("/api/v1/assets/{id}/technical-attributes", assetId)
+                .header(AUTHENTICATED_TENANT_HEADER, tenantA)
+                .header(AUTHENTICATED_ACTOR_HEADER, "missing-user")
+                .contentType(APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(Map.of("values", Map.of("hostname", "host-03")))))
+            .andExpect(status().isBadRequest());
+
+        assertThat(technicalAttributeValue(tenantA, assetId, "hostname")).isEqualTo("host-02");
+        mockUserService.verify();
+    }
+
+    @Test
+    void genericPatchDoesNotUpdateTechnicalAttributes() throws Exception {
+        UUID tenantId = UUID.randomUUID();
+        UUID tenantAdminId = UUID.randomUUID();
+        UUID assetId = insertAsset(
+            tenantId,
+            "LAP-TECH",
+            "SN-TECH",
+            "Laptop",
+            AssetStatus.ACTIVE,
+            null,
+            null
+        );
+        insertTechnicalAttribute(tenantId, assetId, "hostname", "host-01");
+
+        expectRoleLookup(tenantId, tenantAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+
+        Map<String, Object> patchPayload = assetPayload("LAP-TECH-UPDATED", "SN-TECH", "Laptop");
+        patchPayload.put("technical_attributes", Map.of("values", Map.of("hostname", "host-02")));
+        mockMvc.perform(patch("/api/v1/assets/{id}", assetId)
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
+                .header(AUTHENTICATED_USER_HEADER, tenantAdminId)
+                .header(AUTHENTICATED_ACTOR_HEADER, "tenant-admin")
+                .contentType(APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(patchPayload)))
+            .andExpect(status().isBadRequest());
+
+        assertThat(technicalAttributeValue(tenantId, assetId, "hostname")).isEqualTo("host-01");
+        assertThat(countRows("asset_technical_attributes")).isEqualTo(1);
+        assertThat(assetRow(tenantId, assetId).assetTag()).isEqualTo("LAP-TECH");
+        assertThat(countRows("local_audit_records")).isEqualTo(0);
         mockUserService.verify();
     }
 

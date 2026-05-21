@@ -1262,23 +1262,23 @@ Approved future planning candidates:
 
 Current recommended next decision:
 
-`Asset QR Lite / Derived Identifier Decision Gate`
+`Asset Type-Specific Technical Attributes v1 Decision Gate`
 
 Optional branch:
 
-If the owner explicitly wants Backend/API Search v1 before QR Lite, open:
+If the owner explicitly wants printable labels / information sheets before technical attributes, open:
 
-`Backend/API Search v1 Planning Packet`
+`Printable Asset Label / Information Sheet Planning Packet`
 
-This optional branch must remain separate from frontend quick find, employee self-search, public search, saved views, advanced filters, Elasticsearch/global search and reporting/dashboard.
+This optional branch must remain separate from scanner/camera/mobile workflow, printer integration, bulk print, public lookup, QR search, Asset 360 and reporting/dashboard.
 
 Optional branch:
 
-If the owner explicitly wants ordinary employee self-view before QR Lite, open:
+If the owner explicitly wants Backend/API QR before technical attributes, open:
 
-`Employee Self-View Access Decision Gate`
+`Backend/API QR Planning Packet`
 
-This optional branch must remain separate from public lookup, full-name-only lookup, QR/export/PDF, Asset 360 and reporting/dashboard.
+This optional branch must remain separate from frontend-derived QR display, scanner/camera/mobile workflow, public lookup, employee self-service and printable label/export scope.
 
 This baseline remains internally validated only.
 
@@ -1640,6 +1640,114 @@ Deferred:
 - technical attributes search;
 - QR/export/PDF;
 - Asset 360/reporting.
+
+This remains internally validated implementation evidence only.
+
+It does not prove:
+
+- release readiness;
+- FTOV start;
+- FTOV exit;
+- production readiness;
+- real tenant validation;
+- real day-to-day operational validation.
+
+## Current Baseline Update — Asset QR Lite Frontend Derived Display Closeout
+
+Asset QR Lite first bounded implementation has been completed and accepted as frontend-only derived QR display.
+
+User-facing feature names:
+
+- `QR Lite`;
+- `QR по инвентарному номеру`.
+
+Implementation interpretation:
+
+- implemented inside the existing Operational Workspace;
+- displayed only inside selected Asset Technical details;
+- generated from existing selected Asset frontend state;
+- QR payload is exactly `asset_tag`;
+- QR is derived presentation only;
+- QR is not canonical Asset identity;
+- QR does not replace `asset_tag`;
+- `asset_tag` remains the canonical inventory/business identifier inside tenant;
+- QR block is read-only;
+- QR is visually secondary and support-oriented.
+
+Displayed near QR:
+
+- asset display title;
+- `asset_tag`;
+- `serial_number`;
+- `asset_type`.
+
+These nearby values are display-only and are not encoded into QR.
+
+QR generation:
+
+- generated locally in frontend;
+- embedded local QR generator was used;
+- no external dependency was added;
+- no remote QR service was used;
+- no package/build pipeline change was made.
+
+Preserved placement boundaries:
+
+- Asset Overview remains QR-free;
+- asset header/card identity area remains QR-free;
+- Controlled Employee Asset Information Sheet remains QR-free;
+- printable label/sheet was not opened;
+- scanner/mobile/public route was not opened.
+
+Excluded from this implementation:
+
+- backend/API QR;
+- backend/API changes;
+- DB changes;
+- migrations;
+- new endpoint;
+- DTO/read-model changes;
+- auth/IAM expansion;
+- new role model;
+- ordinary employee role;
+- employee self-service;
+- public QR lookup;
+- public asset page;
+- QR-based authentication;
+- canonical `qr_code`;
+- canonical `barcode`;
+- canonical `inventory_number`;
+- stored QR value;
+- stored barcode value;
+- backend QR generation;
+- remote QR service;
+- scanner/camera/mobile workflow;
+- printer integration;
+- bulk print;
+- export/PDF/Excel/print;
+- download QR action;
+- label designer;
+- Asset 360;
+- reporting/dashboard;
+- QR search;
+- backend search;
+- Elasticsearch/global search;
+- QR payload from anything except `asset_tag`;
+- note/history/audit payload;
+- assignment/user payload;
+- tenant id payload;
+- URL payload.
+
+Deferred:
+
+- QR in Asset Overview;
+- QR in Controlled Employee Asset Information Sheet;
+- printable label/sheet;
+- scanner/camera/mobile workflow;
+- backend/API QR;
+- QR search;
+- public lookup;
+- employee self-service.
 
 This remains internally validated implementation evidence only.
 

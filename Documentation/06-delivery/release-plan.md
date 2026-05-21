@@ -1930,31 +1930,23 @@ Approved future planning candidates:
 
 Current recommended next decision:
 
-`Asset QR Lite / Derived Identifier Decision Gate`
+`Asset Type-Specific Technical Attributes v1 Decision Gate`
 
 Optional branch:
 
-If the owner explicitly wants Backend/API Search v1 before QR Lite, open:
+If the owner explicitly wants printable labels / information sheets before technical attributes, open:
 
-`Backend/API Search v1 Planning Packet`
+`Printable Asset Label / Information Sheet Planning Packet`
 
-This optional branch must remain separate from frontend quick find, employee self-search, public search, saved views, advanced filters, Elasticsearch/global search and reporting/dashboard.
+This optional branch must remain separate from scanner/camera/mobile workflow, printer integration, bulk print, public lookup, QR search, Asset 360 and reporting/dashboard.
 
 Optional branch:
 
-If the owner explicitly wants ordinary employee self-view before QR Lite, open:
+If the owner explicitly wants Backend/API QR before technical attributes, open:
 
-`Employee Self-View Access Decision Gate`
+`Backend/API QR Planning Packet`
 
-This optional branch must remain separate from public lookup, full-name-only lookup, QR/export/PDF, Asset 360 and reporting/dashboard.
-
-Non-claim rule:
-
-This planning-candidate update does not prove release readiness, FTOV start, FTOV exit, production readiness, real tenant validation or real day-to-day operational validation.
-
-The project remains in:
-
-**Project Stabilization / First-Adopter-Gated Hold**
+This optional branch must remain separate from frontend-derived QR display, scanner/camera/mobile workflow, public lookup, employee self-service and printable label/export scope.
 
 ## Unified Create Launcher Implementation Closeout Clarification
 
@@ -2361,6 +2353,132 @@ Deferred to separate future decisions:
 - technical attributes search;
 - QR/export/PDF;
 - Asset 360/reporting.
+
+### Non-claim rule
+
+This closeout does not prove:
+
+- release readiness;
+- FTOV start;
+- FTOV exit;
+- production readiness;
+- real tenant validation;
+- real day-to-day operational validation.
+
+The project remains in:
+
+**Project Stabilization / First-Adopter-Gated Hold**
+
+## Asset QR Lite Frontend Derived Display Implementation Closeout Clarification
+
+Asset QR Lite first bounded implementation is accepted as completed.
+
+### Delivery interpretation
+
+This implementation is accepted as:
+
+**bounded frontend-only derived QR display inside selected Asset Technical details.**
+
+Implemented scope:
+
+- `QR Lite`;
+- `QR по инвентарному номеру`;
+- read-only QR block inside selected Asset Technical details;
+- QR payload is exactly `asset_tag`;
+- visible encoded value:
+  - `Инвентарный тег: <asset_tag>`;
+- helper copy explaining:
+  - QR is derived;
+  - QR is not a separate identifier;
+  - QR does not open public access;
+- local frontend QR generation;
+- embedded local QR generator;
+- no external dependency;
+- no remote QR service;
+- no package/build pipeline change.
+
+### Display context
+
+Displayed near QR as read-only context:
+
+- asset display title;
+- `asset_tag`;
+- `serial_number`;
+- `asset_type`.
+
+These fields are display-only and are not encoded in QR.
+
+### Preserved boundaries
+
+The implementation preserved:
+
+- existing Operational Workspace shell;
+- existing Tree-and-Detail selected Asset model;
+- existing selected Asset Technical details as secondary/support-oriented surface;
+- Asset Overview as QR-free;
+- Asset header/card identity area as QR-free;
+- Controlled Employee Asset Information Sheet as QR-free;
+- Assign as dedicated flow;
+- Transfer as dedicated flow;
+- Return as dedicated flow;
+- Retire as not surfaced;
+- generic edit as master-record-only.
+
+### Not opened
+
+This implementation did not open:
+
+- backend/API QR;
+- backend/API changes;
+- DB changes;
+- migrations;
+- new endpoints;
+- DTO/read-model changes;
+- auth/IAM expansion;
+- new role model;
+- ordinary employee role;
+- employee self-service;
+- public QR lookup;
+- public asset page;
+- QR-based authentication;
+- canonical `qr_code`;
+- canonical `barcode`;
+- canonical `inventory_number`;
+- stored QR value;
+- stored barcode value;
+- backend QR generation;
+- remote QR service;
+- scanner/camera/mobile workflow;
+- printer integration;
+- bulk print;
+- export/PDF/Excel/print;
+- download QR action;
+- label designer;
+- Asset 360;
+- reporting/dashboard;
+- QR search;
+- backend search;
+- Elasticsearch/global search;
+- QR payload beyond `asset_tag`;
+- note/history/audit payload;
+- assignment/user payload;
+- tenant id payload;
+- URL payload.
+
+### Deferred
+
+Deferred to separate future decisions:
+
+- QR in Asset Overview;
+- QR in Controlled Employee Asset Information Sheet;
+- printable label/sheet;
+- scanner/camera/mobile workflow;
+- backend/API QR;
+- QR search;
+- public lookup;
+- employee self-service;
+- printer integration;
+- bulk print/export.
 
 ### Non-claim rule
 

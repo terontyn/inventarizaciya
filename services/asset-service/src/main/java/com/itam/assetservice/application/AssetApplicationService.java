@@ -125,12 +125,13 @@ public class AssetApplicationService {
         boolean touchesNote,
         boolean touchesAssignedUserId,
         boolean touchesLocationId,
+        boolean touchesTechnicalAttributes,
         AuditMetadata auditMetadata
     ) {
-        if (touchesAssignedUserId || touchesLocationId) {
+        if (touchesAssignedUserId || touchesLocationId || touchesTechnicalAttributes) {
             throw new ResponseStatusException(
                 HttpStatus.BAD_REQUEST,
-                "Generic PATCH must not modify assigned_user_id or location_id"
+                "Generic PATCH must not modify assigned_user_id, location_id, or technical_attributes"
             );
         }
 

@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.itam.assetservice.domain.AssetResponsibilityFactRepository;
 import com.itam.assetservice.domain.AssetRepository;
+import com.itam.assetservice.domain.AssetTechnicalAttributeRepository;
 import com.itam.assetservice.domain.AuditEntity;
 import com.itam.assetservice.domain.AuditRecordRepository;
 import com.itam.assetservice.infrastructure.SqlTenantScope;
@@ -18,6 +19,7 @@ class TenantScopedRepositoryContractTest {
     void tenantScopedRepositoryMethodsRequireTenantIdAsFirstParameter() {
         assertTenantScopeFirstParameter(AssetRepository.class);
         assertTenantScopeFirstParameter(AssetResponsibilityFactRepository.class);
+        assertTenantScopeFirstParameter(AssetTechnicalAttributeRepository.class);
         assertAuditReadMethodScope();
     }
 

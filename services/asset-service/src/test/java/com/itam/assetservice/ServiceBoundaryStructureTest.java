@@ -8,6 +8,7 @@ import com.itam.assetservice.application.AssetAuthorizationService;
 import com.itam.assetservice.application.AssetReferenceValidator;
 import com.itam.assetservice.application.AssetReviewReadService;
 import com.itam.assetservice.application.AssetResponsibilityApplicationService;
+import com.itam.assetservice.application.AssetTechnicalAttributeApplicationService;
 import com.itam.assetservice.application.AuditWriter;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -26,6 +27,7 @@ class ServiceBoundaryStructureTest {
             AssetAuthorizationService.class,
             AssetReviewReadService.class,
             AssetResponsibilityApplicationService.class,
+            AssetTechnicalAttributeApplicationService.class,
             AssetReferenceValidator.class,
             AuditWriter.class
         );

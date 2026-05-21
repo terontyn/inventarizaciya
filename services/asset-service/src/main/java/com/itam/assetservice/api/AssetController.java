@@ -6,8 +6,10 @@ import com.itam.assetservice.application.AssetApplicationService;
 import com.itam.assetservice.application.AssetAuthorizationService;
 import com.itam.assetservice.application.AssetReviewReadService;
 import com.itam.assetservice.application.AssetResponsibilityApplicationService;
+import com.itam.assetservice.application.AssetTechnicalAttributeApplicationService;
 import com.itam.assetservice.domain.Asset;
 import com.itam.assetservice.domain.AssetResponsibilityFact;
+import com.itam.assetservice.domain.AssetTechnicalAttributes;
 import com.itam.assetservice.domain.AuditRecord;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -15,7 +17,10 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.net.URI;
 import java.time.Instant;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -24,6 +29,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -38,6 +44,7 @@ public class AssetController {
     private final AssetAuthorizationService assetAuthorizationService;
     private final AssetReviewReadService assetReviewReadService;
     private final AssetResponsibilityApplicationService assetResponsibilityApplicationService;
+    private final AssetTechnicalAttributeApplicationService assetTechnicalAttributeApplicationService;
     private final AuthenticatedRequestContextExtractor requestContextExtractor;
 
     public AssetController(
@@ -45,12 +52,14 @@ public class AssetController {
         AssetAuthorizationService assetAuthorizationService,
         AssetReviewReadService assetReviewReadService,
         AssetResponsibilityApplicationService assetResponsibilityApplicationService,
+        AssetTechnicalAttributeApplicationService assetTechnicalAttributeApplicationService,
         AuthenticatedRequestContextExtractor requestContextExtractor
     ) {
         this.assetApplicationService = assetApplicationService;
         this.assetAuthorizationService = assetAuthorizationService;
         this.assetReviewReadService = assetReviewReadService;
         this.assetResponsibilityApplicationService = assetResponsibilityApplicationService;
+        this.assetTechnicalAttributeApplicationService = assetTechnicalAttributeApplicationService;
         this.requestContextExtractor = requestContextExtractor;
     }
 
@@ -90,11 +99,15 @@ public class AssetController {
     }
 
     @GetMapping("/{id}")
-    public AssetResponse get(@PathVariable UUID id, HttpServletRequest servletRequest) {
+    public AssetDetailResponse get(@PathVariable UUID id, HttpServletRequest servletRequest) {
         UUID tenantId = requestContextExtractor.requireTenantId(servletRequest);
         UUID authenticatedUserId = requestContextExtractor.requireAuthenticatedUserId(servletRequest);
         assetAuthorizationService.requireAssetReadAccess(tenantId, authenticatedUserId);
-        return AssetResponse.from(assetApplicationService.findById(tenantId, id));
+        Asset asset = assetApplicationService.findById(tenantId, id);
+        return AssetDetailResponse.from(
+            asset,
+            assetTechnicalAttributeApplicationService.findForAsset(asset)
+        );
     }
 
     @GetMapping("/{id}/history")
@@ -144,6 +157,24 @@ public class AssetController {
             request.touchesNote(),
             request.touchesAssignedUserId(),
             request.touchesLocationId(),
+            request.touchesTechnicalAttributes(),
+            requestContextExtractor.requireAuditMetadata(servletRequest)
+        ));
+    }
+
+    @PutMapping("/{id}/technical-attributes")
+    public TechnicalAttributesUpdateResponse updateTechnicalAttributes(
+        @PathVariable UUID id,
+        @RequestBody JsonNode request,
+        HttpServletRequest servletRequest
+    ) {
+        UUID tenantId = requestContextExtractor.requireTenantId(servletRequest);
+        UUID authenticatedUserId = requestContextExtractor.requireAuthenticatedUserId(servletRequest);
+        assetAuthorizationService.requireAssetMutateAccess(tenantId, authenticatedUserId);
+        return TechnicalAttributesUpdateResponse.from(assetTechnicalAttributeApplicationService.replace(
+            tenantId,
+            id,
+            technicalAttributeValues(request),
             requestContextExtractor.requireAuditMetadata(servletRequest)
         ));
     }
@@ -239,7 +270,8 @@ public class AssetController {
         JsonNode displayName,
         JsonNode note,
         JsonNode assignedUserId,
-        JsonNode locationId
+        JsonNode locationId,
+        JsonNode technicalAttributes
     ) {
         public boolean touchesDisplayName() {
             return displayName != null;
@@ -255,6 +287,10 @@ public class AssetController {
 
         public boolean touchesLocationId() {
             return locationId != null;
+        }
+
+        public boolean touchesTechnicalAttributes() {
+            return technicalAttributes != null;
         }
 
         public String displayNameValue() {
@@ -302,6 +338,70 @@ public class AssetController {
                 asset.locationId(),
                 asset.displayName(),
                 asset.note()
+            );
+        }
+    }
+
+    public record AssetDetailResponse(
+        UUID id,
+        String assetTag,
+        String serialNumber,
+        String assetType,
+        String status,
+        UUID assignedUserId,
+        UUID locationId,
+        String displayName,
+        String note,
+        TechnicalAttributesResponse technicalAttributes
+    ) {
+
+        private static AssetDetailResponse from(
+            Asset asset,
+            AssetTechnicalAttributes technicalAttributes
+        ) {
+            return new AssetDetailResponse(
+                asset.id(),
+                asset.assetTag(),
+                asset.serialNumber(),
+                asset.assetType(),
+                asset.status(),
+                asset.assignedUserId(),
+                asset.locationId(),
+                asset.displayName(),
+                asset.note(),
+                TechnicalAttributesResponse.from(technicalAttributes)
+            );
+        }
+    }
+
+    public record TechnicalAttributesResponse(
+        String profile,
+        Map<String, String> values
+    ) {
+
+        private static TechnicalAttributesResponse from(AssetTechnicalAttributes technicalAttributes) {
+            return new TechnicalAttributesResponse(
+                technicalAttributes.profile().name(),
+                technicalAttributes.values()
+            );
+        }
+    }
+
+    public record TechnicalAttributesUpdateResponse(
+        UUID assetId,
+        String assetTag,
+        String profile,
+        Map<String, String> values
+    ) {
+
+        private static TechnicalAttributesUpdateResponse from(
+            AssetTechnicalAttributeApplicationService.UpdateResult result
+        ) {
+            return new TechnicalAttributesUpdateResponse(
+                result.assetId(),
+                result.assetTag(),
+                result.profile().name(),
+                result.values()
             );
         }
     }
@@ -372,5 +472,51 @@ public class AssetController {
                 auditRecord.changePayload()
             );
         }
+    }
+
+    private static Map<String, String> technicalAttributeValues(JsonNode root) {
+        if (root == null || !root.isObject()) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "Technical attributes request must be an object"
+            );
+        }
+
+        Iterator<Map.Entry<String, JsonNode>> rootFields = root.fields();
+        while (rootFields.hasNext()) {
+            Map.Entry<String, JsonNode> field = rootFields.next();
+            if (!"values".equals(field.getKey())) {
+                throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Technical attributes request supports only values"
+                );
+            }
+        }
+
+        JsonNode valuesNode = root.get("values");
+        if (valuesNode == null || !valuesNode.isObject()) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "values must be an object"
+            );
+        }
+
+        Map<String, String> values = new LinkedHashMap<>();
+        Iterator<Map.Entry<String, JsonNode>> fields = valuesNode.fields();
+        while (fields.hasNext()) {
+            Map.Entry<String, JsonNode> field = fields.next();
+            JsonNode value = field.getValue();
+            if (value == null || value.isNull()) {
+                values.put(field.getKey(), null);
+            } else if (value.isTextual()) {
+                values.put(field.getKey(), value.asText());
+            } else {
+                throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "technical attribute values must be strings or null"
+                );
+            }
+        }
+        return values;
     }
 }

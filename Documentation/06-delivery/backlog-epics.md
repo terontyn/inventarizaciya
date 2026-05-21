@@ -870,11 +870,15 @@ Required next step:
 
 #### 6. QR Lite / Derived Asset Identifier
 
-Status: approved as future product decision candidate.
+Status: first bounded implementation accepted as frontend-only derived QR display; printable label/sheet, scanner workflow, public lookup and backend/API QR remain deferred.
+
 
 Purpose:
 
-- show or export a QR representation for an asset / information sheet.
+- show a derived QR representation for a selected Asset inside the managed Operational Workspace;
+- support physical-to-record recognition through existing `asset_tag`;
+- preserve `asset_tag` as the canonical inventory/business identifier;
+- keep printable label/sheet and information-sheet QR as separate deferred planning tracks.
 
 Candidate interpretation:
 
@@ -888,10 +892,106 @@ Boundary:
 - no bulk label printing is approved;
 - no mobile scanning workflow is approved;
 - no new `qr_code` / `barcode` canonical DB field is approved by this candidate note.
+- no export/PDF/Excel/print workflow is approved by this candidate note;
+- Controlled Employee Asset Information Sheet remains QR-free unless separately approved later.
+Implementation status:
+
+- first bounded implementation completed and accepted;
+- implemented as `QR Lite` / `QR по инвентарному номеру`;
+- implemented inside existing Operational Workspace;
+- displayed only in selected Asset Technical details;
+- implementation is frontend-only;
+- QR payload is exactly `asset_tag`;
+- QR is generated from existing selected Asset frontend state;
+- QR is read-only;
+- QR is derived presentation only;
+- QR is not canonical Asset identity;
+- QR does not replace `asset_tag`;
+- `asset_tag` remains the canonical inventory/business identifier inside tenant.
+
+Displayed near QR:
+
+- asset display title;
+- `asset_tag`;
+- `serial_number`;
+- `asset_type`.
+
+These nearby values are display-only and are not encoded into QR.
+
+QR generation:
+
+- local frontend generation;
+- embedded local QR generator;
+- no external dependency;
+- no remote QR service;
+- no package/build pipeline change.
+
+Preserved placement boundaries:
+
+- Asset Overview remains QR-free;
+- asset header/card identity area remains QR-free;
+- Controlled Employee Asset Information Sheet remains QR-free;
+- printable label/sheet was not opened;
+- scanner/mobile/public route was not opened.
+
+Preserved boundaries:
+
+- no backend/API QR;
+- no backend/API changes;
+- no DB changes;
+- no migrations;
+- no new endpoint;
+- no DTO/read-model changes;
+- no auth/IAM expansion;
+- no ordinary employee role;
+- no employee self-service;
+- no public QR lookup;
+- no public asset page;
+- no QR-based authentication;
+- no canonical `qr_code`;
+- no canonical `barcode`;
+- no canonical `inventory_number`;
+- no stored QR value;
+- no stored barcode value;
+- no backend QR generation;
+- no remote QR service;
+- no scanner/camera/mobile workflow;
+- no printer integration;
+- no bulk print;
+- no export/PDF/Excel/print;
+- no download QR action;
+- no label designer;
+- no Asset 360;
+- no reporting/dashboard;
+- no QR search;
+- no backend search;
+- no Elasticsearch/global search;
+- no QR payload from anything except `asset_tag`;
+- no note/history/audit payload;
+- no assignment/user payload;
+- no tenant id payload;
+- no URL payload.
+
+Deferred:
+
+- QR in Asset Overview;
+- QR in Controlled Employee Asset Information Sheet;
+- printable label/sheet;
+- scanner/camera/mobile workflow;
+- backend/API QR;
+- QR search;
+- public lookup;
+- employee self-service;
+- printer integration;
+- bulk print/export.
 
 Required next step:
 
-- `Asset QR Lite / Derived Identifier Decision Gate`.
+- no further QR Lite implementation is opened by this closeout;
+- if owner wants printable labels / information sheets, open `Printable Asset Label / Information Sheet Planning Packet`;
+- if owner wants scanner / camera / mobile workflow, open separate scanner workflow product decision;
+- if owner wants backend/API QR or QR lookup, open `Backend/API QR Planning Packet`;
+- otherwise continue to the next owner-approved planning candidate.
 
 #### 7. Asset Type-Specific Technical Attributes
 
@@ -954,35 +1054,34 @@ Not approved by this note:
 
 
 
-### Planning priority after Operational Search v1 Frontend Quick Find
+### Planning priority after Asset QR Lite Frontend Derived Display
 
-Unified Create Launcher, Simplified Asset Actions UX, ADR-0005 Asset Delete Semantics, Controlled Employee Asset Information Sheet, and Operational Search v1 Frontend Quick Find are implemented/accepted at their approved scope levels.
+Unified Create Launcher, Simplified Asset Actions UX, ADR-0005 Asset Delete Semantics, Controlled Employee Asset Information Sheet, Operational Search v1 Frontend Quick Find, and Asset QR Lite Frontend Derived Display are implemented/accepted at their approved scope levels.
 
-Operational Search v1 first bounded implementation is accepted as frontend-only controlled quick find.
+Asset QR Lite first bounded implementation is accepted as frontend-only derived QR display from `asset_tag` in selected Asset Technical details.
 
-Backend/API Search v1 remains deferred as a separate planning track.
+Printable label/sheet, scanner workflow, public lookup and Backend/API QR remain deferred as separate planning tracks.
 
 Remaining recommended owner-priority order:
 
-1. QR Lite.
-2. Asset Type-Specific Technical Attributes.
+1. Asset Type-Specific Technical Attributes.
 
 The first recommended next stage is:
 
-`Asset QR Lite / Derived Identifier Decision Gate`
+`Asset Type-Specific Technical Attributes v1 Decision Gate`
 
 Optional branch:
 
-If the owner explicitly wants server-side search before QR Lite, open:
+If the owner explicitly wants printable labels / information sheets before technical attributes, open:
 
-`Backend/API Search v1 Planning Packet`
+`Printable Asset Label / Information Sheet Planning Packet`
 
-This optional branch must remain separate from frontend quick find, employee self-search, public search, saved views, advanced filters, Elasticsearch/global search and reporting/dashboard.
+This optional branch must remain separate from scanner/camera/mobile workflow, printer integration, bulk print, public lookup, QR search, Asset 360 and reporting/dashboard.
 
 Optional branch:
 
-If the owner explicitly wants ordinary employee self-view before QR Lite, open:
+If the owner explicitly wants Backend/API QR before technical attributes, open:
 
-`Employee Self-View Access Decision Gate`
+`Backend/API QR Planning Packet`
 
-This optional branch must remain separate from public lookup, full-name-only lookup, QR/export/PDF, Asset 360 and reporting/dashboard.
+This optional branch must remain separate from frontend-derived QR display, scanner/camera/mobile workflow, public lookup, employee self-service and printable label/export scope.

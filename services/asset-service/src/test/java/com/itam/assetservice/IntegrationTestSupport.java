@@ -63,6 +63,7 @@ public abstract class IntegrationTestSupport {
 
     @BeforeEach
     void setUp() {
+        jdbcTemplate.update("DELETE FROM asset_technical_attributes");
         jdbcTemplate.update("DELETE FROM asset_responsibility_facts");
         jdbcTemplate.update("DELETE FROM local_audit_records");
         jdbcTemplate.update("DELETE FROM assets");
@@ -251,6 +252,35 @@ public abstract class IntegrationTestSupport {
             tenantId,
             assetId
         );
+    }
+
+    protected void insertTechnicalAttribute(
+        UUID tenantId,
+        UUID assetId,
+        String key,
+        String value
+    ) {
+        jdbcTemplate.update(
+            "INSERT INTO asset_technical_attributes ("
+                + "tenant_id, asset_id, attribute_key, attribute_value, created_at, updated_at"
+                + ") VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
+            tenantId,
+            assetId,
+            key,
+            value
+        );
+    }
+
+    protected String technicalAttributeValue(UUID tenantId, UUID assetId, String key) {
+        List<String> values = jdbcTemplate.query(
+            "SELECT attribute_value FROM asset_technical_attributes "
+                + "WHERE tenant_id = ? AND asset_id = ? AND attribute_key = ?",
+            (resultSet, rowNum) -> resultSet.getString("attribute_value"),
+            tenantId,
+            assetId,
+            key
+        );
+        return values.isEmpty() ? null : values.get(0);
     }
 
     protected void expectUserLookup(
