@@ -1294,6 +1294,105 @@ code {
     background: rgba(255, 255, 255, 0.58);
 }
 
+.asset-technical-attributes {
+    display: grid;
+    gap: 0.9rem;
+    margin: 1rem 0;
+    padding: 1rem;
+    border: 1px solid rgba(37, 99, 235, 0.14);
+    border-radius: var(--radius-md);
+    background: rgba(239, 246, 255, 0.48);
+}
+
+.asset-technical-attributes-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    align-items: flex-start;
+}
+
+.asset-technical-attributes-header h4 {
+    margin: 0.2rem 0 0;
+}
+
+.asset-technical-attributes-help {
+    display: grid;
+    gap: 0.35rem;
+    margin: 0;
+    padding-left: 1.1rem;
+    color: var(--muted);
+    line-height: 1.45;
+}
+
+.asset-technical-attributes-groups,
+.asset-technical-attributes-form {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.asset-technical-attributes-group {
+    display: grid;
+    gap: 0.55rem;
+    margin: 0;
+    padding: 0.75rem;
+    border: 1px solid rgba(22, 32, 42, 0.08);
+    border-radius: var(--radius-sm);
+    background: rgba(255, 255, 255, 0.68);
+}
+
+.asset-technical-attributes-group h5,
+.asset-technical-attributes-group legend {
+    margin: 0;
+    color: var(--ink);
+    font-size: 0.9rem;
+    font-weight: 900;
+}
+
+.asset-technical-attributes-group dl {
+    display: grid;
+    gap: 0.4rem;
+    margin: 0;
+}
+
+.asset-technical-attributes-row {
+    display: grid;
+    grid-template-columns: minmax(8rem, 0.72fr) minmax(0, 1fr);
+    gap: 0.75rem;
+    align-items: baseline;
+}
+
+.asset-technical-attributes-row dt {
+    display: grid;
+    gap: 0.1rem;
+    color: var(--muted);
+    font-size: 0.78rem;
+    font-weight: 900;
+}
+
+.asset-technical-attributes-row dt small {
+    font-weight: 700;
+}
+
+.asset-technical-attributes-row dd {
+    margin: 0;
+    overflow-wrap: anywhere;
+    color: var(--ink);
+    font-weight: 760;
+}
+
+.asset-technical-attributes-value-empty,
+.asset-technical-attributes-empty {
+    color: var(--muted);
+}
+
+.asset-technical-attributes-empty {
+    margin: 0;
+    padding: 0.75rem;
+    border: 1px dashed rgba(22, 32, 42, 0.16);
+    border-radius: var(--radius-sm);
+    background: rgba(255, 255, 255, 0.56);
+}
+
 .employee-info-sheet {
     display: grid;
     gap: 0.9rem;
@@ -1889,6 +1988,11 @@ code {
     .asset-qr-lite-context {
         grid-template-columns: 1fr;
     }
+
+    .asset-technical-attributes-row {
+        grid-template-columns: 1fr;
+        gap: 0.25rem;
+    }
 }
 
 @media (max-width: 780px) {
@@ -1926,6 +2030,7 @@ code {
     .asset-action-group-header,
     .asset-qr-lite-header,
     .asset-qr-lite-body,
+    .asset-technical-attributes-header,
     .employee-info-header {
         flex-direction: column;
     }

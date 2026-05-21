@@ -72,6 +72,61 @@ const CREATE_TARGETS = {
 
 const QUICK_FIND_MIN_LENGTH = 2;
 const QUICK_FIND_RESULT_LIMIT = 6;
+const TECHNICAL_ATTRIBUTE_MAX_LENGTH = 512;
+const TECHNICAL_ATTRIBUTE_UNSUPPORTED_PROFILE = "UNSUPPORTED_GENERIC";
+const TECHNICAL_ATTRIBUTE_PROFILE_GROUPS = {
+    PC_LAPTOP: [
+        {
+            title: "Данные устройства",
+            fields: [
+                { key: "hostname", label: "Hostname", secondaryLabel: "Имя компьютера" }
+            ]
+        },
+        {
+            title: "Сетевые данные",
+            fields: [
+                { key: "ip_address", label: "IP-адрес" },
+                { key: "mac_address", label: "MAC-адрес" }
+            ]
+        },
+        {
+            title: "Удалённый доступ",
+            fields: [
+                { key: "anydesk_id", label: "AnyDesk ID" }
+            ]
+        }
+    ],
+    STATIONARY_PHONE: [
+        {
+            title: "Телефонные данные",
+            fields: [
+                { key: "phone_ip", label: "IP телефона" },
+                { key: "extension_number", label: "Внутренний номер" },
+                { key: "sip_line_id", label: "SIP / линия" }
+            ]
+        }
+    ],
+    PRINTER: [
+        {
+            title: "Данные принтера",
+            fields: [
+                { key: "printer_network_name", label: "Сетевое имя принтера" }
+            ]
+        },
+        {
+            title: "Сетевые данные",
+            fields: [
+                { key: "printer_ip", label: "IP принтера" }
+            ]
+        },
+        {
+            title: "Размещение",
+            fields: [
+                { key: "printer_placement_note", label: "Примечание по размещению", multiline: true }
+            ]
+        }
+    ]
+};
 const QR_LITE_VERSIONS = [
     { version: 1, dataCodewords: 19, eccCodewords: 7, alignment: [] },
     { version: 2, dataCodewords: 34, eccCodewords: 10, alignment: [6, 18] },
@@ -165,6 +220,7 @@ const AUDIT_ACTION_LABELS = {
 const ACTION_MESSAGES = {
     assetCreated: "Актив создан. Карточка открыта и обновлена.",
     assetUpdated: "Данные актива сохранены. Ответственность не менялась.",
+    technicalAttributesUpdated: "Технические данные сохранены. Инвентарный идентификатор и ответственность не менялись.",
     assetAssigned: "Assign выполнен. Актив выдан выбранному пользователю.",
     assetTransferred: "Transfer выполнен. Изменение ответственности зафиксировано.",
     assetReturned: "Return выполнен. Текущая пользовательская ответственность завершена.",
@@ -273,6 +329,7 @@ function createEmptyBusyState() {
         refreshAll: false,
         createAsset: false,
         updateAsset: false,
+        technicalAttributes: false,
         assignAsset: false,
         transferAsset: false,
         returnAsset: false,
@@ -311,6 +368,7 @@ const state = {
     activeReviewSection: "history",
     activeAdminResource: "roles",
     selectedAdminItemId: null,
+    technicalAttributesEditing: false,
     selectedTreeNode: { type: TREE_NODE_TYPES.WORKSPACE },
     expandedTreeNodes: new Set(),
     treeFilter: "",
@@ -719,6 +777,7 @@ async function loadAssetBundle(assetId) {
         ]);
 
         state.selectedAsset = asset;
+        state.technicalAttributesEditing = false;
         state.assetHistory = history.items ?? [];
         state.assetAudit = audit.items ?? [];
     });
@@ -961,6 +1020,26 @@ function buildAssetUpsertPayload(formData) {
     return payload;
 }
 
+function buildTechnicalAttributesPayload(formData, profile) {
+    const fields = getTechnicalAttributeFields(profile);
+    if (fields.length === 0) {
+        throw new Error("Для этого типа актива технические атрибуты v1 не настроены.");
+    }
+
+    const values = {};
+    fields.forEach((field) => {
+        const value = formDataValue(formData, field.key);
+        if (value.length > TECHNICAL_ATTRIBUTE_MAX_LENGTH) {
+            throw new Error(`Поле "${field.label}" длиннее ${TECHNICAL_ATTRIBUTE_MAX_LENGTH} символов.`);
+        }
+        if (value) {
+            values[field.key] = value;
+        }
+    });
+
+    return { values };
+}
+
 function buildAdminPayload(config, formData) {
     const payload = {};
     for (const field of config.fields) {
@@ -1005,6 +1084,61 @@ function assetDisplayTitle(asset) {
 
 function assetCanonicalTag(asset) {
     return optionalAssetText(asset?.asset_tag);
+}
+
+function getAssetTechnicalAttributes(asset) {
+    const source = asset?.technical_attributes && typeof asset.technical_attributes === "object"
+        ? asset.technical_attributes
+        : {};
+    const profile = TECHNICAL_ATTRIBUTE_PROFILE_GROUPS[source.profile]
+        ? source.profile
+        : TECHNICAL_ATTRIBUTE_UNSUPPORTED_PROFILE;
+    const values = source.values && typeof source.values === "object" && !Array.isArray(source.values)
+        ? source.values
+        : {};
+    return { profile, values };
+}
+
+function getTechnicalAttributeGroups(profile) {
+    return TECHNICAL_ATTRIBUTE_PROFILE_GROUPS[profile] || [];
+}
+
+function getTechnicalAttributeFields(profile) {
+    return getTechnicalAttributeGroups(profile).flatMap((group) => group.fields);
+}
+
+function hasStoredTechnicalAttributeValues(values, profile) {
+    return getTechnicalAttributeFields(profile)
+        .some((field) => Boolean(optionalAssetText(values?.[field.key])));
+}
+
+function mergeSelectedAssetTechnicalAttributes(response) {
+    if (!state.selectedAsset) {
+        return;
+    }
+
+    const current = getAssetTechnicalAttributes(state.selectedAsset);
+    const nested = response?.technical_attributes && typeof response.technical_attributes === "object"
+        ? response.technical_attributes
+        : {};
+    const profile = TECHNICAL_ATTRIBUTE_PROFILE_GROUPS[response?.profile]
+        ? response.profile
+        : TECHNICAL_ATTRIBUTE_PROFILE_GROUPS[nested.profile]
+            ? nested.profile
+            : current.profile;
+    const responseValues = response?.values && typeof response.values === "object" && !Array.isArray(response.values)
+        ? response.values
+        : nested.values && typeof nested.values === "object" && !Array.isArray(nested.values)
+            ? nested.values
+            : {};
+
+    state.selectedAsset = {
+        ...state.selectedAsset,
+        technical_attributes: {
+            profile,
+            values: responseValues
+        }
+    };
 }
 
 function validateRequiredFields(payload, labels) {
@@ -1110,6 +1244,26 @@ async function onAssetDetailSubmit(event) {
             return;
         }
 
+        if (form.id === "asset-technical-attributes-form") {
+            if (isBusy("technicalAttributes")) {
+                return;
+            }
+            const technicalAttributes = getAssetTechnicalAttributes(state.selectedAsset);
+            const payload = buildTechnicalAttributesPayload(new FormData(form), technicalAttributes.profile);
+            await withBusy("technicalAttributes", async () => {
+                const saved = await requestJson("asset", `/api/v1/assets/${state.selectedAssetId}/technical-attributes`, {
+                    method: "PUT",
+                    body: payload
+                });
+                mergeSelectedAssetTechnicalAttributes(saved);
+                state.activeAssetSection = "technical";
+                state.technicalAttributesEditing = false;
+            });
+            scrollToElement(ui.workspaceDetail || ui.assetDetailPanel);
+            showActionSuccess("technicalAttributesUpdated", { scope: FEEDBACK_SCOPES.ASSET, assetId: state.selectedAssetId });
+            return;
+        }
+
         if (form.id === "asset-assign-form") {
             if (isBusy("assignAsset")) {
                 return;
@@ -1190,6 +1344,10 @@ async function onAssetDetailSubmit(event) {
 }
 
 function onAssetInteractionClick(event) {
+    if (handleTechnicalAttributesClick(event)) {
+        return;
+    }
+
     const screenButton = event.target.closest("[data-screen]");
     if (screenButton) {
         activateScreen(screenButton.dataset.screen);
@@ -1232,6 +1390,29 @@ function onAssetInteractionClick(event) {
     if (cardButton) {
         scrollToElement(ui.assetDetailPanel);
     }
+}
+
+function handleTechnicalAttributesClick(event) {
+    const editButton = event.target.closest("[data-technical-attributes-edit]");
+    if (editButton) {
+        state.technicalAttributesEditing = true;
+        state.activeAssetSection = "technical";
+        render();
+        scrollToElement(ui.workspaceDetail || ui.assetDetailPanel);
+        focusFirstFormControl("asset-technical-attributes-form");
+        return true;
+    }
+
+    const cancelButton = event.target.closest("[data-technical-attributes-cancel]");
+    if (cancelButton) {
+        state.technicalAttributesEditing = false;
+        state.activeAssetSection = "technical";
+        render();
+        scrollToElement(ui.workspaceDetail || ui.assetDetailPanel);
+        return true;
+    }
+
+    return false;
 }
 
 function openCreateTarget(target) {
@@ -1475,6 +1656,10 @@ function onQuickFindPanelClick(event) {
 }
 
 function onWorkspaceDetailClick(event) {
+    if (handleTechnicalAttributesClick(event)) {
+        return;
+    }
+
     const toggle = event.target.closest("[data-tree-toggle]");
     if (toggle) {
         toggleTreeExpansion(toggle.dataset.treeToggle);
@@ -1547,7 +1732,7 @@ function onWorkspaceDetailSubmit(event) {
         return;
     }
 
-    if (["asset-update-form", "asset-assign-form", "asset-transfer-form", "asset-return-form"].includes(form.id)) {
+    if (["asset-update-form", "asset-technical-attributes-form", "asset-assign-form", "asset-transfer-form", "asset-return-form"].includes(form.id)) {
         onAssetDetailSubmit(event);
         return;
     }
@@ -3813,6 +3998,115 @@ function renderAssetHistoryAuditSection() {
     `;
 }
 
+function renderAssetTechnicalAttributesBlock(asset) {
+    const technicalAttributes = getAssetTechnicalAttributes(asset);
+    const groups = getTechnicalAttributeGroups(technicalAttributes.profile);
+    const isSupported = groups.length > 0;
+    const canEdit = isSupported && canAssetMutate();
+    const isEditing = canEdit && state.technicalAttributesEditing;
+
+    return `
+        <section class="asset-technical-attributes" aria-label="Технические атрибуты">
+            <div class="asset-technical-attributes-header">
+                <div>
+                    <p class="section-kicker">Технические данные</p>
+                    <h4>Технические атрибуты</h4>
+                </div>
+                <span class="summary-pill">${escapeHtml(canEdit ? technicalAttributes.profile : "Только для чтения")}</span>
+            </div>
+            <ul class="asset-technical-attributes-help">
+                <li>Технические данные зависят от типа актива и заполняются вручную.</li>
+                <li>Эти данные не являются инвентарным идентификатором.</li>
+                <li>Инвентарный идентификатор остаётся: asset_tag.</li>
+                <li>Данные не используются для QR Lite, быстрого поиска или информационного листа сотрудника.</li>
+                <li>Некоторые технические данные могут содержать сетевую или удалённую информацию.</li>
+            </ul>
+            ${isSupported
+                ? (isEditing
+                    ? renderTechnicalAttributeEditForm(technicalAttributes.profile, technicalAttributes.values)
+                    : renderTechnicalAttributeReadView(technicalAttributes.profile, technicalAttributes.values, canEdit))
+                : `<p class="asset-technical-attributes-empty">Для этого типа актива технические атрибуты v1 не настроены.</p>`}
+        </section>
+    `;
+}
+
+function renderTechnicalAttributeReadView(profile, values, canEdit) {
+    const hasValues = hasStoredTechnicalAttributeValues(values, profile);
+    return `
+        ${hasValues ? "" : `<p class="asset-technical-attributes-empty">Технические данные пока не заполнены.</p>`}
+        <div class="asset-technical-attributes-groups">
+            ${getTechnicalAttributeGroups(profile).map((group) => `
+                <section class="asset-technical-attributes-group">
+                    <h5>${escapeHtml(group.title)}</h5>
+                    <dl>
+                        ${group.fields.map((field) => renderTechnicalAttributeReadRow(field, values)).join("")}
+                    </dl>
+                </section>
+            `).join("")}
+        </div>
+        <div class="button-row button-row-inline">
+            ${canEdit
+                ? `<button class="button button-secondary" type="button" data-technical-attributes-edit ${isBusy("technicalAttributes") ? "disabled" : ""}>Редактировать технические данные</button>`
+                : `<span class="summary-pill">Только для чтения</span>`}
+        </div>
+    `;
+}
+
+function renderTechnicalAttributeReadRow(field, values) {
+    const value = optionalAssetText(values?.[field.key]);
+    return `
+        <div class="asset-technical-attributes-row">
+            <dt>
+                <span>${escapeHtml(field.label)}</span>
+                ${field.secondaryLabel ? `<small>${escapeHtml(field.secondaryLabel)}</small>` : ""}
+            </dt>
+            <dd class="${value ? "" : "asset-technical-attributes-value-empty"}">${escapeHtml(value || "Не заполнено")}</dd>
+        </div>
+    `;
+}
+
+function renderTechnicalAttributeEditForm(profile, values) {
+    return `
+        <form id="asset-technical-attributes-form" class="asset-technical-attributes-form">
+            ${getTechnicalAttributeGroups(profile).map((group) => `
+                <fieldset class="asset-technical-attributes-group">
+                    <legend>${escapeHtml(group.title)}</legend>
+                    ${group.fields.map((field) => renderTechnicalAttributeField(field, values)).join("")}
+                </fieldset>
+            `).join("")}
+            <div class="button-row button-row-inline">
+                <button class="button button-primary ${isBusy("technicalAttributes") ? "is-loading" : ""}" type="submit" ${isBusy("technicalAttributes") ? "disabled" : ""}>${isBusy("technicalAttributes") ? "Сохраняем" : "Сохранить технические данные"}</button>
+                <button class="button button-ghost" type="button" data-technical-attributes-cancel ${isBusy("technicalAttributes") ? "disabled" : ""}>Отменить</button>
+            </div>
+        </form>
+    `;
+}
+
+function renderTechnicalAttributeField(field, values) {
+    const value = optionalAssetText(values?.[field.key]);
+    const label = `
+        <span>${escapeHtml(field.label)}</span>
+        ${field.secondaryLabel ? `<small class="reference-meta">${escapeHtml(field.secondaryLabel)}</small>` : ""}
+        ${field.key === "printer_placement_note" ? `<small class="reference-meta">Не заменяет текущую локацию.</small>` : ""}
+    `;
+
+    if (field.multiline) {
+        return `
+            <label class="field field-wide">
+                ${label}
+                <textarea name="${escapeAttribute(field.key)}" maxlength="${TECHNICAL_ATTRIBUTE_MAX_LENGTH}">${escapeHtml(value)}</textarea>
+            </label>
+        `;
+    }
+
+    return `
+        <label class="field">
+            ${label}
+            <input name="${escapeAttribute(field.key)}" type="text" value="${escapeAttribute(value)}" maxlength="${TECHNICAL_ATTRIBUTE_MAX_LENGTH}">
+        </label>
+    `;
+}
+
 function renderAssetTechnicalSection(asset) {
     return `
         <section class="asset-section">
@@ -3827,6 +4121,7 @@ function renderAssetTechnicalSection(asset) {
                 Технические значения доступны для поддержки и сверки. Они не являются основной рабочей навигацией.
             </p>
             ${renderAssetQrLiteBlock(asset)}
+            ${renderAssetTechnicalAttributesBlock(asset)}
             <details class="technical-disclosure-panel">
                 <summary>Показать служебные идентификаторы</summary>
                 <div class="asset-summary-grid technical-grid-muted">
