@@ -995,7 +995,7 @@ Required next step:
 
 #### 7. Asset Type-Specific Technical Attributes
 
-Status: approved as future product decision candidate.
+Status: first bounded implementation accepted as backend/API/DB controlled key-value support plus frontend integration inside selected Asset Technical details.
 
 Purpose:
 
@@ -1025,9 +1025,106 @@ Boundary:
 - no Astra Configuration Manager / Hardware Inspector parity is approved;
 - no import/export/search over attributes is approved by this candidate note.
 
+Implementation status:
+
+- first bounded implementation completed and accepted;
+- backend/API/DB implementation completed and accepted;
+- frontend integration completed and accepted;
+- implemented as `Технические атрибуты`;
+- implemented inside existing Operational Workspace;
+- frontend surface is selected Asset Technical details only;
+- technical attributes are secondary operational context;
+- technical attributes are not canonical Asset identity;
+- technical attributes do not replace `asset_tag`;
+- technical attributes do not replace `serial_number`;
+- technical attributes do not replace responsibility/location/status semantics.
+
+Backend/API/DB implementation:
+
+- added `asset_technical_attributes` table;
+- implemented controlled key/value storage;
+- added server-side profile mapping from current free-text `asset_type`;
+- supported profiles:
+  - `PC_LAPTOP`;
+  - `STATIONARY_PHONE`;
+  - `PRINTER`;
+  - `UNSUPPORTED_GENERIC`;
+- extended asset detail response with nested `technical_attributes`;
+- added separate update endpoint:
+  - `PUT /api/v1/assets/{id}/technical-attributes`;
+- added audit action:
+  - `ASSET_TECHNICAL_ATTRIBUTES_UPDATED`;
+- reused existing asset read/mutate authorization cutline.
+
+Frontend implementation:
+
+- added `Технические атрибуты` block only in selected Asset Technical details;
+- added profile-based display and edit;
+- edit uses only:
+  - `PUT /api/v1/assets/{id}/technical-attributes`;
+- read-only users see values without edit controls;
+- unsupported/generic profile shows safe no-edit state.
+
+Supported fields:
+
+- `PC_LAPTOP`:
+  - `hostname`;
+  - `anydesk_id`;
+  - `ip_address`;
+  - `mac_address`;
+- `STATIONARY_PHONE`:
+  - `phone_ip`;
+  - `extension_number`;
+  - `sip_line_id`;
+- `PRINTER`:
+  - `printer_ip`;
+  - `printer_network_name`;
+  - `printer_placement_note`.
+
+Preserved boundaries:
+
+- no technical attributes in Asset Overview;
+- no technical attributes in asset header;
+- no technical attributes in generic master edit;
+- no technical attributes in Employee Information Sheet;
+- no technical attribute search in Quick Find;
+- no QR Lite payload change;
+- no import/export/PDF/Excel/print;
+- no reporting/dashboard;
+- no Asset 360;
+- no discovery agent;
+- no endpoint scanner;
+- no network scanning;
+- no remote control;
+- no patch management;
+- no Hardware Inspector parity;
+- no Astra Configuration Manager parity;
+- no uncontrolled custom fields;
+- no tenant-defined field admin platform;
+- no employee self-service;
+- no public lookup;
+- no auth/IAM expansion;
+- no new role model.
+
+Deferred:
+
+- search over technical attributes;
+- showing technical attributes in Employee Information Sheet;
+- showing technical attributes in Asset Overview;
+- QR payload changes;
+- import/export of technical attributes;
+- reporting/dashboard usage;
+- discovery/agent/scanner/platform scope;
+- stricter format validation for IP/MAC/SIP/AnyDesk;
+- sensitive-value redaction policy changes.
+
 Required next step:
 
-- `Asset Type-Specific Technical Attributes v1 Decision Gate`.
+- no further Asset Type-Specific Technical Attributes implementation is opened by this closeout;
+- if owner wants search by technical attributes, open `Search over Technical Attributes Decision Gate`;
+- if owner wants technical attributes in Employee Information Sheet, open `Employee Information Sheet Technical Attribute Exposure Decision Gate`;
+- if owner wants import/export, reporting/dashboard, discovery/agent/scanner or Asset 360, open separate product decision first;
+- otherwise continue to integrated stabilization / verification.
 
 #### 8. Configuration Manager-inspired candidates
 
@@ -1054,34 +1151,39 @@ Not approved by this note:
 
 
 
-### Planning priority after Asset QR Lite Frontend Derived Display
+### Planning priority after Asset Type-Specific Technical Attributes v1
 
-Unified Create Launcher, Simplified Asset Actions UX, ADR-0005 Asset Delete Semantics, Controlled Employee Asset Information Sheet, Operational Search v1 Frontend Quick Find, and Asset QR Lite Frontend Derived Display are implemented/accepted at their approved scope levels.
+Unified Create Launcher, Simplified Asset Actions UX, ADR-0005 Asset Delete Semantics, Controlled Employee Asset Information Sheet, Operational Search v1 Frontend Quick Find, Asset QR Lite Frontend Derived Display, and Asset Type-Specific Technical Attributes v1 are implemented/accepted at their approved scope levels.
 
-Asset QR Lite first bounded implementation is accepted as frontend-only derived QR display from `asset_tag` in selected Asset Technical details.
+Asset Type-Specific Technical Attributes v1 is accepted as:
 
-Printable label/sheet, scanner workflow, public lookup and Backend/API QR remain deferred as separate planning tracks.
+- backend/API/DB controlled key-value support;
+- frontend integration inside selected Asset Technical details.
 
-Remaining recommended owner-priority order:
-
-1. Asset Type-Specific Technical Attributes.
+The currently owner-prioritized post-Asset-Identity candidates have now been implemented or closed at their bounded approved scope.
 
 The first recommended next stage is:
 
-`Asset Type-Specific Technical Attributes v1 Decision Gate`
+`Post-Technical-Attributes Stabilization / Controlled End-to-End Recheck`
+
+This next stage should verify the integrated Operational Workspace after the recent accepted increments and should not open new product scope by default.
 
 Optional branch:
 
-If the owner explicitly wants printable labels / information sheets before technical attributes, open:
+If the owner explicitly wants search by technical attributes, open:
 
-`Printable Asset Label / Information Sheet Planning Packet`
+`Search over Technical Attributes Decision Gate`
 
-This optional branch must remain separate from scanner/camera/mobile workflow, printer integration, bulk print, public lookup, QR search, Asset 360 and reporting/dashboard.
+This optional branch must remain separate from current frontend quick find, backend search, advanced filtering, saved views, reporting/dashboard and Elasticsearch/global search.
 
 Optional branch:
 
-If the owner explicitly wants Backend/API QR before technical attributes, open:
+If the owner explicitly wants technical attributes in Employee Information Sheet, open:
 
-`Backend/API QR Planning Packet`
+`Employee Information Sheet Technical Attribute Exposure Decision Gate`
 
-This optional branch must remain separate from frontend-derived QR display, scanner/camera/mobile workflow, public lookup, employee self-service and printable label/export scope.
+This optional branch must remain separate from employee self-service, public lookup, QR payload changes, export/PDF and Asset 360.
+
+Optional branch:
+
+If the owner explicitly wants import/export, reporting/dashboard, discovery/agent/scanner or Asset 360, open a separate product decision gate first.

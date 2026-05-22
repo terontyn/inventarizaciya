@@ -1217,6 +1217,389 @@ class AssetApiIntegrationTest extends IntegrationTestSupport {
     }
 
     @Test
+    void technicalAttributeSearchValidatesQueryLimitAndSupportedParameters() throws Exception {
+        UUID tenantId = UUID.randomUUID();
+        UUID tenantAdminId = UUID.randomUUID();
+
+        expectRoleLookup(tenantId, tenantAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+        expectRoleLookup(tenantId, tenantAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+        expectRoleLookup(tenantId, tenantAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+        expectRoleLookup(tenantId, tenantAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+        expectRoleLookup(tenantId, tenantAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+        expectRoleLookup(tenantId, tenantAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+        expectRoleLookup(tenantId, tenantAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+        expectRoleLookup(tenantId, tenantAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+
+        mockMvc.perform(get("/api/v1/assets/technical-attribute-search")
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
+                .header(AUTHENTICATED_USER_HEADER, tenantAdminId))
+            .andExpect(status().isBadRequest());
+
+        mockMvc.perform(get("/api/v1/assets/technical-attribute-search")
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
+                .header(AUTHENTICATED_USER_HEADER, tenantAdminId)
+                .param("q", "   "))
+            .andExpect(status().isBadRequest());
+
+        mockMvc.perform(get("/api/v1/assets/technical-attribute-search")
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
+                .header(AUTHENTICATED_USER_HEADER, tenantAdminId)
+                .param("q", "h"))
+            .andExpect(status().isBadRequest());
+
+        mockMvc.perform(get("/api/v1/assets/technical-attribute-search")
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
+                .header(AUTHENTICATED_USER_HEADER, tenantAdminId)
+                .param("q", "h".repeat(129)))
+            .andExpect(status().isBadRequest());
+
+        mockMvc.perform(get("/api/v1/assets/technical-attribute-search")
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
+                .header(AUTHENTICATED_USER_HEADER, tenantAdminId)
+                .param("q", "host")
+                .param("limit", "0"))
+            .andExpect(status().isBadRequest());
+
+        mockMvc.perform(get("/api/v1/assets/technical-attribute-search")
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
+                .header(AUTHENTICATED_USER_HEADER, tenantAdminId)
+                .param("q", "host")
+                .param("limit", "21"))
+            .andExpect(status().isBadRequest());
+
+        mockMvc.perform(get("/api/v1/assets/technical-attribute-search")
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
+                .header(AUTHENTICATED_USER_HEADER, tenantAdminId)
+                .param("q", "host")
+                .param("keys", "hostname"))
+            .andExpect(status().isBadRequest());
+
+        mockMvc.perform(get("/api/v1/assets/technical-attribute-search")
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
+                .header(AUTHENTICATED_USER_HEADER, tenantAdminId)
+                .param("q", "host")
+                .param("limit", "20"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.query").value("host"))
+            .andExpect(jsonPath("$.limit").value(20))
+            .andExpect(jsonPath("$.results").isEmpty());
+
+        mockUserService.verify();
+    }
+
+    @Test
+    void technicalAttributeSearchRanksDeduplicatesAndReturnsAssetOnlyResults() throws Exception {
+        UUID tenantId = UUID.randomUUID();
+        UUID tenantAdminId = UUID.randomUUID();
+        UUID exactAssetId = insertAsset(
+            tenantId,
+            "A-EXACT",
+            "SN-EXACT",
+            "Laptop",
+            AssetStatus.ACTIVE,
+            UUID.randomUUID(),
+            UUID.randomUUID(),
+            "Exact laptop",
+            "Host note is not searched here"
+        );
+        UUID prefixAssetId = insertAsset(
+            tenantId,
+            "B-PREFIX",
+            "SN-PREFIX",
+            "Laptop",
+            AssetStatus.ACTIVE,
+            null,
+            null
+        );
+        UUID containsAssetId = insertAsset(
+            tenantId,
+            "C-CONTAINS",
+            "SN-CONTAINS",
+            "Laptop",
+            AssetStatus.RETIRED,
+            null,
+            null
+        );
+        UUID duplicateMatchAssetId = insertAsset(
+            tenantId,
+            "D-DEDUP",
+            "SN-DEDUP",
+            "Laptop",
+            AssetStatus.ACTIVE,
+            null,
+            null
+        );
+        insertTechnicalAttribute(tenantId, exactAssetId, "hostname", "host");
+        insertTechnicalAttribute(tenantId, prefixAssetId, "hostname", "Host-alpha");
+        insertTechnicalAttribute(tenantId, containsAssetId, "hostname", "alpha-HOST");
+        insertTechnicalAttribute(tenantId, duplicateMatchAssetId, "hostname", "same-host");
+        insertTechnicalAttribute(tenantId, duplicateMatchAssetId, "ip_address", "same-host-ip");
+
+        expectRoleLookup(tenantId, tenantAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+        mockMvc.perform(get("/api/v1/assets/technical-attribute-search")
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
+                .header(AUTHENTICATED_USER_HEADER, tenantAdminId)
+                .param("q", "host"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.query").value("host"))
+            .andExpect(jsonPath("$.limit").value(10))
+            .andExpect(jsonPath("$.results.length()").value(4))
+            .andExpect(jsonPath("$.results[0].asset_id").value(exactAssetId.toString()))
+            .andExpect(jsonPath("$.results[0].asset_tag").value("A-EXACT"))
+            .andExpect(jsonPath("$.results[0].display_name").value("Exact laptop"))
+            .andExpect(jsonPath("$.results[0].asset_type").value("Laptop"))
+            .andExpect(jsonPath("$.results[0].serial_number").value("SN-EXACT"))
+            .andExpect(jsonPath("$.results[0].status").value(AssetStatus.ACTIVE))
+            .andExpect(jsonPath("$.results[0].matched_field.key").value("hostname"))
+            .andExpect(jsonPath("$.results[0].matched_field.label").value("Hostname"))
+            .andExpect(jsonPath("$.results[0].matched_field.display_value").value("host"))
+            .andExpect(jsonPath("$.results[0].matched_field.sensitive").value(false))
+            .andExpect(jsonPath("$.results[0].matched_field.masked").value(false))
+            .andExpect(jsonPath("$.results[1].asset_tag").value("B-PREFIX"))
+            .andExpect(jsonPath("$.results[2].asset_tag").value("C-CONTAINS"))
+            .andExpect(jsonPath("$.results[3].asset_tag").value("D-DEDUP"))
+            .andExpect(jsonPath("$.results[3].matched_field.key").value("hostname"))
+            .andExpect(jsonPath("$.results[0].technical_attributes").doesNotExist())
+            .andExpect(jsonPath("$.results[0].assigned_user").doesNotExist())
+            .andExpect(jsonPath("$.results[0].qr").doesNotExist())
+            .andExpect(jsonPath("$.results[0].links").doesNotExist())
+            .andExpect(jsonPath("$.users").doesNotExist())
+            .andExpect(jsonPath("$.employees").doesNotExist());
+
+        assertThat(countRows("local_audit_records")).isZero();
+        mockUserService.verify();
+    }
+
+    @Test
+    void technicalAttributeSearchCoversApprovedKeysAndMasksSensitiveValues() throws Exception {
+        UUID tenantId = UUID.randomUUID();
+        UUID tenantAdminId = UUID.randomUUID();
+
+        insertSearchAsset(tenantId, "ANYDESK", "Laptop", "anydesk_id", "123456789");
+        insertSearchAsset(tenantId, "IP", "Laptop", "ip_address", "10.0.0.25");
+        insertSearchAsset(tenantId, "MAC", "Laptop", "mac_address", "AA:BB:CC:DD:EE:FF");
+        insertSearchAsset(tenantId, "PHONE-IP", "IP Phone", "phone_ip", "10.10.0.15");
+        insertSearchAsset(tenantId, "EXT", "IP Phone", "extension_number", "210");
+        insertSearchAsset(tenantId, "SIP", "IP Phone", "sip_line_id", "line-primary");
+        insertSearchAsset(tenantId, "PRINTER-IP", "Printer", "printer_ip", "10.20.0.40");
+        insertSearchAsset(tenantId, "PRINTER-NAME", "Printer", "printer_network_name", "floor-2-mfp");
+
+        expectRoleLookup(tenantId, tenantAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+        expectRoleLookup(tenantId, tenantAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+        expectRoleLookup(tenantId, tenantAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+        expectRoleLookup(tenantId, tenantAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+        expectRoleLookup(tenantId, tenantAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+        expectRoleLookup(tenantId, tenantAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+        expectRoleLookup(tenantId, tenantAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+        expectRoleLookup(tenantId, tenantAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+
+        assertTechnicalAttributeSearchMatch(
+            tenantId,
+            tenantAdminId,
+            "456789",
+            "anydesk_id",
+            "AnyDesk ID",
+            "\u2022\u2022\u2022\u20226789",
+            true,
+            true
+        );
+        assertTechnicalAttributeSearchMatch(
+            tenantId,
+            tenantAdminId,
+            "10.0.0",
+            "ip_address",
+            "IP-адрес",
+            "10.0.0.xxx",
+            true,
+            true
+        );
+        assertTechnicalAttributeSearchMatch(
+            tenantId,
+            tenantAdminId,
+            "bb:cc",
+            "mac_address",
+            "MAC-адрес",
+            "AA:**:**:**:**:FF",
+            true,
+            true
+        );
+        assertTechnicalAttributeSearchMatch(
+            tenantId,
+            tenantAdminId,
+            "10.10.0",
+            "phone_ip",
+            "IP телефона",
+            "10.10.0.xxx",
+            true,
+            true
+        );
+        assertTechnicalAttributeSearchMatch(
+            tenantId,
+            tenantAdminId,
+            "210",
+            "extension_number",
+            "Внутренний номер",
+            "210",
+            false,
+            false
+        );
+        assertTechnicalAttributeSearchMatch(
+            tenantId,
+            tenantAdminId,
+            "primary",
+            "sip_line_id",
+            "SIP / линия",
+            "lin\u2026ry",
+            true,
+            true
+        );
+        assertTechnicalAttributeSearchMatch(
+            tenantId,
+            tenantAdminId,
+            "10.20.0",
+            "printer_ip",
+            "IP принтера",
+            "10.20.0.xxx",
+            true,
+            true
+        );
+        assertTechnicalAttributeSearchMatch(
+            tenantId,
+            tenantAdminId,
+            "floor",
+            "printer_network_name",
+            "Сетевое имя принтера",
+            "floor-2-mfp",
+            false,
+            false
+        );
+
+        mockUserService.verify();
+    }
+
+    @Test
+    void technicalAttributeSearchExcludesUnapprovedDataAndKeepsTenantIsolation() throws Exception {
+        UUID tenantA = UUID.randomUUID();
+        UUID tenantB = UUID.randomUUID();
+        UUID tenantAAdminId = UUID.randomUUID();
+        UUID tenantBAdminId = UUID.randomUUID();
+        UUID assetId = insertAsset(
+            tenantA,
+            "QR-SECRET",
+            "SN-SECRET",
+            "Printer",
+            AssetStatus.ACTIVE,
+            null,
+            null,
+            "Searchable display name is not searched here",
+            "note-secret"
+        );
+        UUID tenantBAssetId = insertAsset(
+            tenantB,
+            "TENANT-B",
+            "SN-B",
+            "Laptop",
+            AssetStatus.ACTIVE,
+            null,
+            null
+        );
+        insertTechnicalAttribute(tenantA, assetId, "printer_placement_note", "placement-secret");
+        insertTechnicalAttribute(tenantA, assetId, "unsupported_custom", "custom-secret");
+        insertTechnicalAttribute(tenantB, tenantBAssetId, "hostname", "tenant-b-host");
+        insertAssetAuditRecord(
+            tenantA,
+            assetId,
+            com.itam.assetservice.domain.AuditAction.UPDATE,
+            "tenant-admin",
+            "corr-audit-secret",
+            "{\"audit\":\"audit-secret\"}",
+            java.time.Instant.now()
+        );
+
+        expectRoleLookup(tenantA, tenantAAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+        expectRoleLookup(tenantA, tenantAAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+        expectRoleLookup(tenantA, tenantAAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+        expectRoleLookup(tenantA, tenantAAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+        expectRoleLookup(tenantA, tenantAAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+        expectRoleLookup(tenantB, tenantBAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+
+        assertTechnicalAttributeSearchEmpty(tenantA, tenantAAdminId, "placement-secret");
+        assertTechnicalAttributeSearchEmpty(tenantA, tenantAAdminId, "custom-secret");
+        assertTechnicalAttributeSearchEmpty(tenantA, tenantAAdminId, "note-secret");
+        assertTechnicalAttributeSearchEmpty(tenantA, tenantAAdminId, "audit-secret");
+        assertTechnicalAttributeSearchEmpty(tenantA, tenantAAdminId, "QR-SECRET");
+
+        mockMvc.perform(get("/api/v1/assets/technical-attribute-search")
+                .header(AUTHENTICATED_TENANT_HEADER, tenantB)
+                .header(AUTHENTICATED_USER_HEADER, tenantBAdminId)
+                .param("q", "tenant-b-host"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.results.length()").value(1))
+            .andExpect(jsonPath("$.results[0].asset_id").value(tenantBAssetId.toString()));
+
+        mockUserService.verify();
+    }
+
+    @Test
+    void technicalAttributeSearchUsesExistingReadRolesAndDoesNotEmitAudit() throws Exception {
+        UUID tenantId = UUID.randomUUID();
+        UUID assetId = insertAsset(
+            tenantId,
+            "LAP-SEARCH",
+            "SN-SEARCH",
+            "Laptop",
+            AssetStatus.ACTIVE,
+            null,
+            null
+        );
+        insertTechnicalAttribute(tenantId, assetId, "hostname", "role-host");
+        UUID tenantAdminId = UUID.randomUUID();
+        UUID assetOperatorId = UUID.randomUUID();
+        UUID supportReviewerId = UUID.randomUUID();
+        UUID callerWithoutRoleId = UUID.randomUUID();
+
+        expectRoleLookup(tenantId, tenantAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+        expectRoleLookup(tenantId, assetOperatorId, List.of(PilotRoleNames.ASSET_OPERATOR));
+        expectRoleLookup(tenantId, supportReviewerId, List.of(PilotRoleNames.SUPPORT_REVIEWER));
+        expectRoleLookup(tenantId, callerWithoutRoleId, List.of());
+
+        mockMvc.perform(get("/api/v1/assets/technical-attribute-search")
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
+                .header(AUTHENTICATED_USER_HEADER, tenantAdminId)
+                .param("q", "role-host"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.results[0].asset_id").value(assetId.toString()));
+
+        mockMvc.perform(get("/api/v1/assets/technical-attribute-search")
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
+                .header(AUTHENTICATED_USER_HEADER, assetOperatorId)
+                .param("q", "role-host"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.results[0].asset_id").value(assetId.toString()));
+
+        mockMvc.perform(get("/api/v1/assets/technical-attribute-search")
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
+                .header(AUTHENTICATED_USER_HEADER, supportReviewerId)
+                .param("q", "role-host"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.results[0].asset_id").value(assetId.toString()));
+
+        mockMvc.perform(get("/api/v1/assets/technical-attribute-search")
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
+                .header(AUTHENTICATED_USER_HEADER, callerWithoutRoleId)
+                .param("q", "role-host"))
+            .andExpect(status().isForbidden());
+
+        mockMvc.perform(get("/api/v1/assets/technical-attribute-search")
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
+                .param("q", "role-host"))
+            .andExpect(status().isBadRequest());
+
+        assertThat(countRows("local_audit_records")).isZero();
+        mockUserService.verify();
+    }
+
+    @Test
     void genericPatchDoesNotUpdateTechnicalAttributes() throws Exception {
         UUID tenantId = UUID.randomUUID();
         UUID tenantAdminId = UUID.randomUUID();
@@ -1280,6 +1663,58 @@ class AssetApiIntegrationTest extends IntegrationTestSupport {
 
         mockUserService.verify();
         assertThat(countRows("local_audit_records")).isEqualTo(0);
+    }
+
+    private UUID insertSearchAsset(UUID tenantId, String assetTagSuffix, String assetType, String key, String value) {
+        UUID assetId = insertAsset(
+            tenantId,
+            "SEARCH-" + assetTagSuffix,
+            "SN-" + assetTagSuffix,
+            assetType,
+            AssetStatus.ACTIVE,
+            null,
+            null
+        );
+        insertTechnicalAttribute(tenantId, assetId, key, value);
+        return assetId;
+    }
+
+    private void assertTechnicalAttributeSearchMatch(
+        UUID tenantId,
+        UUID authenticatedUserId,
+        String query,
+        String expectedKey,
+        String expectedLabel,
+        String expectedDisplayValue,
+        boolean expectedSensitive,
+        boolean expectedMasked
+    ) throws Exception {
+        mockMvc.perform(get("/api/v1/assets/technical-attribute-search")
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
+                .header(AUTHENTICATED_USER_HEADER, authenticatedUserId)
+                .param("q", query)
+                .param("limit", "1"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.results.length()").value(1))
+            .andExpect(jsonPath("$.results[0].matched_field.key").value(expectedKey))
+            .andExpect(jsonPath("$.results[0].matched_field.label").value(expectedLabel))
+            .andExpect(jsonPath("$.results[0].matched_field.display_value").value(expectedDisplayValue))
+            .andExpect(jsonPath("$.results[0].matched_field.sensitive").value(expectedSensitive))
+            .andExpect(jsonPath("$.results[0].matched_field.masked").value(expectedMasked))
+            .andExpect(jsonPath("$.results[0].technical_attributes").doesNotExist());
+    }
+
+    private void assertTechnicalAttributeSearchEmpty(
+        UUID tenantId,
+        UUID authenticatedUserId,
+        String query
+    ) throws Exception {
+        mockMvc.perform(get("/api/v1/assets/technical-attribute-search")
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
+                .header(AUTHENTICATED_USER_HEADER, authenticatedUserId)
+                .param("q", query))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.results").isEmpty());
     }
 
     private Map<String, Object> assetPayload(String assetTag, String serialNumber, String assetType) {

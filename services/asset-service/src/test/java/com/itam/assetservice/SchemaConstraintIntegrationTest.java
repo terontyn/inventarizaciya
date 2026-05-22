@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.itam.assetservice.domain.AssetStatus;
+import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -202,5 +203,33 @@ class SchemaConstraintIntegrationTest extends IntegrationTestSupport {
         assertThatThrownBy(() ->
             insertTechnicalAttribute(tenantA, assetId, "anydesk_id", "a".repeat(513))
         ).isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void technicalAttributesSearchScopeIndexExistsWithoutChangingCoreConstraints() {
+        Integer indexCount = jdbcTemplate.queryForObject(
+            "SELECT COUNT(*) FROM INFORMATION_SCHEMA.INDEXES "
+                + "WHERE LOWER(TABLE_NAME) = 'asset_technical_attributes' "
+                + "AND LOWER(INDEX_NAME) = 'idx_asset_technical_attributes_search_scope'",
+            Integer.class
+        );
+        assertThat(indexCount).isEqualTo(1);
+
+        List<String> indexColumns = jdbcTemplate.queryForList(
+            "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.INDEX_COLUMNS "
+                + "WHERE LOWER(TABLE_NAME) = 'asset_technical_attributes' "
+                + "AND LOWER(INDEX_NAME) = 'idx_asset_technical_attributes_search_scope' "
+                + "ORDER BY ORDINAL_POSITION",
+            String.class
+        );
+        assertThat(indexColumns).containsExactly("tenant_id", "attribute_key");
+
+        Integer primaryKeyCount = jdbcTemplate.queryForObject(
+            "SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS "
+                + "WHERE LOWER(TABLE_NAME) = 'asset_technical_attributes' "
+                + "AND CONSTRAINT_TYPE = 'PRIMARY KEY'",
+            Integer.class
+        );
+        assertThat(primaryKeyCount).isEqualTo(1);
     }
 }

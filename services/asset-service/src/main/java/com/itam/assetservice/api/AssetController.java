@@ -21,6 +21,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -31,6 +32,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
@@ -96,6 +98,21 @@ public class AssetController {
         return assetApplicationService.findAll(tenantId).stream()
             .map(AssetResponse::from)
             .toList();
+    }
+
+    @GetMapping("/technical-attribute-search")
+    public TechnicalAttributeSearchResponse searchTechnicalAttributes(
+        @RequestParam(required = false) String q,
+        @RequestParam(required = false) Integer limit,
+        HttpServletRequest servletRequest
+    ) {
+        UUID tenantId = requestContextExtractor.requireTenantId(servletRequest);
+        UUID authenticatedUserId = requestContextExtractor.requireAuthenticatedUserId(servletRequest);
+        assetAuthorizationService.requireAssetReadAccess(tenantId, authenticatedUserId);
+        rejectUnsupportedTechnicalAttributeSearchParameters(servletRequest);
+        return TechnicalAttributeSearchResponse.from(
+            assetTechnicalAttributeApplicationService.search(tenantId, q, limit)
+        );
     }
 
     @GetMapping("/{id}")
@@ -406,6 +423,71 @@ public class AssetController {
         }
     }
 
+    public record TechnicalAttributeSearchResponse(
+        String query,
+        int limit,
+        List<TechnicalAttributeSearchAssetResponse> results
+    ) {
+
+        private static TechnicalAttributeSearchResponse from(
+            AssetTechnicalAttributeApplicationService.SearchResponse result
+        ) {
+            return new TechnicalAttributeSearchResponse(
+                result.query(),
+                result.limit(),
+                result.results().stream()
+                    .map(TechnicalAttributeSearchAssetResponse::from)
+                    .toList()
+            );
+        }
+    }
+
+    public record TechnicalAttributeSearchAssetResponse(
+        UUID assetId,
+        String assetTag,
+        String displayName,
+        String assetType,
+        String serialNumber,
+        String status,
+        TechnicalAttributeMatchedFieldResponse matchedField
+    ) {
+
+        private static TechnicalAttributeSearchAssetResponse from(
+            AssetTechnicalAttributeApplicationService.SearchAssetResult result
+        ) {
+            return new TechnicalAttributeSearchAssetResponse(
+                result.assetId(),
+                result.assetTag(),
+                result.displayName(),
+                result.assetType(),
+                result.serialNumber(),
+                result.status(),
+                TechnicalAttributeMatchedFieldResponse.from(result.matchedField())
+            );
+        }
+    }
+
+    public record TechnicalAttributeMatchedFieldResponse(
+        String key,
+        String label,
+        String displayValue,
+        boolean sensitive,
+        boolean masked
+    ) {
+
+        private static TechnicalAttributeMatchedFieldResponse from(
+            AssetTechnicalAttributeApplicationService.MatchedField matchedField
+        ) {
+            return new TechnicalAttributeMatchedFieldResponse(
+                matchedField.key(),
+                matchedField.label(),
+                matchedField.displayValue(),
+                matchedField.sensitive(),
+                matchedField.masked()
+            );
+        }
+    }
+
     public record AssignAssetRequest(@NotNull UUID targetUserId) {
     }
 
@@ -518,5 +600,17 @@ public class AssetController {
             }
         }
         return values;
+    }
+
+    private static void rejectUnsupportedTechnicalAttributeSearchParameters(HttpServletRequest request) {
+        Set<String> supportedParameters = Set.of("q", "limit");
+        for (String parameterName : request.getParameterMap().keySet()) {
+            if (!supportedParameters.contains(parameterName)) {
+                throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "technical attribute search supports only q and limit"
+                );
+            }
+        }
     }
 }

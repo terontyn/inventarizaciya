@@ -1,7 +1,10 @@
 package com.itam.assetservice.infrastructure;
 
+import com.itam.assetservice.domain.AssetTechnicalAttributeKey;
 import com.itam.assetservice.domain.AssetTechnicalAttributeRepository;
+import com.itam.assetservice.domain.AssetTechnicalAttributeSearchResult;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
@@ -71,5 +74,89 @@ public class JdbcAssetTechnicalAttributeRepository implements AssetTechnicalAttr
                 parameters
             );
         }
+    }
+
+    @Override
+    public List<AssetTechnicalAttributeSearchResult> searchByTechnicalAttributes(
+        UUID tenantId,
+        String normalizedQuery,
+        List<AssetTechnicalAttributeKey> searchableKeys,
+        int limit
+    ) {
+        UUID scopedTenantId = SqlTenantScope.requireTenantId(tenantId);
+        List<String> keyNames = searchableKeys.stream()
+            .map(AssetTechnicalAttributeKey::key)
+            .toList();
+        MapSqlParameterSource parameters = new MapSqlParameterSource()
+            .addValue("tenantId", scopedTenantId)
+            .addValue("keys", keyNames)
+            .addValue("query", normalizedQuery)
+            .addValue("prefixPattern", escapeLikePattern(normalizedQuery) + "%")
+            .addValue("containsPattern", "%" + escapeLikePattern(normalizedQuery) + "%")
+            .addValue("limit", limit);
+
+        return jdbcTemplate.query(
+            "SELECT asset_id, asset_tag, display_name, asset_type, serial_number, status, "
+                + "attribute_key, attribute_value "
+                + "FROM ("
+                + "SELECT matched.*, "
+                + "ROW_NUMBER() OVER ("
+                + "PARTITION BY matched.asset_id "
+                + "ORDER BY matched.match_rank, matched.key_priority, matched.asset_tag, matched.asset_id"
+                + ") AS row_number "
+                + "FROM ("
+                + "SELECT a.id AS asset_id, a.asset_tag, a.display_name, a.asset_type, a.serial_number, a.status, "
+                + "ata.attribute_key, ata.attribute_value, "
+                + "CASE "
+                + "WHEN LOWER(ata.attribute_value) = :query THEN 0 "
+                + "WHEN LOWER(ata.attribute_value) LIKE :prefixPattern ESCAPE '\\' THEN 1 "
+                + "ELSE 2 "
+                + "END AS match_rank, "
+                + keyPriorityCaseSql()
+                + " AS key_priority "
+                + "FROM asset_technical_attributes ata "
+                + "JOIN assets a ON ata.tenant_id = a.tenant_id AND ata.asset_id = a.id "
+                + "WHERE ata.tenant_id = :tenantId "
+                + "AND ata.attribute_key IN (:keys) "
+                + "AND LOWER(ata.attribute_value) LIKE :containsPattern ESCAPE '\\'"
+                + ") matched"
+                + ") ranked "
+                + "WHERE ranked.row_number = 1 "
+                + "ORDER BY ranked.match_rank, ranked.key_priority, ranked.asset_tag, ranked.asset_id "
+                + "LIMIT :limit",
+            parameters,
+            (resultSet, rowNum) -> new AssetTechnicalAttributeSearchResult(
+                resultSet.getObject("asset_id", UUID.class),
+                resultSet.getString("asset_tag"),
+                resultSet.getString("display_name"),
+                resultSet.getString("asset_type"),
+                resultSet.getString("serial_number"),
+                resultSet.getString("status"),
+                AssetTechnicalAttributeKey.fromKey(resultSet.getString("attribute_key")).orElseThrow(),
+                resultSet.getString("attribute_value")
+            )
+        );
+    }
+
+    private static String keyPriorityCaseSql() {
+        return "CASE ata.attribute_key "
+            + "WHEN 'hostname' THEN 1 "
+            + "WHEN 'anydesk_id' THEN 2 "
+            + "WHEN 'ip_address' THEN 3 "
+            + "WHEN 'mac_address' THEN 4 "
+            + "WHEN 'phone_ip' THEN 5 "
+            + "WHEN 'extension_number' THEN 6 "
+            + "WHEN 'sip_line_id' THEN 7 "
+            + "WHEN 'printer_ip' THEN 8 "
+            + "WHEN 'printer_network_name' THEN 9 "
+            + "ELSE 99 "
+            + "END";
+    }
+
+    private static String escapeLikePattern(String value) {
+        return value
+            .replace("\\", "\\\\")
+            .replace("%", "\\%")
+            .replace("_", "\\_");
     }
 }

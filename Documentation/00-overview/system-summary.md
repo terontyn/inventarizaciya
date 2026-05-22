@@ -1262,34 +1262,39 @@ Approved future planning candidates:
 
 Current recommended next decision:
 
-`Asset Type-Specific Technical Attributes v1 Decision Gate`
+`Post-Technical-Attributes Stabilization / Controlled End-to-End Recheck`
 
-Optional branch:
+Reason:
 
-If the owner explicitly wants printable labels / information sheets before technical attributes, open:
+All currently owner-prioritized post-Asset-Identity operational usability candidates have now been implemented or closed at their approved bounded scope levels.
 
-`Printable Asset Label / Information Sheet Planning Packet`
+The next default move should not be another product expansion.
 
-This optional branch must remain separate from scanner/camera/mobile workflow, printer integration, bulk print, public lookup, QR search, Asset 360 and reporting/dashboard.
+Recommended next work should be a stabilization / verification gate that checks the integrated Operational Workspace after:
 
-Optional branch:
+- Unified Create Launcher;
+- Simplified Asset Actions UX;
+- ADR-0005 Asset Delete Semantics;
+- Controlled Employee Asset Information Sheet;
+- Operational Search v1 Frontend Quick Find;
+- Asset QR Lite;
+- Asset Type-Specific Technical Attributes v1.
 
-If the owner explicitly wants Backend/API QR before technical attributes, open:
+Optional branches:
 
-`Backend/API QR Planning Packet`
+If the owner explicitly wants search by technical attributes, open:
 
-This optional branch must remain separate from frontend-derived QR display, scanner/camera/mobile workflow, public lookup, employee self-service and printable label/export scope.
+`Search over Technical Attributes Decision Gate`
 
-This baseline remains internally validated only.
+This optional branch must remain separate from current frontend quick find, backend search, advanced filtering, saved views, reporting/dashboard and Elasticsearch/global search.
 
-It does not prove:
+If the owner explicitly wants technical attributes visible to employees, open:
 
-- release readiness;
-- FTOV start;
-- FTOV exit;
-- production readiness;
-- real tenant validation;
-- real day-to-day operational validation.
+`Employee Information Sheet Technical Attribute Exposure Decision Gate`
+
+This optional branch must remain separate from employee self-service, public lookup, QR payloads, export/PDF and Asset 360.
+
+If the owner explicitly wants import/export, reporting, discovery/agent/scanner or Asset 360, open a separate product decision gate first.
 
 ## Current Baseline Update — Unified Create Launcher Closeout
 
@@ -1748,6 +1753,154 @@ Deferred:
 - QR search;
 - public lookup;
 - employee self-service.
+
+This remains internally validated implementation evidence only.
+
+It does not prove:
+
+- release readiness;
+- FTOV start;
+- FTOV exit;
+- production readiness;
+- real tenant validation;
+- real day-to-day operational validation.
+
+## Current Baseline Update — Asset Type-Specific Technical Attributes v1 Closeout
+
+Asset Type-Specific Technical Attributes v1 has been completed and accepted at its approved bounded scope.
+
+Implementation is accepted as two bounded layers:
+
+1. backend/API/DB controlled key-value support;
+2. frontend integration inside selected Asset Technical details.
+
+### Backend/API/DB implementation
+
+Accepted backend/API/DB scope:
+
+- added `asset_technical_attributes` as asset-service-owned tenant-scoped controlled key/value storage;
+- added server-side technical attribute profiles:
+  - `PC_LAPTOP`;
+  - `STATIONARY_PHONE`;
+  - `PRINTER`;
+  - `UNSUPPORTED_GENERIC`;
+- added allowlisted technical attribute keys:
+  - `hostname`;
+  - `anydesk_id`;
+  - `ip_address`;
+  - `mac_address`;
+  - `phone_ip`;
+  - `extension_number`;
+  - `sip_line_id`;
+  - `printer_ip`;
+  - `printer_network_name`;
+  - `printer_placement_note`;
+- extended `GET /api/v1/assets/{id}` with nested `technical_attributes`;
+- added separate update endpoint:
+  - `PUT /api/v1/assets/{id}/technical-attributes`;
+- added audit action:
+  - `ASSET_TECHNICAL_ATTRIBUTES_UPDATED`;
+- preserved existing asset read/mutate authorization cutline.
+
+Preserved backend/API/DB boundaries:
+
+- `GET /api/v1/assets` list endpoint remains lightweight;
+- `POST /api/v1/assets` remains master-record create only;
+- generic `PATCH /api/v1/assets/{id}` remains master-record-only;
+- Assign / Transfer / Return remain dedicated flows;
+- technical attributes do not move responsibility or location into generic PATCH;
+- technical attributes do not become canonical Asset identity;
+- technical attributes do not replace `asset_tag`;
+- technical attributes do not replace `serial_number`;
+- technical attributes do not affect status/lifecycle semantics.
+
+### Frontend integration
+
+Accepted frontend integration scope:
+
+- added `Технические атрибуты` only inside selected Asset Technical details;
+- added profile-based read display for:
+  - PC/laptop fields;
+  - stationary phone fields;
+  - printer fields;
+  - unsupported/generic safe empty state;
+- added bounded in-place edit through:
+  - `PUT /api/v1/assets/{id}/technical-attributes`;
+- kept active Technical details context after save;
+- read-only users see technical attributes without edit controls.
+
+Displayed profile fields:
+
+- `PC_LAPTOP`:
+  - `Hostname` / `Имя компьютера`;
+  - `IP-адрес`;
+  - `MAC-адрес`;
+  - `AnyDesk ID`;
+- `STATIONARY_PHONE`:
+  - `IP телефона`;
+  - `Внутренний номер`;
+  - `SIP / линия`;
+- `PRINTER`:
+  - `Сетевое имя принтера`;
+  - `IP принтера`;
+  - `Примечание по размещению`;
+- `UNSUPPORTED_GENERIC`:
+  - `Для этого типа актива технические атрибуты v1 не настроены`.
+
+Preserved frontend boundaries:
+
+- Asset Overview remains unchanged;
+- asset header remains unchanged;
+- generic master edit remains unchanged;
+- Actions tab remains unchanged;
+- Quick Find remains unchanged;
+- QR Lite remains unchanged;
+- Employee Information Sheet remains unchanged;
+- no technical attribute search was added;
+- no QR payload change was added;
+- no technical attributes are exposed to ordinary employee/self-service/public surfaces.
+
+### Excluded from this implementation
+
+This closeout did not open:
+
+- discovery agent;
+- endpoint scanner;
+- network scanning;
+- remote control;
+- patch management;
+- OS/software deployment;
+- Hardware Inspector parity;
+- Astra Configuration Manager parity;
+- uncontrolled custom fields;
+- tenant-defined field admin platform;
+- import/export;
+- PDF/Excel/print;
+- bulk edit;
+- search over technical attributes;
+- QR payload changes;
+- Employee Information Sheet exposure;
+- Asset Overview exposure;
+- reporting/dashboard;
+- Asset 360;
+- public lookup;
+- employee self-service;
+- auth/IAM expansion;
+- new role model.
+
+### Deferred
+
+Deferred to separate future decisions:
+
+- search over technical attributes;
+- technical attributes in Employee Information Sheet;
+- technical attributes in Asset Overview;
+- QR payload changes;
+- import/export of technical attributes;
+- reporting/dashboard usage of technical attributes;
+- discovery/agent/scanner/platform scope;
+- richer validation for IP/MAC/SIP/AnyDesk formats;
+- redaction policy changes for sensitive technical values.
 
 This remains internally validated implementation evidence only.
 

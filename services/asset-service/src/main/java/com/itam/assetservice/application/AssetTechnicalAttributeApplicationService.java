@@ -6,14 +6,17 @@ import com.itam.assetservice.domain.AssetTechnicalAttributeKey;
 import com.itam.assetservice.domain.AssetTechnicalAttributeProfile;
 import com.itam.assetservice.domain.AssetTechnicalAttributeProfileResolver;
 import com.itam.assetservice.domain.AssetTechnicalAttributeRepository;
+import com.itam.assetservice.domain.AssetTechnicalAttributeSearchResult;
 import com.itam.assetservice.domain.AssetTechnicalAttributes;
 import com.itam.assetservice.domain.AuditAction;
 import com.itam.assetservice.domain.AuditEntity;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -24,8 +27,31 @@ import org.springframework.web.server.ResponseStatusException;
 public class AssetTechnicalAttributeApplicationService {
 
     private static final int ATTRIBUTE_VALUE_MAX_LENGTH = 512;
+    private static final int SEARCH_QUERY_MIN_LENGTH = 2;
+    private static final int SEARCH_QUERY_MAX_LENGTH = 128;
+    private static final int DEFAULT_SEARCH_LIMIT = 10;
+    private static final int MAX_SEARCH_LIMIT = 20;
     private static final String SENSITIVITY_NOTE =
         "Technical attributes may contain operational network or remote access data.";
+    private static final List<AssetTechnicalAttributeKey> SEARCHABLE_KEYS = List.of(
+        AssetTechnicalAttributeKey.HOSTNAME,
+        AssetTechnicalAttributeKey.ANYDESK_ID,
+        AssetTechnicalAttributeKey.IP_ADDRESS,
+        AssetTechnicalAttributeKey.MAC_ADDRESS,
+        AssetTechnicalAttributeKey.PHONE_IP,
+        AssetTechnicalAttributeKey.EXTENSION_NUMBER,
+        AssetTechnicalAttributeKey.SIP_LINE_ID,
+        AssetTechnicalAttributeKey.PRINTER_IP,
+        AssetTechnicalAttributeKey.PRINTER_NETWORK_NAME
+    );
+    private static final Set<AssetTechnicalAttributeKey> SENSITIVE_SEARCH_KEYS = Set.of(
+        AssetTechnicalAttributeKey.ANYDESK_ID,
+        AssetTechnicalAttributeKey.IP_ADDRESS,
+        AssetTechnicalAttributeKey.MAC_ADDRESS,
+        AssetTechnicalAttributeKey.PHONE_IP,
+        AssetTechnicalAttributeKey.SIP_LINE_ID,
+        AssetTechnicalAttributeKey.PRINTER_IP
+    );
 
     private final AssetRepository assetRepository;
     private final AssetTechnicalAttributeRepository technicalAttributeRepository;
@@ -106,6 +132,20 @@ public class AssetTechnicalAttributeApplicationService {
         );
 
         return new UpdateResult(asset.id(), asset.assetTag(), profile, savedValues);
+    }
+
+    public SearchResponse search(UUID tenantId, String query, Integer requestedLimit) {
+        String normalizedQuery = normalizeSearchQuery(query);
+        int limit = normalizeSearchLimit(requestedLimit);
+        List<SearchAssetResult> results = technicalAttributeRepository.searchByTechnicalAttributes(
+                tenantId,
+                normalizedQuery.toLowerCase(Locale.ROOT),
+                SEARCHABLE_KEYS,
+                limit
+            ).stream()
+            .map(this::toSearchAssetResult)
+            .toList();
+        return new SearchResponse(normalizedQuery, limit, results);
     }
 
     private Asset requireAsset(UUID tenantId, UUID assetId) {
@@ -195,11 +235,159 @@ public class AssetTechnicalAttributeApplicationService {
         return new ChangedValues(changedKeys, before, after);
     }
 
+    private SearchAssetResult toSearchAssetResult(AssetTechnicalAttributeSearchResult result) {
+        return new SearchAssetResult(
+            result.assetId(),
+            result.assetTag(),
+            result.displayName(),
+            result.assetType(),
+            result.serialNumber(),
+            result.status(),
+            matchedField(result.matchedKey(), result.matchedValue())
+        );
+    }
+
+    private MatchedField matchedField(AssetTechnicalAttributeKey key, String value) {
+        boolean sensitive = SENSITIVE_SEARCH_KEYS.contains(key);
+        return new MatchedField(
+            key.key(),
+            labelFor(key),
+            sensitive ? maskSensitiveValue(key, value) : value,
+            sensitive,
+            sensitive
+        );
+    }
+
+    private static String normalizeSearchQuery(String query) {
+        if (query == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "q is required");
+        }
+        String normalizedQuery = query.trim();
+        if (normalizedQuery.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "q must not be blank");
+        }
+        if (normalizedQuery.length() < SEARCH_QUERY_MIN_LENGTH) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "q must be at least " + SEARCH_QUERY_MIN_LENGTH + " characters"
+            );
+        }
+        if (normalizedQuery.length() > SEARCH_QUERY_MAX_LENGTH) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "q must not exceed " + SEARCH_QUERY_MAX_LENGTH + " characters"
+            );
+        }
+        return normalizedQuery;
+    }
+
+    private static int normalizeSearchLimit(Integer requestedLimit) {
+        if (requestedLimit == null) {
+            return DEFAULT_SEARCH_LIMIT;
+        }
+        if (requestedLimit < 1 || requestedLimit > MAX_SEARCH_LIMIT) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "limit must be between 1 and " + MAX_SEARCH_LIMIT
+            );
+        }
+        return requestedLimit;
+    }
+
+    private static String labelFor(AssetTechnicalAttributeKey key) {
+        return switch (key) {
+            case HOSTNAME -> "Hostname";
+            case ANYDESK_ID -> "AnyDesk ID";
+            case IP_ADDRESS -> "IP-адрес";
+            case MAC_ADDRESS -> "MAC-адрес";
+            case PHONE_IP -> "IP телефона";
+            case EXTENSION_NUMBER -> "Внутренний номер";
+            case SIP_LINE_ID -> "SIP / линия";
+            case PRINTER_IP -> "IP принтера";
+            case PRINTER_NETWORK_NAME -> "Сетевое имя принтера";
+            default -> throw new IllegalArgumentException("Unsupported technical attribute search key");
+        };
+    }
+
+    private static String maskSensitiveValue(AssetTechnicalAttributeKey key, String value) {
+        if (value == null || value.isBlank()) {
+            return "\u2022\u2022\u2022\u2022";
+        }
+        String trimmedValue = value.trim();
+        return switch (key) {
+            case ANYDESK_ID -> maskTrailingValue(trimmedValue);
+            case IP_ADDRESS, PHONE_IP, PRINTER_IP -> maskIpLikeValue(trimmedValue);
+            case MAC_ADDRESS -> maskMacLikeValue(trimmedValue);
+            case SIP_LINE_ID -> maskMiddleValue(trimmedValue);
+            default -> maskMiddleValue(trimmedValue);
+        };
+    }
+
+    private static String maskTrailingValue(String value) {
+        if (value.length() < 4) {
+            return "\u2022\u2022\u2022\u2022";
+        }
+        return "\u2022\u2022\u2022\u2022" + value.substring(value.length() - 4);
+    }
+
+    private static String maskIpLikeValue(String value) {
+        String[] parts = value.split("\\.");
+        if (parts.length == 4) {
+            return parts[0] + "." + parts[1] + "." + parts[2] + ".xxx";
+        }
+        return maskMiddleValue(value);
+    }
+
+    private static String maskMacLikeValue(String value) {
+        String normalizedValue = value.replace("-", ":");
+        String[] parts = normalizedValue.split(":");
+        if (parts.length == 6) {
+            return parts[0] + ":**:**:**:**:" + parts[5];
+        }
+        return maskMiddleValue(value);
+    }
+
+    private static String maskMiddleValue(String value) {
+        if (value.length() < 5) {
+            return "\u2022\u2022\u2022\u2022";
+        }
+        return value.substring(0, Math.min(3, value.length() - 2))
+            + "\u2026"
+            + value.substring(value.length() - 2);
+    }
+
     public record UpdateResult(
         UUID assetId,
         String assetTag,
         AssetTechnicalAttributeProfile profile,
         Map<String, String> values
+    ) {
+    }
+
+    public record SearchResponse(
+        String query,
+        int limit,
+        List<SearchAssetResult> results
+    ) {
+    }
+
+    public record SearchAssetResult(
+        UUID assetId,
+        String assetTag,
+        String displayName,
+        String assetType,
+        String serialNumber,
+        String status,
+        MatchedField matchedField
+    ) {
+    }
+
+    public record MatchedField(
+        String key,
+        String label,
+        String displayValue,
+        boolean sensitive,
+        boolean masked
     ) {
     }
 
