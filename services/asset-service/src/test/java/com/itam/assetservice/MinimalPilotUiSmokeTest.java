@@ -138,6 +138,15 @@ class MinimalPilotUiSmokeTest {
                 assertThat(body, containsString("Сетевое имя принтера"));
                 assertThat(body, containsString("IP принтера"));
                 assertThat(body, containsString("Примечание по размещению"));
+                assertThat(body, containsString("Поиск по техническим данным"));
+                assertThat(body, containsString("Ищет по вручную заполненным техническим данным устройств"));
+                assertThat(body, containsString("Это не глобальный поиск и не сканирование сети"));
+                assertThat(body, containsString("Быстрый поиск остаётся поиском по уже загруженным данным рабочего пространства"));
+                assertThat(body, containsString("Активы / устройства"));
+                assertThat(body, containsString("Введите минимум 2 символа"));
+                assertThat(body, containsString("Ничего не найдено по утверждённым техническим данным"));
+                assertThat(body, containsString("Часть значения скрыта"));
+                assertThat(body, containsString("/api/v1/assets/technical-attribute-search"));
                 assertThat(body, not(containsString("Личный кабинет")));
                 assertThat(body, not(containsString("Портал сотрудника")));
                 assertThat(body, not(containsString("Самообслуживание")));
@@ -186,10 +195,10 @@ class MinimalPilotUiSmokeTest {
             .andExpect(content().string(not(containsString("Generic PATCH only"))))
             .andExpect(content().string(not(containsString("Mutate path"))))
             .andExpect(content().string(not(containsString("Master data"))))
+            .andExpect(content().string(not(containsString("data-technical-search-action"))))
             .andExpect(content().string(not(containsString("saved views"))))
             .andExpect(content().string(not(containsString("bulk actions"))))
             .andExpect(content().string(not(containsString("dashboard"))))
-            .andExpect(content().string(not(containsString("search"))))
             .andExpect(content().string(not(containsString("Asset 360"))))
             .andExpect(content().string(not(containsString("Elasticsearch"))))
             .andExpect(content().string(not(containsString("global search"))))

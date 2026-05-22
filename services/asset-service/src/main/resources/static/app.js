@@ -72,6 +72,9 @@ const CREATE_TARGETS = {
 
 const QUICK_FIND_MIN_LENGTH = 2;
 const QUICK_FIND_RESULT_LIMIT = 6;
+const TECHNICAL_SEARCH_MIN_LENGTH = 2;
+const TECHNICAL_SEARCH_MAX_LENGTH = 128;
+const TECHNICAL_SEARCH_LIMIT = 10;
 const TECHNICAL_ATTRIBUTE_MAX_LENGTH = 512;
 const TECHNICAL_ATTRIBUTE_UNSUPPORTED_PROFILE = "UNSUPPORTED_GENERIC";
 const TECHNICAL_ATTRIBUTE_PROFILE_GROUPS = {
@@ -334,6 +337,7 @@ function createEmptyBusyState() {
         transferAsset: false,
         returnAsset: false,
         refreshAsset: false,
+        technicalSearch: false,
         adminResource: false,
         roleBinding: false,
         refreshAdmin: false
@@ -373,6 +377,11 @@ const state = {
     expandedTreeNodes: new Set(),
     treeFilter: "",
     quickFindQuery: "",
+    technicalSearchQuery: "",
+    technicalSearchResults: [],
+    technicalSearchError: "",
+    technicalSearchHasSearched: false,
+    technicalSearchLastQuery: "",
     createLauncherOpen: false,
     lastRoleAssignment: null,
     lastFeedback: null
@@ -383,6 +392,7 @@ document.addEventListener("DOMContentLoaded", initialize);
 function initialize() {
     cacheElements();
     ensureQuickFindUi();
+    ensureTechnicalSearchUi();
     bindStaticEvents();
     restoreContext();
     render();
@@ -413,6 +423,10 @@ function cacheElements() {
     ui.treeFilterStatus = document.getElementById("tree-filter-status");
     ui.quickFindInput = document.getElementById("quick-find-input");
     ui.quickFindPanel = document.getElementById("quick-find-panel");
+    ui.technicalSearchForm = document.getElementById("technical-search-form");
+    ui.technicalSearchInput = document.getElementById("technical-search-input");
+    ui.technicalSearchPanel = document.getElementById("technical-search-panel");
+    ui.technicalSearchClear = document.getElementById("technical-search-clear");
     ui.workspaceTreeBody = document.getElementById("workspace-tree-body");
     ui.workspaceDetail = document.getElementById("workspace-detail");
     ui.screenNav = document.getElementById("screen-nav");
@@ -482,6 +496,63 @@ function ensureQuickFindUi() {
     ui.quickFindPanel = document.getElementById("quick-find-panel");
 }
 
+function ensureTechnicalSearchUi() {
+    if (!ui.workspaceTree || document.getElementById("technical-search-input")) {
+        ui.technicalSearchForm = document.getElementById("technical-search-form");
+        ui.technicalSearchInput = document.getElementById("technical-search-input");
+        ui.technicalSearchPanel = document.getElementById("technical-search-panel");
+        ui.technicalSearchClear = document.getElementById("technical-search-clear");
+        return;
+    }
+
+    const quickFindSection = ui.quickFindInput?.closest(".quick-find");
+    const anchor = quickFindSection || ui.treeFilter?.closest(".tree-filter") || ui.workspaceTreeBody;
+    const position = quickFindSection ? "afterend" : "beforebegin";
+    const markup = `
+        <section class="technical-search" aria-label="Поиск по техническим данным">
+            <div class="technical-search-heading">
+                <p class="section-kicker">Технический поиск</p>
+                <strong>Поиск по техническим данным</strong>
+            </div>
+            <p class="technical-search-help">Ищет по вручную заполненным техническим данным устройств.</p>
+            <p class="technical-search-help">Это не глобальный поиск и не сканирование сети.</p>
+            <p class="technical-search-help">Быстрый поиск остаётся поиском по уже загруженным данным рабочего пространства.</p>
+            <p class="technical-search-help">Результаты открывают карточку актива без действий в строке результата.</p>
+            <form id="technical-search-form" class="technical-search-form">
+                <label class="field technical-search-field">
+                    <span>Поиск по техническим данным</span>
+                    <input
+                        id="technical-search-input"
+                        class="technical-search-input"
+                        type="text"
+                        autocomplete="off"
+                        maxlength="${TECHNICAL_SEARCH_MAX_LENGTH}"
+                        placeholder="Hostname, AnyDesk, IP, MAC, внутренний номер..."
+                        aria-describedby="technical-search-help"
+                    >
+                    <small id="technical-search-help" class="technical-search-help">Введите технический признак устройства: hostname, AnyDesk, IP, MAC, внутренний номер или сетевое имя принтера.</small>
+                </label>
+                <div class="technical-search-actions">
+                    <button class="button button-secondary" type="submit">Найти</button>
+                    <button id="technical-search-clear" class="button button-ghost" type="button">Очистить</button>
+                </div>
+            </form>
+            <div id="technical-search-panel" class="technical-search-panel" aria-live="polite"></div>
+        </section>
+    `;
+
+    if (anchor) {
+        anchor.insertAdjacentHTML(position, markup);
+    } else {
+        ui.workspaceTree.insertAdjacentHTML("beforeend", markup);
+    }
+
+    ui.technicalSearchForm = document.getElementById("technical-search-form");
+    ui.technicalSearchInput = document.getElementById("technical-search-input");
+    ui.technicalSearchPanel = document.getElementById("technical-search-panel");
+    ui.technicalSearchClear = document.getElementById("technical-search-clear");
+}
+
 function bindStaticEvents() {
     ui.sessionForm.addEventListener("submit", onSessionSubmit);
     ui.userServiceBaseUrl.addEventListener("input", renderUserServiceUrlPreview);
@@ -496,6 +567,10 @@ function bindStaticEvents() {
     ui.refreshAdminResource?.addEventListener("click", onRefreshAdminResourceClick);
     ui.quickFindInput?.addEventListener("input", onQuickFindInput);
     ui.quickFindPanel?.addEventListener("click", onQuickFindPanelClick);
+    ui.technicalSearchInput?.addEventListener("input", onTechnicalSearchInput);
+    ui.technicalSearchForm?.addEventListener("submit", onTechnicalSearchSubmit);
+    ui.technicalSearchClear?.addEventListener("click", onTechnicalSearchClear);
+    ui.technicalSearchPanel?.addEventListener("click", onTechnicalSearchPanelClick);
     ui.treeFilter?.addEventListener("input", onTreeFilterInput);
     ui.workspaceTreeBody?.addEventListener("click", onTreeClick);
     ui.workspaceDetail?.addEventListener("click", onWorkspaceDetailClick);
@@ -1655,6 +1730,86 @@ function onQuickFindPanelClick(event) {
     }
 }
 
+function onTechnicalSearchInput(event) {
+    state.technicalSearchQuery = event.target.value || "";
+}
+
+async function onTechnicalSearchSubmit(event) {
+    event.preventDefault();
+    const query = String(state.technicalSearchQuery || ui.technicalSearchInput?.value || "").trim();
+    state.technicalSearchQuery = query;
+
+    if (!query) {
+        state.technicalSearchHasSearched = false;
+        state.technicalSearchError = "";
+        state.technicalSearchResults = [];
+        state.technicalSearchLastQuery = "";
+        renderTechnicalSearch();
+        return;
+    }
+
+    if (query.length < TECHNICAL_SEARCH_MIN_LENGTH) {
+        state.technicalSearchHasSearched = true;
+        state.technicalSearchError = "Введите минимум 2 символа.";
+        state.technicalSearchResults = [];
+        state.technicalSearchLastQuery = query;
+        renderTechnicalSearch();
+        return;
+    }
+
+    if (query.length > TECHNICAL_SEARCH_MAX_LENGTH) {
+        state.technicalSearchHasSearched = true;
+        state.technicalSearchError = `Запрос не должен быть длиннее ${TECHNICAL_SEARCH_MAX_LENGTH} символов.`;
+        state.technicalSearchResults = [];
+        state.technicalSearchLastQuery = query;
+        renderTechnicalSearch();
+        return;
+    }
+
+    state.technicalSearchHasSearched = true;
+    state.technicalSearchError = "";
+    state.technicalSearchResults = [];
+    state.technicalSearchLastQuery = query;
+
+    try {
+        await withBusy("technicalSearch", async () => {
+            const params = new URLSearchParams({
+                q: query,
+                limit: String(TECHNICAL_SEARCH_LIMIT)
+            });
+            const response = await requestJson("asset", `/api/v1/assets/technical-attribute-search?${params.toString()}`);
+            state.technicalSearchResults = Array.isArray(response.results) ? response.results : [];
+            state.technicalSearchLastQuery = response.query || query;
+        });
+    } catch (error) {
+        state.technicalSearchError = "Не удалось выполнить поиск по техническим данным. Проверьте подключение и повторите попытку.";
+        state.technicalSearchResults = [];
+        renderTechnicalSearch();
+    }
+}
+
+function onTechnicalSearchClear() {
+    state.technicalSearchQuery = "";
+    state.technicalSearchResults = [];
+    state.technicalSearchError = "";
+    state.technicalSearchHasSearched = false;
+    state.technicalSearchLastQuery = "";
+    renderTechnicalSearch();
+    ui.technicalSearchInput?.focus();
+}
+
+function onTechnicalSearchPanelClick(event) {
+    const result = event.target.closest("[data-technical-search-asset-id]");
+    if (!result) {
+        return;
+    }
+
+    selectAssetNode(result.dataset.technicalSearchAssetId, {
+        source: "technical-search",
+        activeSection: "technical"
+    });
+}
+
 function onWorkspaceDetailClick(event) {
     if (handleTechnicalAttributesClick(event)) {
         return;
@@ -1804,7 +1959,7 @@ async function selectAssetNode(assetId, context = {}) {
             parentId: context.parentId || "",
             group: context.group || ""
         };
-        state.activeAssetSection = "overview";
+        state.activeAssetSection = context.activeSection || "overview";
         await withBusy("refreshAsset", () => loadAssetBundle(assetId));
         scrollToElement(ui.workspaceDetail);
     } catch (error) {
@@ -1947,6 +2102,7 @@ function renderTreeWorkspace() {
     }
 
     renderQuickFind();
+    renderTechnicalSearch();
     renderTreeNavigation();
     renderTreeDetail();
     applyTreeFilter();
@@ -2068,6 +2224,112 @@ function renderQuickFindAssetResult(asset) {
 function renderQuickFindEmpty(title, copy) {
     return `
         <div class="quick-find-empty">
+            <strong>${escapeHtml(title)}</strong>
+            <p>${escapeHtml(copy)}</p>
+        </div>
+    `;
+}
+
+function renderTechnicalSearch() {
+    if (!ui.technicalSearchInput || !ui.technicalSearchPanel) {
+        return;
+    }
+
+    if (ui.technicalSearchInput.value !== state.technicalSearchQuery) {
+        ui.technicalSearchInput.value = state.technicalSearchQuery;
+    }
+
+    setButtonBusy(ui.technicalSearchForm?.querySelector("button[type='submit']"), isBusy("technicalSearch"), "Ищем");
+    ui.technicalSearchPanel.innerHTML = renderTechnicalSearchPanel();
+}
+
+function renderTechnicalSearchPanel() {
+    if (isBusy("technicalSearch")) {
+        return renderTechnicalSearchEmpty("Ищем", "Выполняем поиск по утверждённым техническим данным.");
+    }
+
+    if (state.technicalSearchError) {
+        return renderTechnicalSearchEmpty("Поиск не выполнен", state.technicalSearchError, "technical-search-error");
+    }
+
+    if (!hasResolvedProfile()) {
+        return renderTechnicalSearchEmpty(
+            "Поиск по техническим данным",
+            "Введите технический признак устройства: hostname, AnyDesk, IP, MAC, внутренний номер или сетевое имя принтера."
+        );
+    }
+
+    if (!canAssetRead()) {
+        return renderTechnicalSearchEmpty(
+            "Поиск недоступен",
+            "Текущая роль не имеет доступа к реестру активов."
+        );
+    }
+
+    if (!state.technicalSearchHasSearched) {
+        return renderTechnicalSearchEmpty(
+            "Поиск по техническим данным",
+            "Введите технический признак устройства: hostname, AnyDesk, IP, MAC, внутренний номер или сетевое имя принтера."
+        );
+    }
+
+    if (state.technicalSearchResults.length === 0) {
+        return renderTechnicalSearchEmpty(
+            "Ничего не найдено",
+            "Ничего не найдено по утверждённым техническим данным."
+        );
+    }
+
+    return `
+        <div class="technical-search-results">
+            <section class="technical-search-group" aria-label="Активы / устройства">
+                <div class="technical-search-group-header">
+                    <span>Активы / устройства</span>
+                    <span class="summary-pill">${escapeHtml(String(state.technicalSearchResults.length))}</span>
+                </div>
+                ${state.technicalSearchResults.map(renderTechnicalSearchResult).join("")}
+            </section>
+        </div>
+    `;
+}
+
+function renderTechnicalSearchResult(result) {
+    const assetId = result.asset_id || result.assetId || "";
+    const matchedField = result.matched_field || result.matchedField || {};
+    const title = assetDisplayTitle({
+        id: assetId,
+        display_name: result.display_name || result.displayName,
+        asset_tag: result.asset_tag || result.assetTag,
+        asset_type: result.asset_type || result.assetType,
+        serial_number: result.serial_number || result.serialNumber
+    });
+    const meta = [
+        result.asset_tag || result.assetTag ? `Инв. тег: ${result.asset_tag || result.assetTag}` : "",
+        result.asset_type || result.assetType ? `Тип: ${result.asset_type || result.assetType}` : "",
+        result.serial_number || result.serialNumber ? `SN: ${result.serial_number || result.serialNumber}` : "",
+        result.status ? `Статус: ${result.status}` : ""
+    ].filter(Boolean).join(" · ");
+    const matchLabel = matchedField.label || matchedField.key || "Техническое поле";
+    const displayValue = matchedField.display_value || matchedField.displayValue || "";
+    const maskedHint = matchedField.masked
+        ? `<span class="technical-search-masked-hint">Часть значения скрыта</span>`
+        : "";
+
+    return `
+        <button class="technical-search-result" type="button" data-technical-search-asset-id="${escapeAttribute(assetId)}">
+            <span class="technical-search-title">${escapeHtml(title)}</span>
+            <span class="technical-search-meta">${escapeHtml(meta || "Данные актива")}</span>
+            <span class="technical-search-match">
+                <span>${escapeHtml(matchLabel)}: ${escapeHtml(displayValue || "-")}</span>
+                ${maskedHint}
+            </span>
+        </button>
+    `;
+}
+
+function renderTechnicalSearchEmpty(title, copy, className = "") {
+    return `
+        <div class="technical-search-empty ${escapeAttribute(className)}">
             <strong>${escapeHtml(title)}</strong>
             <p>${escapeHtml(copy)}</p>
         </div>
