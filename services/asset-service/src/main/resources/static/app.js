@@ -77,6 +77,11 @@ const TECHNICAL_SEARCH_MAX_LENGTH = 128;
 const TECHNICAL_SEARCH_LIMIT = 10;
 const TECHNICAL_ATTRIBUTE_MAX_LENGTH = 512;
 const TECHNICAL_ATTRIBUTE_UNSUPPORTED_PROFILE = "UNSUPPORTED_GENERIC";
+const EMPLOYEE_SHEET_TECHNICAL_HINT_FIELDS = [
+    { key: "hostname", label: "Hostname" },
+    { key: "extension_number", label: "Внутренний номер" },
+    { key: "printer_network_name", label: "Сетевое имя принтера" }
+];
 const TECHNICAL_ATTRIBUTE_PROFILE_GROUPS = {
     PC_LAPTOP: [
         {
@@ -338,6 +343,7 @@ function createEmptyBusyState() {
         returnAsset: false,
         refreshAsset: false,
         technicalSearch: false,
+        employeeSheetTechnicalHints: false,
         adminResource: false,
         roleBinding: false,
         refreshAdmin: false
@@ -382,6 +388,10 @@ const state = {
     technicalSearchError: "",
     technicalSearchHasSearched: false,
     technicalSearchLastQuery: "",
+    employeeSheetTechnicalHintsUserId: "",
+    employeeSheetTechnicalHintsByAssetId: {},
+    employeeSheetTechnicalHintsError: "",
+    employeeSheetTechnicalHintsRequestId: 0,
     createLauncherOpen: false,
     lastRoleAssignment: null,
     lastFeedback: null
@@ -710,6 +720,7 @@ function clearSession() {
     state.selectedTreeNode = { type: TREE_NODE_TYPES.WORKSPACE };
     state.expandedTreeNodes = new Set();
     state.treeFilter = "";
+    resetEmployeeSheetTechnicalHints();
     state.lastRoleAssignment = null;
     state.lastFeedback = null;
 
@@ -815,6 +826,10 @@ async function refreshAllData(options = {}) {
         }
 
         render();
+        if (state.selectedTreeNode?.type === TREE_NODE_TYPES.USER) {
+            resetEmployeeSheetTechnicalHints(state.selectedTreeNode.id);
+            loadEmployeeSheetTechnicalHintsForUser(state.selectedTreeNode.id);
+        }
         if (!options.silent) {
             showFlash("Данные рабочего контура обновлены.", "success");
         }
@@ -1077,6 +1092,102 @@ function extractErrorMessage(response, payload) {
         }
     }
     return `${response.status} ${response.statusText}`;
+}
+
+function resetEmployeeSheetTechnicalHints(userId = "") {
+    state.employeeSheetTechnicalHintsUserId = String(userId || "");
+    state.employeeSheetTechnicalHintsByAssetId = {};
+    state.employeeSheetTechnicalHintsError = "";
+    state.employeeSheetTechnicalHintsRequestId += 1;
+    state.busy.employeeSheetTechnicalHints = false;
+}
+
+function isCurrentEmployeeSheetHintsRequest(userId, requestId) {
+    return state.employeeSheetTechnicalHintsRequestId === requestId
+        && state.selectedTreeNode?.type === TREE_NODE_TYPES.USER
+        && String(state.selectedTreeNode.id || "") === String(userId || "");
+}
+
+function selectUserNode(userId, options = {}) {
+    const selectedUserId = String(userId || "");
+    state.selectedTreeNode = { type: TREE_NODE_TYPES.USER, id: selectedUserId };
+    resetEmployeeSheetTechnicalHints(selectedUserId);
+    render();
+
+    if (options.scroll !== false) {
+        scrollToElement(ui.workspaceDetail);
+    }
+
+    loadEmployeeSheetTechnicalHintsForUser(selectedUserId);
+}
+
+async function loadEmployeeSheetTechnicalHintsForUser(userId) {
+    const selectedUserId = String(userId || "");
+    const selectedUserExists = state.references.users.some((user) => String(user.id || "") === selectedUserId);
+    if (!selectedUserId || !selectedUserExists || !hasConnectionContext() || !canAssetRead()) {
+        return;
+    }
+
+    const requestId = state.employeeSheetTechnicalHintsRequestId + 1;
+    state.employeeSheetTechnicalHintsRequestId = requestId;
+    state.employeeSheetTechnicalHintsUserId = selectedUserId;
+    state.employeeSheetTechnicalHintsError = "";
+    state.busy.employeeSheetTechnicalHints = true;
+    render();
+
+    try {
+        const params = new URLSearchParams({ user_id: selectedUserId });
+        const response = await requestJson("asset", `/api/v1/assets/employee-sheet-technical-hints?${params.toString()}`);
+        if (!isCurrentEmployeeSheetHintsRequest(selectedUserId, requestId)) {
+            return;
+        }
+
+        state.employeeSheetTechnicalHintsByAssetId = buildEmployeeSheetTechnicalHintsByAssetId(response);
+        state.employeeSheetTechnicalHintsError = "";
+    } catch (error) {
+        if (!isCurrentEmployeeSheetHintsRequest(selectedUserId, requestId)) {
+            return;
+        }
+
+        state.employeeSheetTechnicalHintsByAssetId = {};
+        state.employeeSheetTechnicalHintsError = "Технические подсказки временно недоступны.";
+    } finally {
+        if (isCurrentEmployeeSheetHintsRequest(selectedUserId, requestId)) {
+            state.busy.employeeSheetTechnicalHints = false;
+            render();
+        }
+    }
+}
+
+function buildEmployeeSheetTechnicalHintsByAssetId(response) {
+    const rows = Array.isArray(response?.assets) ? response.assets : [];
+    return rows.reduce((accumulator, row) => {
+        const assetId = row?.asset_id || row?.assetId || row?.id;
+        if (!assetId) {
+            return accumulator;
+        }
+
+        const hints = normalizeEmployeeSheetTechnicalHints(row?.technical_hints || row?.technicalHints);
+        if (Object.keys(hints).length > 0) {
+            accumulator[String(assetId)] = hints;
+        }
+        return accumulator;
+    }, {});
+}
+
+function normalizeEmployeeSheetTechnicalHints(rawHints) {
+    if (!rawHints || typeof rawHints !== "object") {
+        return {};
+    }
+
+    return EMPLOYEE_SHEET_TECHNICAL_HINT_FIELDS.reduce((accumulator, field) => {
+        const rawValue = rawHints[field.key];
+        const value = rawValue == null ? "" : String(rawValue).trim();
+        if (value) {
+            accumulator[field.key] = value;
+        }
+        return accumulator;
+    }, {});
 }
 
 function buildAssetUpsertPayload(formData) {
@@ -1719,9 +1830,7 @@ function onQuickFindPanelClick(event) {
         if (!userId) {
             return;
         }
-        state.selectedTreeNode = { type: TREE_NODE_TYPES.USER, id: userId };
-        render();
-        scrollToElement(ui.workspaceDetail);
+        selectUserNode(userId);
         return;
     }
 
@@ -1924,7 +2033,8 @@ function selectTreeNodeFromElement(element) {
     if (type === TREE_NODE_TYPES.DEPARTMENT) {
         state.selectedTreeNode = { type, id: element.dataset.departmentId || FALLBACK_DEPARTMENT_ID };
     } else if (type === TREE_NODE_TYPES.USER) {
-        state.selectedTreeNode = { type, id: element.dataset.userId || "" };
+        selectUserNode(element.dataset.userId || "");
+        return;
     } else if (type === TREE_NODE_TYPES.BRANCH) {
         state.selectedTreeNode = { type, id: element.dataset.branchId || FALLBACK_BRANCH_ID };
     } else if (type === TREE_NODE_TYPES.LOCATION) {
@@ -1939,6 +2049,7 @@ function selectTreeNodeFromElement(element) {
         state.selectedTreeNode = { type: TREE_NODE_TYPES.WORKSPACE };
     }
 
+    resetEmployeeSheetTechnicalHints();
     render();
     scrollToElement(ui.workspaceDetail);
 }
@@ -1952,6 +2063,7 @@ async function selectAssetNode(assetId, context = {}) {
     }
 
     try {
+        resetEmployeeSheetTechnicalHints();
         state.selectedTreeNode = {
             type: TREE_NODE_TYPES.ASSET,
             id: assetId,
@@ -2940,6 +3052,7 @@ function renderEmployeeInfoSheet(user, assets, departmentName) {
                     </div>
                     <span class="summary-pill">${escapeHtml(String(assets.length))}</span>
                 </div>
+                ${assets.length > 0 ? renderEmployeeSheetTechnicalHintsStatus() : ""}
                 ${renderEmployeeDeviceList(assets)}
             </section>
         </section>
@@ -2988,8 +3101,56 @@ function renderEmployeeDeviceCard(asset) {
                     <dd>${renderLocationReference(asset.location_id)}</dd>
                 </div>
             </dl>
+            ${renderEmployeeDeviceTechnicalHints(asset)}
         </article>
     `;
+}
+
+function renderEmployeeSheetTechnicalHintsStatus() {
+    if (isBusy("employeeSheetTechnicalHints")) {
+        return `<p class="employee-technical-hints-status">Загружаем технические подсказки...</p>`;
+    }
+
+    if (state.employeeSheetTechnicalHintsError) {
+        return `<p class="employee-technical-hints-status employee-technical-hints-error">${escapeHtml(state.employeeSheetTechnicalHintsError)}</p>`;
+    }
+
+    return "";
+}
+
+function renderEmployeeDeviceTechnicalHints(asset) {
+    const rows = getEmployeeSheetTechnicalHintRows(asset);
+    if (rows.length === 0) {
+        return "";
+    }
+
+    return `
+        <dl class="employee-technical-hints" aria-label="Технические подсказки">
+            ${rows.map((row) => `
+                <div class="employee-technical-hint">
+                    <dt>${escapeHtml(row.label)}</dt>
+                    <dd>${escapeHtml(row.value)}</dd>
+                </div>
+            `).join("")}
+        </dl>
+    `;
+}
+
+function getEmployeeSheetTechnicalHintRows(asset) {
+    const selectedUserId = state.selectedTreeNode?.type === TREE_NODE_TYPES.USER
+        ? String(state.selectedTreeNode.id || "")
+        : "";
+    if (!asset?.id || !selectedUserId || state.employeeSheetTechnicalHintsUserId !== selectedUserId) {
+        return [];
+    }
+
+    const hints = state.employeeSheetTechnicalHintsByAssetId[String(asset.id)] || {};
+    return EMPLOYEE_SHEET_TECHNICAL_HINT_FIELDS
+        .map((field) => ({
+            label: field.label,
+            value: optionalAssetText(hints[field.key])
+        }))
+        .filter((row) => row.value);
 }
 
 function renderBranchDetail(branchId) {
