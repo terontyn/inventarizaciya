@@ -201,6 +201,7 @@ public class JdbcAssetTechnicalAttributeRepository implements AssetTechnicalAttr
             + "WHEN 'sip_line_id' THEN 7 "
             + "WHEN 'printer_ip' THEN 8 "
             + "WHEN 'printer_network_name' THEN 9 "
+            + "WHEN 'printer_placement_note' THEN 10 "
             + "ELSE 99 "
             + "END";
     }

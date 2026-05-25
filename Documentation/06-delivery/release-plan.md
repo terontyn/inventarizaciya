@@ -3023,3 +3023,118 @@ This closeout does not prove:
 The project remains in:
 
 **Project Stabilization / First-Adopter-Gated Hold**
+
+## Quick Find / Technical Search Merge Semantics Closeout Clarification
+
+Quick Find / Technical Search Merge Semantics is accepted as completed at its approved bounded frontend-only scope.
+
+### Delivery interpretation
+
+This implementation is accepted as:
+
+**frontend-only visual grouping and semantic clarification for existing search surfaces.**
+
+It improves search orientation without merging search logic and without introducing backend/global search.
+
+### Accepted scope
+
+Implemented scope:
+
+- added shared visual search area:
+  - `Поиск`;
+- kept separate sections:
+  - `Сотрудники и активы`;
+  - `Технические данные`;
+- clarified `Быстрый поиск` as loaded-state workspace search;
+- clarified `Поиск по техническим данным` as endpoint-based technical-attribute search;
+- preserved separate result rendering and handlers;
+- preserved separate state and data sources;
+- preserved backend masking behavior for technical search;
+- preserved standalone `Информационный лист` employee-only search.
+
+### Preserved Quick Find behavior
+
+`Быстрый поиск` remains:
+
+- frontend-only;
+- loaded-state-only;
+- no backend call;
+- search over loaded users and assets only;
+- grouped by:
+  - `Сотрудники`;
+  - `Активы / устройства`.
+
+Searchable values remain:
+
+- employee/user name;
+- `asset_tag`;
+- `display_name`;
+- `serial_number`;
+- `asset_type`.
+
+### Preserved Technical Search behavior
+
+`Поиск по техническим данным` remains:
+
+- separate from Quick Find;
+- endpoint-based;
+- asset/device result only;
+- read-only navigation result rows.
+
+Existing endpoint remains unchanged:
+
+```http
+GET /api/v1/assets/technical-attribute-search
+```
+
+Backend-provided masking/sensitivity behavior remains unchanged.
+
+### Preserved boundaries
+
+This implementation preserves:
+
+- `Фильтр дерева` as local/open-tree filter only;
+- standalone `Информационный лист` as separate employee-only search interface;
+- no merged search input;
+- no merged result list;
+- no backend/API change;
+- no new endpoint;
+- no search scope expansion;
+- no unmasked sensitive technical values.
+
+### Not opened
+
+This implementation did not open:
+
+- global search;
+- Elasticsearch;
+- advanced filters;
+- saved views;
+- persistent preferences;
+- backend unified search;
+- cross-service search orchestration;
+- search over `note`;
+- search over `printer_placement_note`;
+- QR search;
+- audit/history search;
+- public lookup;
+- employee self-service;
+- Asset 360;
+- reporting/dashboard;
+- auth/IAM expansion;
+- new role model.
+
+### Non-claim rule
+
+This closeout does not prove:
+
+- release readiness;
+- FTOV start;
+- FTOV exit;
+- production readiness;
+- real tenant validation;
+- real day-to-day operational validation.
+
+The project remains in:
+
+**Project Stabilization / First-Adopter-Gated Hold**

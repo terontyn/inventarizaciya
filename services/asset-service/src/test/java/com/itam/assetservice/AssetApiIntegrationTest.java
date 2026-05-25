@@ -1383,7 +1383,9 @@ class AssetApiIntegrationTest extends IntegrationTestSupport {
         insertSearchAsset(tenantId, "SIP", "IP Phone", "sip_line_id", "line-primary");
         insertSearchAsset(tenantId, "PRINTER-IP", "Printer", "printer_ip", "10.20.0.40");
         insertSearchAsset(tenantId, "PRINTER-NAME", "Printer", "printer_network_name", "floor-2-mfp");
+        insertSearchAsset(tenantId, "PRINTER-PLACE", "Printer", "printer_placement_note", "placement-secret");
 
+        expectRoleLookup(tenantId, tenantAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
         expectRoleLookup(tenantId, tenantAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
         expectRoleLookup(tenantId, tenantAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
         expectRoleLookup(tenantId, tenantAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
@@ -1473,6 +1475,16 @@ class AssetApiIntegrationTest extends IntegrationTestSupport {
             false,
             false
         );
+        assertTechnicalAttributeSearchMatch(
+            tenantId,
+            tenantAdminId,
+            "placement-secret",
+            "printer_placement_note",
+            "Примечание по размещению",
+            "\u2022\u2022\u2022\u2022",
+            true,
+            true
+        );
 
         mockUserService.verify();
     }
@@ -1523,7 +1535,21 @@ class AssetApiIntegrationTest extends IntegrationTestSupport {
         expectRoleLookup(tenantA, tenantAAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
         expectRoleLookup(tenantB, tenantBAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
 
-        assertTechnicalAttributeSearchEmpty(tenantA, tenantAAdminId, "placement-secret");
+        mockMvc.perform(get("/api/v1/assets/technical-attribute-search")
+                .header(AUTHENTICATED_TENANT_HEADER, tenantA)
+                .header(AUTHENTICATED_USER_HEADER, tenantAAdminId)
+                .param("q", "placement-secret"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.results.length()").value(1))
+            .andExpect(jsonPath("$.results[0].asset_id").value(assetId.toString()))
+            .andExpect(jsonPath("$.results[0].matched_field.key").value("printer_placement_note"))
+            .andExpect(jsonPath("$.results[0].matched_field.label").value("Примечание по размещению"))
+            .andExpect(jsonPath("$.results[0].matched_field.display_value").isNotEmpty())
+            .andExpect(jsonPath("$.results[0].matched_field.display_value").value("\u2022\u2022\u2022\u2022"))
+            .andExpect(jsonPath("$.results[0].matched_field.display_value").value(org.hamcrest.Matchers.not("placement-secret")))
+            .andExpect(jsonPath("$.results[0].matched_field.sensitive").value(true))
+            .andExpect(jsonPath("$.results[0].matched_field.masked").value(true))
+            .andExpect(jsonPath("$.results[0].technical_attributes").doesNotExist());
         assertTechnicalAttributeSearchEmpty(tenantA, tenantAAdminId, "custom-secret");
         assertTechnicalAttributeSearchEmpty(tenantA, tenantAAdminId, "note-secret");
         assertTechnicalAttributeSearchEmpty(tenantA, tenantAAdminId, "audit-secret");

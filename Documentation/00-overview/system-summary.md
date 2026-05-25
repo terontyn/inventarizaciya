@@ -2323,3 +2323,101 @@ It does not prove:
 - production readiness;
 - real tenant validation;
 - real day-to-day operational validation.
+
+## Current Baseline Update — Quick Find / Technical Search Merge Semantics Closeout
+
+Quick Find / Technical Search Merge Semantics has been implemented and accepted as a bounded frontend-only UX semantics clarification.
+
+The implementation did not merge search logic and did not introduce a new search backend.
+
+Accepted implementation:
+
+- added a shared visual search area in the left workspace/navigation region:
+  - `Поиск`;
+- kept two separate sections inside this area:
+  - `Сотрудники и активы`;
+  - `Технические данные`;
+- clarified that `Быстрый поиск` searches already loaded workspace data only;
+- clarified that `Поиск по техническим данным` uses the existing technical-attribute search endpoint and preserves masking/sensitivity behavior;
+- kept Quick Find and Technical Search state, handlers, result rendering and data sources separate;
+- kept standalone `Информационный лист` employee-only search unchanged;
+- kept `Фильтр дерева` as local/open-tree filtering only.
+
+Preserved Quick Find semantics:
+
+- frontend-only;
+- loaded-state-only;
+- no backend call;
+- searches loaded users and loaded assets;
+- searches:
+  - employee/user name;
+  - `asset_tag`;
+  - `display_name`;
+  - `serial_number`;
+  - `asset_type`;
+- result groups remain:
+  - `Сотрудники`;
+  - `Активы / устройства`;
+- result rows remain read-only navigation rows.
+
+Preserved Technical Search semantics:
+
+- existing endpoint unchanged:
+  - `GET /api/v1/assets/technical-attribute-search`;
+- technical attributes only;
+- result group remains:
+  - `Активы / устройства`;
+- backend masking/sensitivity behavior is preserved;
+- frontend does not unmask sensitive values;
+- result rows remain read-only navigation rows;
+- result click still opens selected Asset detail / Technical details when safe.
+
+Preserved standalone `Информационный лист` semantics:
+
+- separate top-level interface remains unchanged;
+- employee-only search remains loaded-state-only;
+- asset results are not shown in Employee Sheet search;
+- selected employee stays inside the standalone sheet path;
+- assigned devices and low-sensitivity hints remain unchanged.
+
+This implementation did not open:
+
+- global search;
+- Elasticsearch;
+- advanced filters;
+- saved views;
+- persistent preferences;
+- backend unified search;
+- new backend endpoint;
+- cross-service search orchestration;
+- search over `note`;
+- search over `printer_placement_note`;
+- QR search;
+- audit/history search;
+- public lookup;
+- employee self-service;
+- Asset 360;
+- reporting/dashboard;
+- auth/IAM expansion;
+- new role model.
+
+Implementation scope:
+
+- frontend-only;
+- existing static Operational Workspace UI only;
+- smoke test updated for static UI coverage;
+- no backend/API changes;
+- no DB/migration changes;
+- no Documentation change during implementation;
+- no build/package changes.
+
+This remains internally validated implementation evidence only.
+
+It does not prove:
+
+- release readiness;
+- FTOV start;
+- FTOV exit;
+- production readiness;
+- real tenant validation;
+- real day-to-day operational validation.

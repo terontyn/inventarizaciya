@@ -43,7 +43,8 @@ public class AssetTechnicalAttributeApplicationService {
         AssetTechnicalAttributeKey.EXTENSION_NUMBER,
         AssetTechnicalAttributeKey.SIP_LINE_ID,
         AssetTechnicalAttributeKey.PRINTER_IP,
-        AssetTechnicalAttributeKey.PRINTER_NETWORK_NAME
+        AssetTechnicalAttributeKey.PRINTER_NETWORK_NAME,
+        AssetTechnicalAttributeKey.PRINTER_PLACEMENT_NOTE
     );
     private static final Set<AssetTechnicalAttributeKey> SENSITIVE_SEARCH_KEYS = Set.of(
         AssetTechnicalAttributeKey.ANYDESK_ID,
@@ -51,7 +52,8 @@ public class AssetTechnicalAttributeApplicationService {
         AssetTechnicalAttributeKey.MAC_ADDRESS,
         AssetTechnicalAttributeKey.PHONE_IP,
         AssetTechnicalAttributeKey.SIP_LINE_ID,
-        AssetTechnicalAttributeKey.PRINTER_IP
+        AssetTechnicalAttributeKey.PRINTER_IP,
+        AssetTechnicalAttributeKey.PRINTER_PLACEMENT_NOTE
     );
     private static final List<AssetTechnicalAttributeKey> EMPLOYEE_SHEET_HINT_KEYS = List.of(
         AssetTechnicalAttributeKey.HOSTNAME,
@@ -350,6 +352,7 @@ public class AssetTechnicalAttributeApplicationService {
             case SIP_LINE_ID -> "SIP / линия";
             case PRINTER_IP -> "IP принтера";
             case PRINTER_NETWORK_NAME -> "Сетевое имя принтера";
+            case PRINTER_PLACEMENT_NOTE -> "Примечание по размещению";
             default -> throw new IllegalArgumentException("Unsupported technical attribute search key");
         };
     }
@@ -364,6 +367,7 @@ public class AssetTechnicalAttributeApplicationService {
             case IP_ADDRESS, PHONE_IP, PRINTER_IP -> maskIpLikeValue(trimmedValue);
             case MAC_ADDRESS -> maskMacLikeValue(trimmedValue);
             case SIP_LINE_ID -> maskMiddleValue(trimmedValue);
+            case PRINTER_PLACEMENT_NOTE -> "\u2022\u2022\u2022\u2022";
             default -> maskMiddleValue(trimmedValue);
         };
     }

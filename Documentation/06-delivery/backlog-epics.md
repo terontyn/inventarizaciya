@@ -1150,9 +1150,10 @@ Not approved by this note:
 - Astra Configuration Manager parity.
 
 
-### Planning priority after Standalone Employee Information Sheet Interface
+### Planning priority after Quick Find / Technical Search Merge Semantics
 
-Unified Create Launcher, Simplified Asset Actions UX, ADR-0005 Asset Delete Semantics, Controlled Employee Asset Information Sheet, Operational Search v1 Frontend Quick Find, Asset QR Lite Frontend Derived Display, Asset Type-Specific Technical Attributes v1, Search over Technical Attributes, Employee Sheet Technical Attribute Exposure, and Standalone Employee Information Sheet Interface are implemented/accepted at their approved scope levels.
+Unified Create Launcher, Simplified Asset Actions UX, ADR-0005 Asset Delete Semantics, Controlled Employee Asset Information Sheet, Operational Search v1 Frontend Quick Find, Asset QR Lite Frontend Derived Display, Asset Type-Specific Technical Attributes v1, Search over Technical Attributes, Employee Sheet Technical Attribute Exposure, Standalone Employee Information Sheet Interface, and Quick Find / Technical Search Merge Semantics are implemented/accepted at their approved scope levels.
+
 Standalone Employee Information Sheet Interface is accepted as:
 
 - a frontend-only focused-interface correction;
@@ -1160,6 +1161,20 @@ Standalone Employee Information Sheet Interface is accepted as:
 - employee-only loaded-state search;
 - selected employee information plus assigned devices;
 - low-sensitivity technical hints only.
+
+Quick Find / Technical Search Merge Semantics is accepted as:
+
+- a frontend-only visual grouping and semantic clarification;
+- shared visual search area:
+  - `Поиск`;
+- two separate sections:
+  - `Сотрудники и активы`;
+  - `Технические данные`;
+- no merged search logic;
+- no backend/API changes;
+- no global search;
+- no advanced filters;
+- no search scope expansion.
 
 Employee Sheet Technical Attribute Exposure is accepted as:
 
@@ -1185,7 +1200,6 @@ The next stage should be the next owner-selected bounded feature gate or the def
 Possible optional branches:
 
 - `Search Scope Expansion Decision Gate` for `note` / `printer_placement_note`;
-- `Quick Find / Technical Search Merge Semantics Decision Gate`;
 - separate product/architecture gates for global search, advanced filters, reporting/dashboard, discovery/scanner, employee self-service, export/PDF/print or Asset 360.
 
 Do not open these branches implicitly.
@@ -1494,6 +1508,94 @@ Required next step:
 - if owner wants public lookup or employee self-service, open separate auth/IAM and product decision gate;
 - if owner wants export/PDF/print, open separate product decision gate;
 - if owner wants Asset 360, reporting/dashboard, global search or Hardware Inspector parity, open separate product/architecture decision first;
+- otherwise continue to the next owner-selected bounded feature gate or the deferred integrated stabilization / verification gate.
+
+This backlog closeout does not prove release readiness, FTOV start, FTOV exit, production readiness, real tenant validation, or real day-to-day operational validation.
+
+#### Quick Find / Technical Search Merge Semantics
+
+Status: implemented and accepted as bounded frontend-only visual grouping and semantic clarification.
+
+Intent:
+
+- reduce user confusion between multiple search-like UI surfaces;
+- clarify the difference between loaded-state workspace search and endpoint-based technical-attribute search;
+- keep existing search semantics intact;
+- avoid global search, advanced filters, backend unified search or product search expansion.
+
+Accepted implementation:
+
+- added shared visual search area:
+  - `Поиск`;
+- kept two separate sections:
+  - `Сотрудники и активы`;
+  - `Технические данные`;
+- clarified Quick Find copy as loaded-state workspace search;
+- clarified Technical Search copy as endpoint-based technical-attribute search with masking preserved;
+- kept Quick Find and Technical Search logic separate;
+- kept separate state, handlers, data sources and result renderers;
+- kept standalone `Информационный лист` search unchanged;
+- kept `Фильтр дерева` as local/open-tree filtering only.
+
+Quick Find remains:
+
+- frontend-only;
+- loaded-state-only;
+- no backend call;
+- users + assets only;
+- result groups:
+  - `Сотрудники`;
+  - `Активы / устройства`.
+
+Quick Find searchable values remain:
+
+- employee/user name;
+- `asset_tag`;
+- `display_name`;
+- `serial_number`;
+- `asset_type`.
+
+Technical Search remains:
+
+- separate backend/API technical-attribute search;
+- existing endpoint:
+  - `GET /api/v1/assets/technical-attribute-search`;
+- technical attributes only;
+- asset/device results only;
+- backend masking/sensitivity behavior preserved;
+- frontend does not unmask sensitive values;
+- read-only navigation result rows.
+
+Preserved boundaries:
+
+- no merged search input;
+- no merged result list;
+- no backend/API changes;
+- no new endpoint;
+- no server-side unified search;
+- no cross-service search orchestration;
+- no global search;
+- no Elasticsearch;
+- no advanced filters;
+- no saved views;
+- no persistent preferences;
+- no search over `note`;
+- no search over `printer_placement_note`;
+- no QR search;
+- no audit/history search;
+- no public lookup;
+- no employee self-service;
+- no Asset 360;
+- no reporting/dashboard;
+- no auth/IAM expansion;
+- no new role model.
+
+Required next step:
+
+- no further Quick Find / Technical Search Merge Semantics implementation is opened by this closeout;
+- if owner wants unified backend search, open separate backend/API decision gate;
+- if owner wants search over `note` or `printer_placement_note`, open separate search-scope decision gate;
+- if owner wants global search, Elasticsearch, advanced filters, saved views, reporting/dashboard, Asset 360, public lookup or employee self-service, open separate product/architecture decision first;
 - otherwise continue to the next owner-selected bounded feature gate or the deferred integrated stabilization / verification gate.
 
 This backlog closeout does not prove release readiness, FTOV start, FTOV exit, production readiness, real tenant validation, or real day-to-day operational validation.
