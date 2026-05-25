@@ -115,6 +115,10 @@ class MinimalPilotUiSmokeTest {
                 assertThat(body, containsString("Аудитор"));
                 assertThat(body, containsString("Быстрый поиск"));
                 assertThat(body, containsString("Поиск"));
+                assertThat(body, containsString("workspace-search-area"));
+                assertThat(body, containsString("Сотрудники и активы"));
+                assertThat(body, containsString("Поиск по уже загруженным сотрудникам и активам рабочего пространства"));
+                assertThat(body, containsString("Ищет имя сотрудника, инвентарный тег, название, серийный номер и тип устройства"));
                 assertThat(body, containsString("Сотрудники"));
                 assertThat(body, containsString("Активы / устройства"));
                 assertThat(body, containsString("По загруженным данным рабочего пространства"));
@@ -150,7 +154,8 @@ class MinimalPilotUiSmokeTest {
                 assertThat(body, containsString("Примечание по размещению"));
                 assertThat(body, containsString("Поиск по техническим данным"));
                 assertThat(body, containsString("Ищет по вручную заполненным техническим данным устройств"));
-                assertThat(body, containsString("Это не глобальный поиск и не сканирование сети"));
+                assertThat(body, containsString("Поиск по утверждённым техническим атрибутам устройств через отдельный endpoint"));
+                assertThat(body, containsString("Чувствительные значения остаются замаскированы"));
                 assertThat(body, containsString("Быстрый поиск остаётся поиском по уже загруженным данным рабочего пространства"));
                 assertThat(body, containsString("Активы / устройства"));
                 assertThat(body, containsString("Введите минимум 2 символа"));

@@ -366,6 +366,16 @@ Return low-sensitivity technical hints for assets assigned to the selected emplo
 
 This endpoint supports the managed workspace `Информационный лист сотрудника`.
 
+### Frontend consumption note
+
+This endpoint is used by Employee Sheet frontend surfaces, including the standalone focused `Информационный лист` interface.
+
+The standalone interface does not introduce a new API endpoint.
+
+It reuses this endpoint only for the accepted low-sensitivity technical hints and remains loaded-state-only for employee search.
+
+This does not change the endpoint contract, authorization model, response shape or excluded-field rules.
+
 ### Request
 
 Query parameters:

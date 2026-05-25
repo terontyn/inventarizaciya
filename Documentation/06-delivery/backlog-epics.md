@@ -1150,9 +1150,16 @@ Not approved by this note:
 - Astra Configuration Manager parity.
 
 
-### Planning priority after Employee Sheet Technical Attribute Exposure
+### Planning priority after Standalone Employee Information Sheet Interface
 
-Unified Create Launcher, Simplified Asset Actions UX, ADR-0005 Asset Delete Semantics, Controlled Employee Asset Information Sheet, Operational Search v1 Frontend Quick Find, Asset QR Lite Frontend Derived Display, Asset Type-Specific Technical Attributes v1, Search over Technical Attributes, and Employee Sheet Technical Attribute Exposure are implemented/accepted at their approved scope levels.
+Unified Create Launcher, Simplified Asset Actions UX, ADR-0005 Asset Delete Semantics, Controlled Employee Asset Information Sheet, Operational Search v1 Frontend Quick Find, Asset QR Lite Frontend Derived Display, Asset Type-Specific Technical Attributes v1, Search over Technical Attributes, Employee Sheet Technical Attribute Exposure, and Standalone Employee Information Sheet Interface are implemented/accepted at their approved scope levels.
+Standalone Employee Information Sheet Interface is accepted as:
+
+- a frontend-only focused-interface correction;
+- a separate top-level `Информационный лист` navigation item;
+- employee-only loaded-state search;
+- selected employee information plus assigned devices;
+- low-sensitivity technical hints only.
 
 Employee Sheet Technical Attribute Exposure is accepted as:
 
@@ -1385,3 +1392,108 @@ Required next step:
 - if owner wants Asset Overview technical hints, open a separate exposure decision gate;
 - if owner wants Asset 360, reporting/dashboard, global search, discovery/scanner or Hardware Inspector parity, open separate product/architecture decision first;
 - otherwise continue to the next owner-selected bounded feature gate or the deferred integrated stabilization / verification gate.
+
+#### Standalone Employee Information Sheet Interface
+
+Status: implemented and accepted as a bounded frontend-only focused-interface correction.
+
+Intent:
+
+- make `Информационный лист сотрудника` feel like a separate focused interface;
+- avoid hiding the sheet inside general selected-user detail;
+- provide a simple operator-facing path with only employee search and employee information;
+- preserve all accepted Employee Sheet privacy and sensitivity boundaries.
+
+Accepted implementation:
+
+- added top-level left navigation item:
+  - `Информационный лист`;
+- added focused right-pane interface;
+- added employee-only local search;
+- search uses only already loaded authorized frontend state;
+- search is not server-side search;
+- search is not Quick Find;
+- search is not Technical Search;
+- selected employee stays inside the standalone sheet path;
+- assigned devices render from loaded frontend asset state;
+- low-sensitivity technical hints are loaded through the existing endpoint:
+  - `GET /api/v1/assets/employee-sheet-technical-hints?user_id=<userId>`;
+- stale hints are cleared when selected employee changes;
+- stale hint responses are ignored;
+- existing embedded Employee Sheet remains intact.
+
+Accepted displayed content:
+
+- selected employee identity/context;
+- department if already resolvable;
+- assigned devices;
+- asset title / `display_name`;
+- `asset_tag`;
+- `asset_type`;
+- `serial_number`;
+- `status`;
+- location if already resolvable;
+- allowed low-sensitivity technical hints.
+
+Accepted hints:
+
+- `hostname` -> `Hostname`;
+- `extension_number` -> `Внутренний номер`;
+- `printer_network_name` -> `Сетевое имя принтера`.
+
+Preserved boundaries:
+
+- read-only only;
+- managed workspace only;
+- no public lookup;
+- no employee self-service;
+- no backend employee search;
+- no full-name public lookup;
+- no export/PDF/Excel/print;
+- no QR in Employee Sheet;
+- no audit/history in Employee Sheet;
+- no action links;
+- no Assign / Transfer / Return;
+- no edit controls;
+- no technical attribute editing;
+- no full `technical_attributes`;
+- no sensitive technical fields;
+- no Asset 360.
+
+Explicitly excluded fields:
+
+- `anydesk_id`;
+- `ip_address`;
+- `mac_address`;
+- `phone_ip`;
+- `sip_line_id`;
+- `printer_ip`;
+- `printer_placement_note`;
+- `note`;
+- QR payload;
+- audit/history;
+- `profile`;
+- arbitrary unsupported/custom fields.
+
+Implementation scope:
+
+- frontend-only;
+- existing static Operational Workspace UI only;
+- smoke test updated for static UI coverage;
+- no backend/API changes;
+- no user-service API changes;
+- no DB/migration changes;
+- no BFF/UI backend;
+- no auth/IAM expansion;
+- no new endpoint.
+
+Required next step:
+
+- no further Standalone Employee Information Sheet implementation is opened by this closeout;
+- if owner wants server-side employee search, open separate backend/API decision gate;
+- if owner wants public lookup or employee self-service, open separate auth/IAM and product decision gate;
+- if owner wants export/PDF/print, open separate product decision gate;
+- if owner wants Asset 360, reporting/dashboard, global search or Hardware Inspector parity, open separate product/architecture decision first;
+- otherwise continue to the next owner-selected bounded feature gate or the deferred integrated stabilization / verification gate.
+
+This backlog closeout does not prove release readiness, FTOV start, FTOV exit, production readiness, real tenant validation, or real day-to-day operational validation.

@@ -2223,3 +2223,103 @@ It does not prove:
 - production readiness;
 - real tenant validation;
 - real day-to-day operational validation.
+
+## Current Baseline Update — Standalone Employee Information Sheet Interface Closeout
+
+Standalone Employee Information Sheet Interface has been implemented and accepted as a bounded frontend-only UX correction over the already accepted Employee Sheet capability.
+
+Owner correction:
+
+- `Информационный лист сотрудника` should not feel like a sub-block hidden inside general selected-user detail;
+- it should be available as a separate focused interface;
+- the interface should contain only employee search and the selected employee information sheet.
+
+Accepted implementation:
+
+- added a separate top-level left navigation item:
+  - `Информационный лист`;
+- opening this item shows a focused right-pane interface;
+- the interface provides employee-only search;
+- search uses already loaded authorized frontend state only;
+- search is limited to loaded users / employee names;
+- selected employee rendering stays inside the standalone sheet path;
+- assigned devices are shown from already loaded frontend asset state;
+- low-sensitivity technical hints are loaded through the existing accepted endpoint:
+  - `GET /api/v1/assets/employee-sheet-technical-hints?user_id=<userId>`;
+- stale hints are cleared when selected employee changes;
+- stale hint responses are ignored;
+- existing embedded Employee Sheet inside selected user detail remains intact.
+
+The standalone interface shows only:
+
+- employee search;
+- selected employee identity/context;
+- assigned devices;
+- allowed low-sensitivity technical hints.
+
+Allowed technical hints remain limited to:
+
+- `hostname` -> `Hostname`;
+- `extension_number` -> `Внутренний номер`;
+- `printer_network_name` -> `Сетевое имя принтера`.
+
+The standalone interface does not show:
+
+- asset registry;
+- Setup/Admin;
+- role binding editor;
+- general user-management editor;
+- action tabs;
+- Assign / Transfer / Return;
+- edit buttons;
+- technical attribute editing;
+- full `technical_attributes`;
+- `profile`;
+- `anydesk_id`;
+- `ip_address`;
+- `mac_address`;
+- `phone_ip`;
+- `sip_line_id`;
+- `printer_ip`;
+- `printer_placement_note`;
+- `note`;
+- QR payload;
+- audit/history;
+- action links;
+- arbitrary unsupported/custom technical fields.
+
+Implementation scope:
+
+- frontend-only;
+- existing static Operational Workspace UI only;
+- smoke test updated for static UI coverage;
+- no backend/API changes;
+- no DB/migration changes;
+- no user-service API changes;
+- no BFF/UI backend;
+- no auth/IAM expansion;
+- no new endpoint;
+- no Documentation change during implementation.
+
+Preserved surfaces:
+
+- existing selected-user detail remains usable;
+- existing embedded Employee Sheet remains intact;
+- Quick Find remains unchanged;
+- Technical Search remains unchanged;
+- Asset Overview remains unchanged;
+- Asset Technical details remain unchanged;
+- QR Lite remains unchanged;
+- Assign / Transfer / Return remain unchanged;
+- Setup/Admin remains unchanged.
+
+This remains internally validated implementation evidence only.
+
+It does not prove:
+
+- release readiness;
+- FTOV start;
+- FTOV exit;
+- production readiness;
+- real tenant validation;
+- real day-to-day operational validation.

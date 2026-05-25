@@ -471,6 +471,37 @@ function cacheElements() {
     ui.refreshAdminResource = document.getElementById("refresh-admin-resource");
 }
 
+function ensureWorkspaceSearchArea() {
+    if (!ui.workspaceTree) {
+        return null;
+    }
+
+    const existingSections = document.getElementById("workspace-search-sections");
+    if (existingSections) {
+        return existingSections;
+    }
+
+    const anchor = ui.treeFilter?.closest(".tree-filter") || ui.workspaceTreeBody;
+    const markup = `
+        <section id="workspace-search-area" class="workspace-search-area" aria-label="Поиск">
+            <div class="workspace-search-heading">
+                <p class="section-kicker">Рабочее пространство</p>
+                <strong>Поиск</strong>
+                <p>Две отдельные области поиска: по загруженным сотрудникам и активам, а также по утверждённым техническим атрибутам.</p>
+            </div>
+            <div id="workspace-search-sections" class="workspace-search-sections"></div>
+        </section>
+    `;
+
+    if (anchor) {
+        anchor.insertAdjacentHTML("beforebegin", markup);
+    } else {
+        ui.workspaceTree.insertAdjacentHTML("beforeend", markup);
+    }
+
+    return document.getElementById("workspace-search-sections");
+}
+
 function ensureQuickFindUi() {
     if (!ui.workspaceTree || document.getElementById("quick-find-input")) {
         ui.quickFindInput = document.getElementById("quick-find-input");
@@ -478,13 +509,16 @@ function ensureQuickFindUi() {
         return;
     }
 
-    const anchor = ui.treeFilter?.closest(".tree-filter") || ui.workspaceTreeBody;
+    const searchSections = ensureWorkspaceSearchArea();
+    const anchor = searchSections || ui.treeFilter?.closest(".tree-filter") || ui.workspaceTreeBody;
     const markup = `
         <section class="quick-find" aria-label="Быстрый поиск">
             <div class="quick-find-heading">
-                <p class="section-kicker">Поиск</p>
+                <p class="section-kicker">Сотрудники и активы</p>
                 <strong>Быстрый поиск</strong>
             </div>
+            <p class="quick-find-help">Поиск по уже загруженным сотрудникам и активам рабочего пространства. Без поиска на сервере.</p>
+            <p class="quick-find-help">Ищет имя сотрудника, инвентарный тег, название, серийный номер и тип устройства.</p>
             <label class="field quick-find-field">
                 <span class="sr-only">Поиск</span>
                 <input
@@ -502,7 +536,7 @@ function ensureQuickFindUi() {
     `;
 
     if (anchor) {
-        anchor.insertAdjacentHTML("beforebegin", markup);
+        anchor.insertAdjacentHTML(searchSections ? "beforeend" : "beforebegin", markup);
     } else {
         ui.workspaceTree.insertAdjacentHTML("beforeend", markup);
     }
@@ -520,17 +554,16 @@ function ensureTechnicalSearchUi() {
         return;
     }
 
-    const quickFindSection = ui.quickFindInput?.closest(".quick-find");
-    const anchor = quickFindSection || ui.treeFilter?.closest(".tree-filter") || ui.workspaceTreeBody;
-    const position = quickFindSection ? "afterend" : "beforebegin";
+    const searchSections = ensureWorkspaceSearchArea();
+    const anchor = searchSections || ui.treeFilter?.closest(".tree-filter") || ui.workspaceTreeBody;
     const markup = `
         <section class="technical-search" aria-label="Поиск по техническим данным">
             <div class="technical-search-heading">
-                <p class="section-kicker">Технический поиск</p>
+                <p class="section-kicker">Технические данные</p>
                 <strong>Поиск по техническим данным</strong>
             </div>
             <p class="technical-search-help">Ищет по вручную заполненным техническим данным устройств.</p>
-            <p class="technical-search-help">Это не глобальный поиск и не сканирование сети.</p>
+            <p class="technical-search-help">Поиск по утверждённым техническим атрибутам устройств через отдельный endpoint. Чувствительные значения остаются замаскированы.</p>
             <p class="technical-search-help">Быстрый поиск остаётся поиском по уже загруженным данным рабочего пространства.</p>
             <p class="technical-search-help">Результаты открывают карточку актива без действий в строке результата.</p>
             <form id="technical-search-form" class="technical-search-form">
@@ -557,7 +590,7 @@ function ensureTechnicalSearchUi() {
     `;
 
     if (anchor) {
-        anchor.insertAdjacentHTML(position, markup);
+        anchor.insertAdjacentHTML(searchSections ? "beforeend" : "beforebegin", markup);
     } else {
         ui.workspaceTree.insertAdjacentHTML("beforeend", markup);
     }

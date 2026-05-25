@@ -2918,3 +2918,108 @@ This closeout does not prove:
 The project remains in:
 
 **Project Stabilization / First-Adopter-Gated Hold**
+
+## Standalone Employee Information Sheet Interface Closeout Clarification
+
+Standalone Employee Information Sheet Interface is accepted as completed at its approved bounded frontend-only scope.
+
+### Delivery interpretation
+
+This implementation is accepted as:
+
+**frontend-only focused-interface correction for the existing Employee Sheet capability.**
+
+It turns the Employee Sheet from a sub-block inside general selected-user detail into a separate focused operational interface.
+
+### Accepted scope
+
+Implemented scope:
+
+- added a top-level left navigation item:
+  - `Информационный лист`;
+- added a focused right-pane interface for Employee Sheet use;
+- added employee-only local search inside this focused interface;
+- search uses already loaded authorized frontend state only;
+- selected employee information is rendered inside the standalone sheet path;
+- assigned devices are shown from already loaded frontend asset state;
+- low-sensitivity technical hints are loaded through the existing accepted endpoint:
+  - `GET /api/v1/assets/employee-sheet-technical-hints?user_id=<userId>`;
+- stale hints are cleared when selected employee changes;
+- stale hint responses are ignored;
+- existing embedded Employee Sheet remains intact.
+
+### Accepted displayed content
+
+The standalone interface may display:
+
+- employee identity/context;
+- department if already resolvable;
+- assigned devices;
+- asset title / `display_name`;
+- `asset_tag`;
+- `asset_type`;
+- `serial_number`;
+- `status`;
+- location if already resolvable;
+- allowed low-sensitivity technical hints.
+
+Allowed technical hints:
+
+- `hostname` -> `Hostname`;
+- `extension_number` -> `Внутренний номер`;
+- `printer_network_name` -> `Сетевое имя принтера`.
+
+### Preserved boundaries
+
+This implementation preserves:
+
+- read-only Employee Sheet behavior;
+- managed-workspace-only access;
+- no public lookup;
+- no employee self-service;
+- no server-side employee search;
+- no full-name public lookup;
+- no export/PDF/Excel/print;
+- no QR in Employee Sheet;
+- no Asset 360;
+- no action links;
+- no Assign / Transfer / Return from the sheet;
+- no edit controls;
+- no technical attribute editing from the sheet;
+- no full `technical_attributes`;
+- no sensitive technical fields in the sheet.
+
+### Not opened
+
+This implementation did not open:
+
+- backend/API changes;
+- user-service API changes;
+- new endpoint;
+- DB/migration changes;
+- BFF/UI backend;
+- auth/IAM expansion;
+- new role model;
+- public lookup;
+- employee self-service;
+- export/PDF/Excel/print;
+- QR in Employee Sheet;
+- Asset 360;
+- global search;
+- advanced search;
+- Hardware Inspector parity.
+
+### Non-claim rule
+
+This closeout does not prove:
+
+- release readiness;
+- FTOV start;
+- FTOV exit;
+- production readiness;
+- real tenant validation;
+- real day-to-day operational validation.
+
+The project remains in:
+
+**Project Stabilization / First-Adopter-Gated Hold**
