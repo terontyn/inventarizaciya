@@ -1600,6 +1600,317 @@ class AssetApiIntegrationTest extends IntegrationTestSupport {
     }
 
     @Test
+    void employeeSheetTechnicalHintsValidateParamsAndUseExistingReadRoles() throws Exception {
+        UUID tenantId = UUID.randomUUID();
+        UUID assignedUserId = UUID.randomUUID();
+        UUID tenantAdminId = UUID.randomUUID();
+        UUID assetOperatorId = UUID.randomUUID();
+        UUID supportReviewerId = UUID.randomUUID();
+        UUID callerWithoutRoleId = UUID.randomUUID();
+        UUID assetId = insertAsset(
+            tenantId,
+            "HINT-ROLE",
+            "SN-HINT-ROLE",
+            "Laptop",
+            AssetStatus.ACTIVE,
+            assignedUserId,
+            null
+        );
+        insertTechnicalAttribute(tenantId, assetId, "hostname", "role-host");
+
+        expectRoleLookup(tenantId, tenantAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+        expectRoleLookup(tenantId, tenantAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+        expectRoleLookup(tenantId, tenantAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+        expectRoleLookup(tenantId, tenantAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+        expectRoleLookup(tenantId, tenantAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+        expectRoleLookup(tenantId, assetOperatorId, List.of(PilotRoleNames.ASSET_OPERATOR));
+        expectRoleLookup(tenantId, supportReviewerId, List.of(PilotRoleNames.SUPPORT_REVIEWER));
+        expectRoleLookup(tenantId, callerWithoutRoleId, List.of());
+
+        mockMvc.perform(get("/api/v1/assets/employee-sheet-technical-hints")
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
+                .header(AUTHENTICATED_USER_HEADER, tenantAdminId))
+            .andExpect(status().isBadRequest());
+
+        mockMvc.perform(get("/api/v1/assets/employee-sheet-technical-hints")
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
+                .header(AUTHENTICATED_USER_HEADER, tenantAdminId)
+                .param("user_id", "   "))
+            .andExpect(status().isBadRequest());
+
+        mockMvc.perform(get("/api/v1/assets/employee-sheet-technical-hints")
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
+                .header(AUTHENTICATED_USER_HEADER, tenantAdminId)
+                .param("user_id", "not-a-uuid"))
+            .andExpect(status().isBadRequest());
+
+        mockMvc.perform(get("/api/v1/assets/employee-sheet-technical-hints")
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
+                .header(AUTHENTICATED_USER_HEADER, tenantAdminId)
+                .param("user_id", assignedUserId.toString())
+                .param("include_sensitive", "true"))
+            .andExpect(status().isBadRequest());
+
+        mockMvc.perform(get("/api/v1/assets/employee-sheet-technical-hints")
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
+                .header(AUTHENTICATED_USER_HEADER, tenantAdminId)
+                .param("user_id", assignedUserId.toString()))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.assets[0].asset_id").value(assetId.toString()))
+            .andExpect(jsonPath("$.assets[0].technical_hints.hostname").value("role-host"));
+
+        mockMvc.perform(get("/api/v1/assets/employee-sheet-technical-hints")
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
+                .header(AUTHENTICATED_USER_HEADER, assetOperatorId)
+                .param("user_id", assignedUserId.toString()))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.assets[0].asset_id").value(assetId.toString()));
+
+        mockMvc.perform(get("/api/v1/assets/employee-sheet-technical-hints")
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
+                .header(AUTHENTICATED_USER_HEADER, supportReviewerId)
+                .param("user_id", assignedUserId.toString()))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.assets[0].asset_id").value(assetId.toString()));
+
+        mockMvc.perform(get("/api/v1/assets/employee-sheet-technical-hints")
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
+                .header(AUTHENTICATED_USER_HEADER, callerWithoutRoleId)
+                .param("user_id", assignedUserId.toString()))
+            .andExpect(status().isForbidden());
+
+        mockMvc.perform(get("/api/v1/assets/employee-sheet-technical-hints")
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
+                .param("user_id", assignedUserId.toString()))
+            .andExpect(status().isBadRequest());
+
+        assertThat(countRows("local_audit_records")).isZero();
+        mockUserService.verify();
+    }
+
+    @Test
+    void employeeSheetTechnicalHintsReturnAssignedAssetsWithOnlyLowSensitivityHints() throws Exception {
+        UUID tenantA = UUID.randomUUID();
+        UUID tenantB = UUID.randomUUID();
+        UUID selectedUserId = UUID.randomUUID();
+        UUID otherUserId = UUID.randomUUID();
+        UUID tenantAAdminId = UUID.randomUUID();
+        UUID tenantBAdminId = UUID.randomUUID();
+        UUID laptopLocationId = UUID.randomUUID();
+        UUID phoneLocationId = UUID.randomUUID();
+        UUID printerLocationId = UUID.randomUUID();
+        UUID laptopAssetId = insertAsset(
+            tenantA,
+            "A-LAPTOP",
+            "SN-LAPTOP",
+            "Laptop",
+            AssetStatus.ACTIVE,
+            selectedUserId,
+            laptopLocationId,
+            "Assigned laptop",
+            null
+        );
+        UUID phoneAssetId = insertAsset(
+            tenantA,
+            "B-PHONE",
+            "SN-PHONE",
+            "Stationary phone",
+            AssetStatus.ACTIVE,
+            selectedUserId,
+            phoneLocationId,
+            "Assigned phone",
+            null
+        );
+        UUID printerAssetId = insertAsset(
+            tenantA,
+            "C-PRINTER",
+            "SN-PRINTER",
+            "Printer",
+            AssetStatus.RETIRED,
+            selectedUserId,
+            printerLocationId,
+            "Assigned printer",
+            null
+        );
+        UUID genericAssetId = insertAsset(
+            tenantA,
+            "D-GENERIC",
+            "SN-GENERIC",
+            "Projector",
+            AssetStatus.ACTIVE,
+            selectedUserId,
+            null,
+            "Generic assigned",
+            null
+        );
+        UUID otherUserAssetId = insertAsset(
+            tenantA,
+            "E-OTHER-USER",
+            "SN-OTHER-USER",
+            "Laptop",
+            AssetStatus.ACTIVE,
+            otherUserId,
+            null
+        );
+        insertAsset(
+            tenantA,
+            "F-UNASSIGNED",
+            "SN-UNASSIGNED",
+            "Laptop",
+            AssetStatus.ACTIVE,
+            null,
+            null
+        );
+        UUID tenantBAssetId = insertAsset(
+            tenantB,
+            "TENANT-B-LAPTOP",
+            "SN-TENANT-B",
+            "Laptop",
+            AssetStatus.ACTIVE,
+            selectedUserId,
+            null
+        );
+
+        insertTechnicalAttribute(tenantA, laptopAssetId, "hostname", "  laptop-host  ");
+        insertTechnicalAttribute(tenantA, laptopAssetId, "anydesk_id", "123456789");
+        insertTechnicalAttribute(tenantA, laptopAssetId, "ip_address", "10.0.0.25");
+        insertTechnicalAttribute(tenantA, laptopAssetId, "mac_address", "AA:BB:CC:DD:EE:FF");
+        insertTechnicalAttribute(tenantA, phoneAssetId, "extension_number", "214");
+        insertTechnicalAttribute(tenantA, phoneAssetId, "phone_ip", "10.10.0.15");
+        insertTechnicalAttribute(tenantA, phoneAssetId, "sip_line_id", "line-primary");
+        insertTechnicalAttribute(tenantA, printerAssetId, "printer_network_name", "printer-main");
+        insertTechnicalAttribute(tenantA, printerAssetId, "printer_ip", "10.20.0.40");
+        insertTechnicalAttribute(tenantA, printerAssetId, "printer_placement_note", "floor-secret");
+        insertTechnicalAttribute(tenantA, genericAssetId, "ip_address", "10.30.0.50");
+        insertTechnicalAttribute(tenantA, otherUserAssetId, "hostname", "other-user-host");
+        insertTechnicalAttribute(tenantB, tenantBAssetId, "hostname", "tenant-b-host");
+
+        expectRoleLookup(tenantA, tenantAAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+        expectRoleLookup(tenantA, tenantAAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+        expectRoleLookup(tenantA, tenantAAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+        expectRoleLookup(tenantB, tenantBAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+
+        mockMvc.perform(get("/api/v1/assets/employee-sheet-technical-hints")
+                .header(AUTHENTICATED_TENANT_HEADER, tenantA)
+                .header(AUTHENTICATED_USER_HEADER, tenantAAdminId)
+                .param("user_id", selectedUserId.toString()))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.user_id").value(selectedUserId.toString()))
+            .andExpect(jsonPath("$.assets.length()").value(4))
+            .andExpect(jsonPath("$.assets[0].asset_id").value(laptopAssetId.toString()))
+            .andExpect(jsonPath("$.assets[0].asset_tag").value("A-LAPTOP"))
+            .andExpect(jsonPath("$.assets[0].display_name").value("Assigned laptop"))
+            .andExpect(jsonPath("$.assets[0].asset_type").value("Laptop"))
+            .andExpect(jsonPath("$.assets[0].serial_number").value("SN-LAPTOP"))
+            .andExpect(jsonPath("$.assets[0].status").value(AssetStatus.ACTIVE))
+            .andExpect(jsonPath("$.assets[0].location_id").value(laptopLocationId.toString()))
+            .andExpect(jsonPath("$.assets[0].technical_hints.hostname").value("laptop-host"))
+            .andExpect(jsonPath("$.assets[0].technical_hints.anydesk_id").doesNotExist())
+            .andExpect(jsonPath("$.assets[0].technical_hints.ip_address").doesNotExist())
+            .andExpect(jsonPath("$.assets[0].technical_hints.mac_address").doesNotExist())
+            .andExpect(jsonPath("$.assets[0].technical_attributes").doesNotExist())
+            .andExpect(jsonPath("$.assets[0].profile").doesNotExist())
+            .andExpect(jsonPath("$.assets[0].note").doesNotExist())
+            .andExpect(jsonPath("$.assets[0].qr").doesNotExist())
+            .andExpect(jsonPath("$.assets[0].audit").doesNotExist())
+            .andExpect(jsonPath("$.assets[0].links").doesNotExist())
+            .andExpect(jsonPath("$.assets[1].asset_id").value(phoneAssetId.toString()))
+            .andExpect(jsonPath("$.assets[1].technical_hints.extension_number").value("214"))
+            .andExpect(jsonPath("$.assets[1].technical_hints.phone_ip").doesNotExist())
+            .andExpect(jsonPath("$.assets[1].technical_hints.sip_line_id").doesNotExist())
+            .andExpect(jsonPath("$.assets[2].asset_id").value(printerAssetId.toString()))
+            .andExpect(jsonPath("$.assets[2].status").value(AssetStatus.RETIRED))
+            .andExpect(jsonPath("$.assets[2].technical_hints.printer_network_name").value("printer-main"))
+            .andExpect(jsonPath("$.assets[2].technical_hints.printer_ip").doesNotExist())
+            .andExpect(jsonPath("$.assets[2].technical_hints.printer_placement_note").doesNotExist())
+            .andExpect(jsonPath("$.assets[3].asset_id").value(genericAssetId.toString()))
+            .andExpect(jsonPath("$.assets[3].technical_hints").isEmpty());
+
+        mockMvc.perform(get("/api/v1/assets/employee-sheet-technical-hints")
+                .header(AUTHENTICATED_TENANT_HEADER, tenantA)
+                .header(AUTHENTICATED_USER_HEADER, tenantAAdminId)
+                .param("user_id", otherUserId.toString()))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.assets.length()").value(1))
+            .andExpect(jsonPath("$.assets[0].asset_id").value(otherUserAssetId.toString()))
+            .andExpect(jsonPath("$.assets[0].technical_hints.hostname").value("other-user-host"));
+
+        mockMvc.perform(get("/api/v1/assets/employee-sheet-technical-hints")
+                .header(AUTHENTICATED_TENANT_HEADER, tenantA)
+                .header(AUTHENTICATED_USER_HEADER, tenantAAdminId)
+                .param("user_id", UUID.randomUUID().toString()))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.assets").isEmpty());
+
+        mockMvc.perform(get("/api/v1/assets/employee-sheet-technical-hints")
+                .header(AUTHENTICATED_TENANT_HEADER, tenantB)
+                .header(AUTHENTICATED_USER_HEADER, tenantBAdminId)
+                .param("user_id", selectedUserId.toString()))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.assets.length()").value(1))
+            .andExpect(jsonPath("$.assets[0].asset_id").value(tenantBAssetId.toString()))
+            .andExpect(jsonPath("$.assets[0].technical_hints.hostname").value("tenant-b-host"));
+
+        assertThat(countRows("local_audit_records")).isZero();
+        mockUserService.verify();
+    }
+
+    @Test
+    void employeeSheetTechnicalHintsDoNotChangeExistingAssetEndpoints() throws Exception {
+        UUID tenantId = UUID.randomUUID();
+        UUID tenantAdminId = UUID.randomUUID();
+        UUID assignedUserId = UUID.randomUUID();
+        UUID assetId = insertAsset(
+            tenantId,
+            "HINT-BOUNDARY",
+            "SN-HINT-BOUNDARY",
+            "Laptop",
+            AssetStatus.ACTIVE,
+            assignedUserId,
+            null
+        );
+        insertTechnicalAttribute(tenantId, assetId, "hostname", "boundary-host");
+
+        expectRoleLookup(tenantId, tenantAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+        expectRoleLookup(tenantId, tenantAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+        expectRoleLookup(tenantId, tenantAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+        expectRoleLookup(tenantId, tenantAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+
+        mockMvc.perform(get("/api/v1/assets")
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
+                .header(AUTHENTICATED_USER_HEADER, tenantAdminId))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$[0].technical_hints").doesNotExist())
+            .andExpect(jsonPath("$[0].technical_attributes").doesNotExist());
+
+        mockMvc.perform(get("/api/v1/assets/{id}", assetId)
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
+                .header(AUTHENTICATED_USER_HEADER, tenantAdminId))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.technical_attributes.values.hostname").value("boundary-host"))
+            .andExpect(jsonPath("$.technical_hints").doesNotExist());
+
+        mockMvc.perform(get("/api/v1/assets/technical-attribute-search")
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
+                .header(AUTHENTICATED_USER_HEADER, tenantAdminId)
+                .param("q", "boundary-host"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.results[0].matched_field.key").value("hostname"))
+            .andExpect(jsonPath("$.results[0].technical_hints").doesNotExist());
+
+        mockMvc.perform(get("/api/v1/assets/employee-sheet-technical-hints")
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
+                .header(AUTHENTICATED_USER_HEADER, tenantAdminId)
+                .param("user_id", assignedUserId.toString()))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.assets[0].technical_hints.hostname").value("boundary-host"))
+            .andExpect(jsonPath("$.assets[0].technical_attributes").doesNotExist());
+
+        assertThat(countRows("local_audit_records")).isZero();
+        mockUserService.verify();
+    }
+
+    @Test
     void genericPatchDoesNotUpdateTechnicalAttributes() throws Exception {
         UUID tenantId = UUID.randomUUID();
         UUID tenantAdminId = UUID.randomUUID();

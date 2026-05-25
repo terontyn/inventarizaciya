@@ -2626,3 +2626,148 @@ This closeout does not prove:
 The project remains in:
 
 **Project Stabilization / First-Adopter-Gated Hold**
+
+## Search over Technical Attributes Closeout Clarification
+
+Search over Technical Attributes is accepted as completed at its approved bounded scope.
+
+### Delivery interpretation
+
+This implementation is accepted as:
+
+**bounded asset-service backend/API technical-attribute search plus bounded frontend UI through a separate `Поиск по техническим данным` block.**
+
+### Backend/API accepted scope
+
+Implemented backend/API scope:
+
+- separate endpoint:
+  - `GET /api/v1/assets/technical-attribute-search`;
+- tenant-scoped search over allowlisted technical attribute keys;
+- bounded query validation:
+  - `q` required;
+  - minimum query length: 2;
+  - maximum query length: 128;
+  - default limit: 10;
+  - maximum limit: 20;
+- search-scope index:
+  - `idx_asset_technical_attributes_search_scope`;
+- asset/device results only;
+- one result per asset;
+- matched technical field metadata;
+- sensitive value masking in result rows;
+- existing asset read authorization reused;
+- no audit emitted for read-only search.
+
+Searchable keys:
+
+- `hostname`;
+- `anydesk_id`;
+- `ip_address`;
+- `mac_address`;
+- `phone_ip`;
+- `extension_number`;
+- `sip_line_id`;
+- `printer_ip`;
+- `printer_network_name`.
+
+Excluded by default:
+
+- `printer_placement_note`;
+- `note`;
+- audit/history;
+- QR payload;
+- arbitrary unsupported/generic fields.
+
+### Frontend accepted scope
+
+Implemented frontend scope:
+
+- separate UI block:
+  - `Поиск по техническим данным`;
+- placed near existing `Быстрый поиск`;
+- existing `Быстрый поиск` remains unchanged;
+- `Фильтр дерева` remains unchanged;
+- button/Enter-triggered search only;
+- endpoint call:
+  - `GET /api/v1/assets/technical-attribute-search`;
+- no extra search params beyond `q` and bounded `limit`;
+- results grouped as:
+  - `Активы / устройства`;
+- result rows are read-only navigation rows;
+- backend-provided masked values are displayed as-is;
+- frontend does not unmask values;
+- result click opens selected Asset detail / Technical details when safe.
+
+### Preserved boundaries
+
+This implementation preserves:
+
+- list endpoint unchanged;
+- detail endpoint unchanged except already accepted technical attributes;
+- create Asset unchanged;
+- generic PATCH unchanged;
+- technical attributes edit endpoint unchanged;
+- Assign / Transfer / Return unchanged;
+- QR Lite unchanged;
+- Employee Information Sheet unchanged;
+- Asset Overview unchanged;
+- no backend/global search platform;
+- no result-row actions.
+
+### Not opened
+
+This implementation did not open:
+
+- global search;
+- Elasticsearch;
+- advanced filters;
+- saved views;
+- persistent preferences;
+- reporting/dashboard;
+- Asset 360;
+- public lookup;
+- employee self-service;
+- auth/IAM expansion;
+- new role model;
+- QR payload changes;
+- QR search;
+- Employee Information Sheet exposure;
+- Asset Overview exposure;
+- import/export;
+- PDF/Excel/print;
+- discovery/scanner/network scan;
+- remote control;
+- Hardware Inspector parity;
+- Astra Configuration Manager parity.
+
+### Deferred
+
+Deferred to separate future decisions:
+
+- merging technical search into `Быстрый поиск`;
+- search over `printer_placement_note`;
+- search over `note`;
+- advanced filters / saved views;
+- global search / Elasticsearch;
+- QR search or QR payload changes;
+- Employee Information Sheet technical attribute exposure;
+- Asset Overview technical attribute exposure;
+- reporting/dashboard;
+- import/export;
+- discovery/agent/scanner/platform scope.
+
+### Non-claim rule
+
+This closeout does not prove:
+
+- release readiness;
+- FTOV start;
+- FTOV exit;
+- production readiness;
+- real tenant validation;
+- real day-to-day operational validation.
+
+The project remains in:
+
+**Project Stabilization / First-Adopter-Gated Hold**

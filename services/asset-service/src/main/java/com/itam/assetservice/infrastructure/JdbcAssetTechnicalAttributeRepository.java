@@ -1,5 +1,6 @@
 package com.itam.assetservice.infrastructure;
 
+import com.itam.assetservice.domain.AssetEmployeeSheetTechnicalHintRow;
 import com.itam.assetservice.domain.AssetTechnicalAttributeKey;
 import com.itam.assetservice.domain.AssetTechnicalAttributeRepository;
 import com.itam.assetservice.domain.AssetTechnicalAttributeSearchResult;
@@ -135,6 +136,57 @@ public class JdbcAssetTechnicalAttributeRepository implements AssetTechnicalAttr
                 AssetTechnicalAttributeKey.fromKey(resultSet.getString("attribute_key")).orElseThrow(),
                 resultSet.getString("attribute_value")
             )
+        );
+    }
+
+    @Override
+    public List<AssetEmployeeSheetTechnicalHintRow> findEmployeeSheetTechnicalHints(
+        UUID tenantId,
+        UUID assignedUserId,
+        List<AssetTechnicalAttributeKey> allowedHintKeys
+    ) {
+        UUID scopedTenantId = SqlTenantScope.requireTenantId(tenantId);
+        List<String> keyNames = allowedHintKeys.stream()
+            .map(AssetTechnicalAttributeKey::key)
+            .toList();
+        MapSqlParameterSource parameters = new MapSqlParameterSource()
+            .addValue("tenantId", scopedTenantId)
+            .addValue("assignedUserId", assignedUserId)
+            .addValue("keys", keyNames);
+
+        return jdbcTemplate.query(
+            "SELECT a.id AS asset_id, a.asset_tag, a.display_name, a.asset_type, "
+                + "a.serial_number, a.status, a.location_id, "
+                + "ata.attribute_key, ata.attribute_value "
+                + "FROM assets a "
+                + "LEFT JOIN asset_technical_attributes ata "
+                + "ON ata.tenant_id = a.tenant_id "
+                + "AND ata.asset_id = a.id "
+                + "AND ata.attribute_key IN (:keys) "
+                + "WHERE a.tenant_id = :tenantId "
+                + "AND a.assigned_user_id = :assignedUserId "
+                + "ORDER BY a.asset_tag, a.id, "
+                + "CASE ata.attribute_key "
+                + "WHEN 'hostname' THEN 1 "
+                + "WHEN 'extension_number' THEN 2 "
+                + "WHEN 'printer_network_name' THEN 3 "
+                + "ELSE 99 "
+                + "END",
+            parameters,
+            (resultSet, rowNum) -> {
+                String rawKey = resultSet.getString("attribute_key");
+                return new AssetEmployeeSheetTechnicalHintRow(
+                    resultSet.getObject("asset_id", UUID.class),
+                    resultSet.getString("asset_tag"),
+                    resultSet.getString("display_name"),
+                    resultSet.getString("asset_type"),
+                    resultSet.getString("serial_number"),
+                    resultSet.getString("status"),
+                    resultSet.getObject("location_id", UUID.class),
+                    rawKey == null ? null : AssetTechnicalAttributeKey.fromKey(rawKey).orElseThrow(),
+                    resultSet.getString("attribute_value")
+                );
+            }
         );
     }
 

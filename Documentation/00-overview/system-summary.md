@@ -1912,3 +1912,153 @@ It does not prove:
 - production readiness;
 - real tenant validation;
 - real day-to-day operational validation.
+
+## Current Baseline Update — Search over Technical Attributes Closeout
+
+Search over Technical Attributes has been completed and accepted at its approved bounded scope.
+
+Implementation is accepted as two bounded layers:
+
+1. backend/API tenant-scoped technical-attribute search support;
+2. frontend UI integration through a separate `Поиск по техническим данным` block.
+
+### Backend/API implementation
+
+Accepted backend/API scope:
+
+- added separate bounded endpoint:
+  - `GET /api/v1/assets/technical-attribute-search`;
+- added tenant-scoped technical-attribute search over approved keys only;
+- added search-scope DB index:
+  - `idx_asset_technical_attributes_search_scope`;
+- returned asset/device results only;
+- returned one result per asset;
+- returned matched field metadata:
+  - matched key;
+  - matched label;
+  - matched display value;
+  - sensitivity flag;
+  - masked flag;
+- applied result-row masking for sensitive fields;
+- reused existing asset read authorization cutline;
+- emitted no audit because search is read-only.
+
+Searchable technical keys:
+
+- `hostname`;
+- `anydesk_id`;
+- `ip_address`;
+- `mac_address`;
+- `phone_ip`;
+- `extension_number`;
+- `sip_line_id`;
+- `printer_ip`;
+- `printer_network_name`.
+
+Excluded from search by default:
+
+- `printer_placement_note`;
+- `note`;
+- audit/history;
+- QR payload;
+- unsupported/generic arbitrary fields;
+- tenant-defined custom keys;
+- user-service data;
+- reporting-service data.
+
+### Frontend UI implementation
+
+Accepted frontend scope:
+
+- added separate UI block:
+  - `Поиск по техническим данным`;
+- placed the block near existing `Быстрый поиск`;
+- kept existing `Быстрый поиск` visibly and behaviorally separate;
+- kept `Фильтр дерева` unchanged;
+- used only:
+  - `GET /api/v1/assets/technical-attribute-search`;
+- supported search by button and Enter;
+- added local validation for query length;
+- displayed results under:
+  - `Активы / устройства`;
+- displayed matched field label and backend-provided display value;
+- respected backend masking;
+- did not unmask sensitive values in frontend;
+- used read-only navigation result rows;
+- result click opens selected Asset detail and Technical details tab when safe.
+
+### Preserved boundaries
+
+This closeout preserves:
+
+- current `Быстрый поиск` as frontend-only loaded-state search;
+- `Фильтр дерева` as local/open-tree filtering;
+- `GET /api/v1/assets` list endpoint unchanged;
+- asset detail endpoint unchanged except already accepted technical attributes;
+- create Asset unchanged;
+- generic PATCH unchanged;
+- technical attributes edit endpoint unchanged;
+- Assign / Transfer / Return unchanged;
+- QR Lite unchanged;
+- Employee Information Sheet unchanged;
+- Asset Overview unchanged;
+- no result-row mutation actions.
+
+### Not opened
+
+This closeout did not open:
+
+- global search;
+- Elasticsearch;
+- external search engine;
+- advanced filters;
+- saved views;
+- persistent search preferences;
+- reporting/dashboard;
+- Asset 360;
+- public lookup;
+- employee self-service;
+- auth/IAM expansion;
+- new role model;
+- QR payload changes;
+- QR search;
+- Employee Information Sheet exposure;
+- Asset Overview exposure;
+- import/export;
+- PDF/Excel/print;
+- discovery agent;
+- scanner/camera workflow;
+- network scanning;
+- remote control;
+- Hardware Inspector parity;
+- Astra Configuration Manager parity;
+- search over `printer_placement_note`;
+- search over `note`;
+- audit/history search.
+
+### Deferred
+
+Deferred to separate future decisions:
+
+- merging technical search into `Быстрый поиск`;
+- search over `printer_placement_note`;
+- search over `note`;
+- global search / Elasticsearch;
+- advanced filters / saved views;
+- QR search or QR payload changes;
+- Employee Information Sheet technical attribute exposure;
+- Asset Overview technical attribute exposure;
+- import/export of technical search results;
+- reporting/dashboard usage;
+- discovery/agent/scanner/platform scope.
+
+This remains internally validated implementation evidence only.
+
+It does not prove:
+
+- release readiness;
+- FTOV start;
+- FTOV exit;
+- production readiness;
+- real tenant validation;
+- real day-to-day operational validation.

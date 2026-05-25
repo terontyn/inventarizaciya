@@ -16,4 +16,10 @@ public interface AssetTechnicalAttributeRepository {
         List<AssetTechnicalAttributeKey> searchableKeys,
         int limit
     );
+
+    List<AssetEmployeeSheetTechnicalHintRow> findEmployeeSheetTechnicalHints(
+        UUID tenantId,
+        UUID assignedUserId,
+        List<AssetTechnicalAttributeKey> allowedHintKeys
+    );
 }

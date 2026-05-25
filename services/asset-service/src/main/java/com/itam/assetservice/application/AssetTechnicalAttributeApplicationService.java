@@ -1,5 +1,6 @@
 package com.itam.assetservice.application;
 
+import com.itam.assetservice.domain.AssetEmployeeSheetTechnicalHintRow;
 import com.itam.assetservice.domain.Asset;
 import com.itam.assetservice.domain.AssetRepository;
 import com.itam.assetservice.domain.AssetTechnicalAttributeKey;
@@ -51,6 +52,14 @@ public class AssetTechnicalAttributeApplicationService {
         AssetTechnicalAttributeKey.PHONE_IP,
         AssetTechnicalAttributeKey.SIP_LINE_ID,
         AssetTechnicalAttributeKey.PRINTER_IP
+    );
+    private static final List<AssetTechnicalAttributeKey> EMPLOYEE_SHEET_HINT_KEYS = List.of(
+        AssetTechnicalAttributeKey.HOSTNAME,
+        AssetTechnicalAttributeKey.EXTENSION_NUMBER,
+        AssetTechnicalAttributeKey.PRINTER_NETWORK_NAME
+    );
+    private static final Set<AssetTechnicalAttributeKey> EMPLOYEE_SHEET_HINT_KEY_SET = Set.copyOf(
+        EMPLOYEE_SHEET_HINT_KEYS
     );
 
     private final AssetRepository assetRepository;
@@ -146,6 +155,42 @@ public class AssetTechnicalAttributeApplicationService {
             .map(this::toSearchAssetResult)
             .toList();
         return new SearchResponse(normalizedQuery, limit, results);
+    }
+
+    public EmployeeSheetTechnicalHintsResponse employeeSheetTechnicalHints(UUID tenantId, UUID userId) {
+        List<AssetEmployeeSheetTechnicalHintRow> rows = technicalAttributeRepository.findEmployeeSheetTechnicalHints(
+            tenantId,
+            userId,
+            EMPLOYEE_SHEET_HINT_KEYS
+        );
+        Map<UUID, EmployeeSheetTechnicalHintAsset> assets = new LinkedHashMap<>();
+        for (AssetEmployeeSheetTechnicalHintRow row : rows) {
+            EmployeeSheetTechnicalHintAsset asset = assets.computeIfAbsent(
+                row.assetId(),
+                assetId -> new EmployeeSheetTechnicalHintAsset(
+                    row.assetId(),
+                    row.assetTag(),
+                    row.displayName(),
+                    row.assetType(),
+                    row.serialNumber(),
+                    row.status(),
+                    row.locationId(),
+                    new LinkedHashMap<>()
+                )
+            );
+            AssetTechnicalAttributeProfile profile = profileResolver.resolve(row.assetType());
+            if (
+                row.hintKey() != null
+                    && profile.allows(row.hintKey())
+                    && EMPLOYEE_SHEET_HINT_KEY_SET.contains(row.hintKey())
+            ) {
+                String hintValue = row.hintValue() == null ? null : row.hintValue().trim();
+                if (hintValue != null && !hintValue.isEmpty()) {
+                    asset.technicalHints().put(row.hintKey().key(), hintValue);
+                }
+            }
+        }
+        return new EmployeeSheetTechnicalHintsResponse(userId, List.copyOf(assets.values()));
     }
 
     private Asset requireAsset(UUID tenantId, UUID assetId) {
@@ -388,6 +433,24 @@ public class AssetTechnicalAttributeApplicationService {
         String displayValue,
         boolean sensitive,
         boolean masked
+    ) {
+    }
+
+    public record EmployeeSheetTechnicalHintsResponse(
+        UUID userId,
+        List<EmployeeSheetTechnicalHintAsset> assets
+    ) {
+    }
+
+    public record EmployeeSheetTechnicalHintAsset(
+        UUID assetId,
+        String assetTag,
+        String displayName,
+        String assetType,
+        String serialNumber,
+        String status,
+        UUID locationId,
+        Map<String, String> technicalHints
     ) {
     }
 

@@ -115,6 +115,21 @@ public class AssetController {
         );
     }
 
+    @GetMapping("/employee-sheet-technical-hints")
+    public EmployeeSheetTechnicalHintsResponse employeeSheetTechnicalHints(
+        @RequestParam(name = "user_id", required = false) String userId,
+        HttpServletRequest servletRequest
+    ) {
+        UUID tenantId = requestContextExtractor.requireTenantId(servletRequest);
+        UUID authenticatedUserId = requestContextExtractor.requireAuthenticatedUserId(servletRequest);
+        assetAuthorizationService.requireAssetReadAccess(tenantId, authenticatedUserId);
+        rejectUnsupportedEmployeeSheetTechnicalHintsParameters(servletRequest);
+        UUID parsedUserId = parseRequiredUuidParameter(userId, "user_id");
+        return EmployeeSheetTechnicalHintsResponse.from(
+            assetTechnicalAttributeApplicationService.employeeSheetTechnicalHints(tenantId, parsedUserId)
+        );
+    }
+
     @GetMapping("/{id}")
     public AssetDetailResponse get(@PathVariable UUID id, HttpServletRequest servletRequest) {
         UUID tenantId = requestContextExtractor.requireTenantId(servletRequest);
@@ -488,6 +503,50 @@ public class AssetController {
         }
     }
 
+    public record EmployeeSheetTechnicalHintsResponse(
+        UUID userId,
+        List<EmployeeSheetTechnicalHintAssetResponse> assets
+    ) {
+
+        private static EmployeeSheetTechnicalHintsResponse from(
+            AssetTechnicalAttributeApplicationService.EmployeeSheetTechnicalHintsResponse result
+        ) {
+            return new EmployeeSheetTechnicalHintsResponse(
+                result.userId(),
+                result.assets().stream()
+                    .map(EmployeeSheetTechnicalHintAssetResponse::from)
+                    .toList()
+            );
+        }
+    }
+
+    public record EmployeeSheetTechnicalHintAssetResponse(
+        UUID assetId,
+        String assetTag,
+        String displayName,
+        String assetType,
+        String serialNumber,
+        String status,
+        UUID locationId,
+        Map<String, String> technicalHints
+    ) {
+
+        private static EmployeeSheetTechnicalHintAssetResponse from(
+            AssetTechnicalAttributeApplicationService.EmployeeSheetTechnicalHintAsset asset
+        ) {
+            return new EmployeeSheetTechnicalHintAssetResponse(
+                asset.assetId(),
+                asset.assetTag(),
+                asset.displayName(),
+                asset.assetType(),
+                asset.serialNumber(),
+                asset.status(),
+                asset.locationId(),
+                asset.technicalHints()
+            );
+        }
+    }
+
     public record AssignAssetRequest(@NotNull UUID targetUserId) {
     }
 
@@ -611,6 +670,36 @@ public class AssetController {
                     "technical attribute search supports only q and limit"
                 );
             }
+        }
+    }
+
+    private static void rejectUnsupportedEmployeeSheetTechnicalHintsParameters(HttpServletRequest request) {
+        Set<String> supportedParameters = Set.of("user_id");
+        for (String parameterName : request.getParameterMap().keySet()) {
+            if (!supportedParameters.contains(parameterName)) {
+                throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "employee sheet technical hints supports only user_id"
+                );
+            }
+        }
+    }
+
+    private static UUID parseRequiredUuidParameter(String rawValue, String parameterName) {
+        if (rawValue == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, parameterName + " is required");
+        }
+        String normalizedValue = rawValue.trim();
+        if (normalizedValue.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, parameterName + " must not be blank");
+        }
+        try {
+            return UUID.fromString(normalizedValue);
+        } catch (IllegalArgumentException exception) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                parameterName + " must be a valid UUID"
+            );
         }
     }
 }

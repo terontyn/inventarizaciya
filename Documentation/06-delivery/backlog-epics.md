@@ -1150,40 +1150,134 @@ Not approved by this note:
 - Astra Configuration Manager parity.
 
 
+### Planning priority after Search over Technical Attributes
 
-### Planning priority after Asset Type-Specific Technical Attributes v1
+Unified Create Launcher, Simplified Asset Actions UX, ADR-0005 Asset Delete Semantics, Controlled Employee Asset Information Sheet, Operational Search v1 Frontend Quick Find, Asset QR Lite Frontend Derived Display, Asset Type-Specific Technical Attributes v1, and Search over Technical Attributes are implemented/accepted at their approved scope levels.
 
-Unified Create Launcher, Simplified Asset Actions UX, ADR-0005 Asset Delete Semantics, Controlled Employee Asset Information Sheet, Operational Search v1 Frontend Quick Find, Asset QR Lite Frontend Derived Display, and Asset Type-Specific Technical Attributes v1 are implemented/accepted at their approved scope levels.
+Search over Technical Attributes is accepted as:
 
-Asset Type-Specific Technical Attributes v1 is accepted as:
+- backend/API tenant-scoped technical-attribute search endpoint;
+- frontend UI through separate `Поиск по техническим данным`;
+- current `Быстрый поиск` preserved as separate frontend-only loaded-state search.
 
-- backend/API/DB controlled key-value support;
-- frontend integration inside selected Asset Technical details.
+Owner decision:
 
-The currently owner-prioritized post-Asset-Identity candidates have now been implemented or closed at their bounded approved scope.
+- integrated `Post-Technical-Attributes Stabilization / Controlled End-to-End Recheck` remains deferred until after the current batch of new bounded features;
+- this deferral is not validation evidence;
+- it does not prove release readiness, FTOV start, FTOV exit, production readiness or real tenant validation.
 
-The first recommended next stage is:
+The next stage should be the next owner-selected bounded feature gate.
 
-`Post-Technical-Attributes Stabilization / Controlled End-to-End Recheck`
+Possible optional branches:
 
-This next stage should verify the integrated Operational Workspace after the recent accepted increments and should not open new product scope by default.
+- `Employee Information Sheet Technical Attribute Exposure Decision Gate`;
+- `Search Scope Expansion Decision Gate` for `note` / `printer_placement_note`;
+- `Quick Find / Technical Search Merge Semantics Decision Gate`;
+- separate product/architecture gates for global search, advanced filters, reporting/dashboard, discovery/scanner or Asset 360.
 
-Optional branch:
+Do not open these branches implicitly.
 
-If the owner explicitly wants search by technical attributes, open:
+Each requires explicit owner decision.
 
-`Search over Technical Attributes Decision Gate`
 
-This optional branch must remain separate from current frontend quick find, backend search, advanced filtering, saved views, reporting/dashboard and Elasticsearch/global search.
+#### Search over Technical Attributes
 
-Optional branch:
+Status: first bounded implementation accepted as backend/API technical-attribute search plus frontend UI through separate `Поиск по техническим данным`.
 
-If the owner explicitly wants technical attributes in Employee Information Sheet, open:
+Intent:
 
-`Employee Information Sheet Technical Attribute Exposure Decision Gate`
+- allow managed workspace users to find assets/devices by already accepted technical attributes;
+- support support/operator lookup by technical clues;
+- keep search bounded to approved technical fields;
+- avoid global search, advanced filtering, reporting, discovery or public lookup scope.
 
-This optional branch must remain separate from employee self-service, public lookup, QR payload changes, export/PDF and Asset 360.
+Backend/API implementation:
 
-Optional branch:
+- added endpoint:
+  - `GET /api/v1/assets/technical-attribute-search`;
+- added bounded tenant-scoped search over technical attributes;
+- added search-scope index:
+  - `idx_asset_technical_attributes_search_scope`;
+- reused existing asset read authorization cutline;
+- returned asset/device results only;
+- returned one result per asset;
+- returned matched field metadata;
+- masked sensitive values in result rows;
+- emitted no audit for read-only search.
 
-If the owner explicitly wants import/export, reporting/dashboard, discovery/agent/scanner or Asset 360, open a separate product decision gate first.
+Frontend implementation:
+
+- added separate UI block:
+  - `Поиск по техническим данным`;
+- placed it near current `Быстрый поиск`;
+- kept current `Быстрый поиск` unchanged;
+- kept `Фильтр дерева` unchanged;
+- result rows are read-only navigation rows;
+- result click opens selected Asset detail / Technical details when safe;
+- displayed backend-provided masked values as-is;
+- did not unmask values in frontend.
+
+Searchable fields:
+
+- `hostname`;
+- `anydesk_id`;
+- `ip_address`;
+- `mac_address`;
+- `phone_ip`;
+- `extension_number`;
+- `sip_line_id`;
+- `printer_ip`;
+- `printer_network_name`.
+
+Excluded by default:
+
+- `printer_placement_note`;
+- `note`;
+- audit/history;
+- QR payload;
+- unsupported/generic arbitrary fields;
+- tenant-defined custom keys.
+
+Preserved boundaries:
+
+- no merge into current `Быстрый поиск`;
+- no backend/global search platform;
+- no Elasticsearch;
+- no advanced filters;
+- no saved views;
+- no reporting/dashboard;
+- no Asset 360;
+- no QR payload changes;
+- no QR search;
+- no Employee Information Sheet exposure;
+- no Asset Overview exposure;
+- no generic PATCH changes;
+- no result-row Assign / Transfer / Return / Edit / Delete / Archive / Retire;
+- no import/export/PDF/Excel/print;
+- no discovery/scanner/network scan;
+- no employee self-service;
+- no public lookup;
+- no auth/IAM expansion;
+- no new role model.
+
+Deferred:
+
+- merging technical search into `Быстрый поиск`;
+- search over `printer_placement_note`;
+- search over `note`;
+- global search / Elasticsearch;
+- advanced filters / saved views;
+- QR search / QR payload changes;
+- Employee Information Sheet technical attribute exposure;
+- Asset Overview technical attribute exposure;
+- import/export;
+- discovery/agent/scanner;
+- reporting/dashboard / Asset 360.
+
+Required next step:
+
+- no further Search over Technical Attributes implementation is opened by this closeout;
+- if owner wants to merge technical search into `Быстрый поиск`, open a separate UI semantics decision gate;
+- if owner wants search over `note` or `printer_placement_note`, open a separate search-scope decision gate;
+- if owner wants global search, advanced filters, saved views, reporting/dashboard, discovery/scanner or Asset 360, open separate product/architecture decision first;
+- otherwise continue to the next owner-selected bounded feature gate.
