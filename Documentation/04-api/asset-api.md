@@ -2,13 +2,13 @@
 
 Status: draft
 Owner: architecture
-Last Updated: 2026-05-20
+Last Updated: 2026-05-25
 
 ## Purpose
 Минимальный API-контракт Foundation Slice для asset-service.
 
 ## Scope
-Этот документ покрывает только Asset CRUD v1 для мастер-записи `Asset`.
+Этот документ покрывает Asset CRUD v1 для мастер-записи `Asset`, responsibility-flow command layer и принятые bounded API extensions внутри asset-service.
 
 ## API Principles
 1. Все API versioned.
@@ -32,10 +32,17 @@ asset-service в Foundation Slice v1 владеет:
 - retire
 
 ## Endpoints v1
+
+Core Asset endpoints:
+
 - `POST /api/v1/assets`
 - `GET /api/v1/assets`
 - `GET /api/v1/assets/{id}`
 - `PATCH /api/v1/assets/{id}`
+
+Accepted bounded extension endpoints:
+
+- `GET /api/v1/assets/employee-sheet-technical-hints`
 
 ## Responsibility Flow Command Layer (candidate for next slice)
 
@@ -340,3 +347,160 @@ Recommended validation:
 Changes to `display_name` and `note` are Asset master-record updates and should be covered by existing update-asset audit behavior.
 
 No new audit event type is required by this API extension.
+
+## Employee Sheet Technical Hints API Extension
+
+This accepted API extension adds a narrow read-only technical hints endpoint for the existing Employee Sheet.
+
+It is intentionally narrower than full technical attributes, technical attribute search, Asset Overview, Asset 360 or employee self-service.
+
+### Endpoint
+
+```http
+GET /api/v1/assets/employee-sheet-technical-hints?user_id=<userId>
+```
+
+### Purpose
+
+Return low-sensitivity technical hints for assets assigned to the selected employee/user in the current tenant.
+
+This endpoint supports the managed workspace `Информационный лист сотрудника`.
+
+### Request
+
+Query parameters:
+
+| Parameter | Required | Description |
+|---|---:|---|
+| `user_id` | yes | Selected employee/user id. Must pass existing id/UUID validation style. |
+
+Rules:
+
+- `user_id` is required;
+- blank `user_id` is rejected;
+- malformed `user_id` is rejected;
+- tenant id is derived from authenticated workspace context;
+- tenant id is not accepted as request parameter;
+- no full-name lookup is supported;
+- no public lookup is supported;
+- no user-service DB join is performed;
+- no user-service existence check is performed in this accepted cut;
+- unknown or no-match `user_id` returns an empty `assets` array.
+
+### Authorization
+
+Uses the existing asset read authorization boundary.
+
+Expected access:
+
+- Tenant Admin: allowed;
+- Asset Operator: allowed;
+- Support Reviewer: allowed read-only;
+- ordinary Employee: not exposed as employee self-service;
+- unauthenticated access: denied.
+
+### Response
+
+Example semantic response:
+
+```json
+{
+  "user_id": "9a35f0d4-9e5c-4e3b-9f24-111111111111",
+  "assets": [
+    {
+      "asset_id": "0a2f1f99-4d3d-4d4c-a1a8-222222222222",
+      "asset_tag": "INV-001",
+      "display_name": "Laptop Ivanov",
+      "asset_type": "laptop",
+      "serial_number": "SN-001",
+      "status": "ACTIVE",
+      "location_id": "64a78fb3-eeee-4444-a235-333333333333",
+      "technical_hints": {
+        "hostname": "host-01"
+      }
+    }
+  ]
+}
+```
+
+Top-level fields:
+
+| Field | Description |
+|---|---|
+| `user_id` | Same selected employee/user id from the request. |
+| `assets` | Assets assigned to this user inside the current tenant. |
+
+Each asset row includes minimal asset identity/context:
+
+| Field | Description |
+|---|---|
+| `asset_id` | Asset id. |
+| `asset_tag` | Canonical inventory/business identifier. |
+| `display_name` | Optional human-readable asset display name. |
+| `asset_type` | Asset type. |
+| `serial_number` | Serial number. |
+| `status` | Asset status. |
+| `location_id` | Current location id, if present. |
+| `technical_hints` | Narrow map of allowed low-sensitivity hints. |
+
+### Allowed technical hints
+
+Only these `technical_hints` keys may be returned:
+
+| Key | Employee Sheet label |
+|---|---|
+| `hostname` | Hostname |
+| `extension_number` | Внутренний номер |
+| `printer_network_name` | Сетевое имя принтера |
+
+Missing, null, blank or whitespace-only hint values are omitted.
+
+`technical_hints` may be an empty object when the assigned asset has no allowed hints.
+
+### Explicitly excluded fields
+
+This endpoint must not return:
+
+- full `technical_attributes`;
+- `profile`;
+- `anydesk_id`;
+- `ip_address`;
+- `mac_address`;
+- `phone_ip`;
+- `sip_line_id`;
+- `printer_ip`;
+- `printer_placement_note`;
+- `note`;
+- QR payload;
+- audit/history;
+- action links;
+- arbitrary unsupported/custom technical fields;
+- masked sensitive technical values.
+
+### Difference from Technical Attribute Search
+
+This endpoint is narrower than:
+
+```http
+GET /api/v1/assets/technical-attribute-search
+```
+
+Technical Attribute Search is a search surface and may return matched-field metadata according to its own masking rules.
+
+Employee Sheet technical hints are not search results. They are a read-only selected-employee sheet view and expose only the three accepted low-sensitivity hints without masked sensitive values.
+
+### Boundary rules
+
+This endpoint does not change:
+
+- `GET /api/v1/assets`;
+- `GET /api/v1/assets/{id}`;
+- `PATCH /api/v1/assets/{id}`;
+- `PUT /api/v1/assets/{id}/technical-attributes`;
+- `GET /api/v1/assets/technical-attribute-search`;
+- Assign / Transfer / Return;
+- QR Lite;
+- Asset Overview;
+- Quick Find.
+
+No audit event is emitted because this is read-only hint retrieval.

@@ -96,6 +96,16 @@ class MinimalPilotUiSmokeTest {
                 assertThat(body, containsString("Переместить"));
                 assertThat(body, containsString("Вернуть"));
                 assertThat(body, containsString("Информационный лист сотрудника"));
+                assertThat(body, containsString("Информационный лист"));
+                assertThat(body, containsString("employeeSheet"));
+                assertThat(body, containsString("standalone-employee-sheet"));
+                assertThat(body, containsString("data-standalone-employee-id"));
+                assertThat(body, containsString("Найти сотрудника по имени"));
+                assertThat(body, containsString("Поиск только по уже загруженным пользователям рабочего пространства"));
+                assertThat(body, containsString("Введите имя сотрудника"));
+                assertThat(body, containsString("Пользователи ещё не загружены. Подключите контур и обновите справочники."));
+                assertThat(body, containsString("Сотрудник не найден в загруженных данных."));
+                assertThat(body, containsString("У сотрудника нет закреплённых устройств в загруженных данных."));
                 assertThat(body, containsString("Закреплённые устройства"));
                 assertThat(body, containsString("Только для чтения"));
                 assertThat(body, containsString("Сформировано в рабочем пространстве учёта"));
@@ -196,6 +206,7 @@ class MinimalPilotUiSmokeTest {
             .andExpect(content().string(not(containsString("Mutate path"))))
             .andExpect(content().string(not(containsString("Master data"))))
             .andExpect(content().string(not(containsString("data-technical-search-action"))))
+            .andExpect(content().string(not(containsString("data-employee-sheet-action"))))
             .andExpect(content().string(not(containsString("saved views"))))
             .andExpect(content().string(not(containsString("bulk actions"))))
             .andExpect(content().string(not(containsString("dashboard"))))

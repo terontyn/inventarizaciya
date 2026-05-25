@@ -2,7 +2,7 @@
 
 Status: approved
 Owner: product
-Last Updated: 2026-05-20
+Last Updated: 2026-05-26
 
 ## MVP Timeline
 Срок MVP: 6–8 недель
@@ -2755,6 +2755,153 @@ Deferred to separate future decisions:
 - Asset Overview technical attribute exposure;
 - reporting/dashboard;
 - import/export;
+- discovery/agent/scanner/platform scope.
+
+### Non-claim rule
+
+This closeout does not prove:
+
+- release readiness;
+- FTOV start;
+- FTOV exit;
+- production readiness;
+- real tenant validation;
+- real day-to-day operational validation.
+
+The project remains in:
+
+**Project Stabilization / First-Adopter-Gated Hold**
+
+## Employee Sheet Technical Attribute Exposure Closeout Clarification
+
+Employee Sheet Technical Attribute Exposure is accepted as completed at its approved bounded scope.
+
+This closeout supersedes the earlier deferred status for Employee Information Sheet technical attribute exposure. Only the narrow low-sensitivity hints subset is accepted.
+
+### Delivery interpretation
+
+This implementation is accepted as:
+
+**bounded asset-service backend/API Employee Sheet technical hints endpoint plus bounded frontend integration inside existing `Информационный лист сотрудника`.**
+
+### Backend/API accepted scope
+
+Implemented backend/API scope:
+
+- separate read-only endpoint:
+  - `GET /api/v1/assets/employee-sheet-technical-hints?user_id=<userId>`;
+- tenant-scoped assigned-asset lookup;
+- selected employee/user id only;
+- existing asset read authorization reused;
+- no user-service DB join;
+- no user-service existence check in this accepted cut;
+- unknown/no-match `user_id` returns an empty `assets` array;
+- no audit emitted for read-only retrieval.
+
+Returned asset context:
+
+- `asset_id`;
+- `asset_tag`;
+- `display_name`;
+- `asset_type`;
+- `serial_number`;
+- `status`;
+- `location_id`;
+- `technical_hints`.
+
+Allowed technical hints only:
+
+- `hostname`;
+- `extension_number`;
+- `printer_network_name`.
+
+### Frontend accepted scope
+
+Implemented frontend scope:
+
+- existing `Информационный лист сотрудника` renders low-sensitivity technical hints under assigned-device rows/cards;
+- endpoint call:
+  - `GET /api/v1/assets/employee-sheet-technical-hints?user_id=<selectedUserId>`;
+- hints are loaded when selected employee/user detail opens or changes;
+- stale hints are cleared on selected user change;
+- hints are merged by `asset_id`;
+- only present hints are shown;
+- endpoint error does not block Employee Sheet rendering;
+- frontend uses a hard allowlist.
+
+Displayed labels:
+
+- `hostname` -> `Hostname`;
+- `extension_number` -> `Внутренний номер`;
+- `printer_network_name` -> `Сетевое имя принтера`.
+
+### Preserved boundaries
+
+This implementation preserves:
+
+- selected employee/user detail only;
+- read-only Employee Sheet behavior;
+- managed-workspace-only access;
+- no employee self-service;
+- no public lookup;
+- no full-name lookup;
+- no export/PDF/Excel/print;
+- no Asset 360;
+- no technical attribute editing from Employee Sheet;
+- no action links from Employee Sheet hints;
+- list endpoint unchanged;
+- detail endpoint unchanged;
+- technical attributes edit endpoint unchanged;
+- Technical Search unchanged;
+- Quick Find unchanged;
+- QR Lite unchanged;
+- Asset Overview unchanged;
+- generic asset edit unchanged;
+- Assign / Transfer / Return unchanged.
+
+### Not opened
+
+This implementation did not open:
+
+- full technical attributes in Employee Sheet;
+- sensitive technical attributes in Employee Sheet;
+- masked sensitive values in Employee Sheet;
+- `anydesk_id`;
+- `ip_address`;
+- `mac_address`;
+- `phone_ip`;
+- `sip_line_id`;
+- `printer_ip`;
+- `printer_placement_note`;
+- `note`;
+- QR payload;
+- audit/history exposure;
+- `profile`;
+- arbitrary unsupported/custom fields;
+- employee self-service;
+- public lookup;
+- export/PDF/Excel/print;
+- Asset Overview exposure;
+- Asset 360;
+- reporting/dashboard;
+- global search;
+- discovery/scanner/network scan;
+- Hardware Inspector parity;
+- Astra Configuration Manager parity;
+- auth/IAM expansion;
+- new role model.
+
+### Deferred
+
+Deferred to separate future decisions:
+
+- broader Employee Sheet expansion;
+- employee self-service;
+- public lookup remains rejected unless separately decided;
+- export/PDF/print;
+- QR in Employee Sheet;
+- Asset Overview technical hints or full technical attributes;
+- reporting/dashboard;
 - discovery/agent/scanner/platform scope.
 
 ### Non-claim rule

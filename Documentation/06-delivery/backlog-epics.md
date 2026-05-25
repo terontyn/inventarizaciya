@@ -2,7 +2,7 @@
 
 Status: approved
 Owner: product
-Last Updated: 2026-05-20
+Last Updated: 2026-05-26
 
 ## Wave 1 Epics
 
@@ -1150,15 +1150,22 @@ Not approved by this note:
 - Astra Configuration Manager parity.
 
 
-### Planning priority after Search over Technical Attributes
+### Planning priority after Employee Sheet Technical Attribute Exposure
 
-Unified Create Launcher, Simplified Asset Actions UX, ADR-0005 Asset Delete Semantics, Controlled Employee Asset Information Sheet, Operational Search v1 Frontend Quick Find, Asset QR Lite Frontend Derived Display, Asset Type-Specific Technical Attributes v1, and Search over Technical Attributes are implemented/accepted at their approved scope levels.
+Unified Create Launcher, Simplified Asset Actions UX, ADR-0005 Asset Delete Semantics, Controlled Employee Asset Information Sheet, Operational Search v1 Frontend Quick Find, Asset QR Lite Frontend Derived Display, Asset Type-Specific Technical Attributes v1, Search over Technical Attributes, and Employee Sheet Technical Attribute Exposure are implemented/accepted at their approved scope levels.
 
-Search over Technical Attributes is accepted as:
+Employee Sheet Technical Attribute Exposure is accepted as:
 
-- backend/API tenant-scoped technical-attribute search endpoint;
-- frontend UI through separate `Поиск по техническим данным`;
-- current `Быстрый поиск` preserved as separate frontend-only loaded-state search.
+- backend/API tenant-scoped Employee Sheet technical hints endpoint;
+- frontend UI rendering inside existing `Информационный лист сотрудника`;
+- low-sensitivity assigned-asset hints only;
+- read-only selected employee/user detail enhancement.
+
+Accepted hints:
+
+- `hostname`;
+- `extension_number`;
+- `printer_network_name`.
 
 Owner decision:
 
@@ -1166,14 +1173,13 @@ Owner decision:
 - this deferral is not validation evidence;
 - it does not prove release readiness, FTOV start, FTOV exit, production readiness or real tenant validation.
 
-The next stage should be the next owner-selected bounded feature gate.
+The next stage should be the next owner-selected bounded feature gate or the deferred integrated stabilization / verification gate when the owner explicitly chooses it.
 
 Possible optional branches:
 
-- `Employee Information Sheet Technical Attribute Exposure Decision Gate`;
 - `Search Scope Expansion Decision Gate` for `note` / `printer_placement_note`;
 - `Quick Find / Technical Search Merge Semantics Decision Gate`;
-- separate product/architecture gates for global search, advanced filters, reporting/dashboard, discovery/scanner or Asset 360.
+- separate product/architecture gates for global search, advanced filters, reporting/dashboard, discovery/scanner, employee self-service, export/PDF/print or Asset 360.
 
 Do not open these branches implicitly.
 
@@ -1281,3 +1287,101 @@ Required next step:
 - if owner wants search over `note` or `printer_placement_note`, open a separate search-scope decision gate;
 - if owner wants global search, advanced filters, saved views, reporting/dashboard, discovery/scanner or Asset 360, open separate product/architecture decision first;
 - otherwise continue to the next owner-selected bounded feature gate.
+
+#### Employee Sheet Technical Attribute Exposure
+
+Status: first bounded implementation accepted as backend/API Employee Sheet technical hints endpoint plus frontend UI integration inside existing `Информационный лист сотрудника`.
+
+Intent:
+
+- allow managed workspace users to see low-sensitivity technical hints for devices assigned to the selected employee/user;
+- improve Employee Sheet usefulness without exposing sensitive technical attributes;
+- keep the sheet read-only and selected-user scoped;
+- avoid employee self-service, public lookup, export/PDF/print or Asset 360 scope.
+
+Backend/API implementation:
+
+- added endpoint:
+  - `GET /api/v1/assets/employee-sheet-technical-hints?user_id=<userId>`;
+- returns assets assigned to selected `user_id` in the current tenant;
+- returns minimal asset identity/context;
+- returns only allowlisted low-sensitivity `technical_hints`;
+- reuses existing asset read authorization;
+- performs no user-service DB join;
+- performs no user-service existence check in this accepted cut;
+- returns empty `assets` for unknown/no-match `user_id`;
+- emits no audit for read-only retrieval.
+
+Frontend implementation:
+
+- existing `Информационный лист сотрудника` renders hints under assigned-device rows/cards;
+- calls:
+  - `GET /api/v1/assets/employee-sheet-technical-hints?user_id=<selectedUserId>`;
+- clears stale hints when selected user changes;
+- merges hints by `asset_id`;
+- displays only present hints;
+- does not show noisy empty hint blocks;
+- does not block Employee Sheet rendering if the endpoint fails;
+- uses a hard frontend allowlist.
+
+Accepted hints:
+
+- `hostname` -> `Hostname`;
+- `extension_number` -> `Внутренний номер`;
+- `printer_network_name` -> `Сетевое имя принтера`.
+
+Preserved boundaries:
+
+- no full `technical_attributes` in Employee Sheet;
+- no sensitive technical fields in Employee Sheet;
+- no masked sensitive values in Employee Sheet;
+- no `profile`;
+- no `note`;
+- no QR payload;
+- no audit/history exposure;
+- no action links;
+- no technical attribute editing from Employee Sheet;
+- no employee self-service;
+- no public lookup;
+- no full-name lookup;
+- no export/PDF/Excel/print;
+- no Asset 360;
+- no Asset Overview exposure;
+- no Quick Find changes;
+- no Technical Search changes;
+- no QR Lite changes;
+- no generic PATCH changes;
+- no Assign / Transfer / Return changes;
+- no auth/IAM expansion;
+- no new role model.
+
+Explicitly excluded fields:
+
+- `anydesk_id`;
+- `ip_address`;
+- `mac_address`;
+- `phone_ip`;
+- `sip_line_id`;
+- `printer_ip`;
+- `printer_placement_note`;
+- arbitrary unsupported/custom technical fields.
+
+Deferred:
+
+- broader Employee Sheet expansion;
+- employee self-service;
+- public lookup remains rejected unless separately decided;
+- export/PDF/print;
+- QR in Employee Sheet;
+- Asset Overview technical hints or full technical attributes;
+- reporting/dashboard;
+- discovery/agent/scanner/platform scope.
+
+Required next step:
+
+- no further Employee Sheet Technical Attribute Exposure implementation is opened by this closeout;
+- if owner wants export/PDF/print, open a separate product decision gate;
+- if owner wants employee self-service, open a separate auth/IAM and product decision gate;
+- if owner wants Asset Overview technical hints, open a separate exposure decision gate;
+- if owner wants Asset 360, reporting/dashboard, global search, discovery/scanner or Hardware Inspector parity, open separate product/architecture decision first;
+- otherwise continue to the next owner-selected bounded feature gate or the deferred integrated stabilization / verification gate.

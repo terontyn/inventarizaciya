@@ -2,7 +2,7 @@
 
 Status: approved
 Owner: project
-Last Updated: 2026-05-20
+Last Updated: 2026-05-25
 
 ## Purpose
 IT Asset Management SaaS для учета активов, оргструктуры, ответственности за технику и истории критических изменений.
@@ -2049,6 +2049,167 @@ Deferred to separate future decisions:
 - Employee Information Sheet technical attribute exposure;
 - Asset Overview technical attribute exposure;
 - import/export of technical search results;
+- reporting/dashboard usage;
+- discovery/agent/scanner/platform scope.
+
+This remains internally validated implementation evidence only.
+
+It does not prove:
+
+- release readiness;
+- FTOV start;
+- FTOV exit;
+- production readiness;
+- real tenant validation;
+- real day-to-day operational validation.
+
+## Current Baseline Update — Employee Sheet Technical Attribute Exposure Closeout
+
+Employee Sheet Technical Attribute Exposure has been completed and accepted at its approved bounded scope.
+
+This closeout supersedes the earlier deferred-note status for Employee Information Sheet technical attribute exposure. The accepted implementation is intentionally narrower than full technical attribute exposure.
+
+Implementation is accepted as two bounded layers:
+
+1. backend/API scoped Employee Sheet technical hints endpoint;
+2. frontend integration inside existing `Информационный лист сотрудника`.
+
+### Backend/API implementation
+
+Accepted backend/API scope:
+
+- added separate read-only endpoint:
+  - `GET /api/v1/assets/employee-sheet-technical-hints?user_id=<userId>`;
+- endpoint is tenant-scoped;
+- endpoint uses selected employee/user id only;
+- endpoint returns only assets assigned to the selected `user_id` in the current tenant;
+- endpoint uses existing asset read authorization;
+- no user-service DB join is performed;
+- no user-service existence check is performed in this first accepted cut;
+- unknown or no-match `user_id` returns an empty `assets` array;
+- no audit is emitted because the endpoint is read-only.
+
+Each returned asset row includes minimal asset identity/context:
+
+- `asset_id`;
+- `asset_tag`;
+- `display_name`;
+- `asset_type`;
+- `serial_number`;
+- `status`;
+- `location_id`;
+- `technical_hints`.
+
+Allowed technical hints are limited to:
+
+- `hostname`;
+- `extension_number`;
+- `printer_network_name`.
+
+The endpoint does not return:
+
+- full `technical_attributes`;
+- `profile`;
+- `anydesk_id`;
+- `ip_address`;
+- `mac_address`;
+- `phone_ip`;
+- `sip_line_id`;
+- `printer_ip`;
+- `printer_placement_note`;
+- `note`;
+- QR payload;
+- audit/history;
+- action links;
+- arbitrary unsupported/custom technical fields;
+- masked sensitive technical values.
+
+### Frontend integration
+
+Accepted frontend scope:
+
+- existing `Информационный лист сотрудника` renders low-sensitivity technical hints for assigned devices;
+- frontend calls:
+  - `GET /api/v1/assets/employee-sheet-technical-hints?user_id=<selectedUserId>`;
+- hints are loaded when selected employee/user detail opens or changes;
+- stale hints are cleared when selected user changes;
+- hints are merged by `asset_id`;
+- hints are displayed as secondary read-only information under existing assigned-device rows/cards;
+- only present hint values are shown;
+- missing hints do not create noisy empty blocks;
+- endpoint failure does not block Employee Sheet rendering;
+- frontend uses a hard allowlist for rendered keys.
+
+User-facing labels:
+
+- `hostname` -> `Hostname`;
+- `extension_number` -> `Внутренний номер`;
+- `printer_network_name` -> `Сетевое имя принтера`.
+
+### Preserved boundaries
+
+This closeout preserves:
+
+- current Employee Sheet as selected employee/user detail only;
+- read-only Employee Sheet behavior;
+- managed-workspace-only access;
+- no employee self-service;
+- no public lookup;
+- no full-name lookup;
+- no export/PDF/Excel/print;
+- no Asset 360;
+- no action links from Employee Sheet hints;
+- no technical attribute editing from Employee Sheet;
+- `GET /api/v1/assets` list endpoint unchanged;
+- `GET /api/v1/assets/{id}` detail endpoint unchanged;
+- `GET /api/v1/assets/technical-attribute-search` unchanged;
+- `PUT /api/v1/assets/{id}/technical-attributes` unchanged;
+- Quick Find unchanged;
+- Technical Search unchanged;
+- Asset Overview unchanged;
+- QR Lite unchanged;
+- generic asset edit unchanged;
+- Assign / Transfer / Return unchanged.
+
+### Not opened
+
+This closeout did not open:
+
+- full technical attributes in Employee Sheet;
+- sensitive technical attributes in Employee Sheet;
+- masked sensitive values in Employee Sheet;
+- Employee self-service;
+- public lookup;
+- full-name lookup;
+- export/PDF/Excel/print;
+- QR in Employee Sheet;
+- Asset Overview technical attribute exposure;
+- Asset 360;
+- reporting/dashboard;
+- global search;
+- Elasticsearch;
+- advanced filters;
+- saved views;
+- import/export;
+- discovery agent;
+- scanner/camera workflow;
+- network scanning;
+- remote control;
+- Hardware Inspector parity;
+- Astra Configuration Manager parity;
+- auth/IAM expansion;
+- new role model.
+
+### Deferred
+
+Deferred to separate future decisions:
+
+- broader Employee Sheet / Asset 360 expansion;
+- employee self-service;
+- public lookup remains rejected unless separately decided;
+- export/PDF/print of Employee Sheet;
+- QR in Employee Sheet;
+- Asset Overview technical hints or full technical attributes;
 - reporting/dashboard usage;
 - discovery/agent/scanner/platform scope.
 

@@ -1527,6 +1527,92 @@ code {
     background: rgba(255, 255, 255, 0.56);
 }
 
+.tree-single-node {
+    padding: 0.45rem;
+}
+
+.standalone-employee-sheet {
+    align-content: start;
+}
+
+.employee-sheet-search {
+    display: grid;
+    gap: 0.75rem;
+    padding: 1rem;
+    border: 1px solid rgba(15, 118, 110, 0.16);
+    border-radius: var(--radius-md);
+    background: rgba(255, 255, 255, 0.76);
+}
+
+.employee-sheet-search-heading {
+    align-items: flex-start;
+}
+
+.employee-sheet-search-form {
+    display: grid;
+    gap: 0.6rem;
+}
+
+.employee-sheet-search-results {
+    display: grid;
+    gap: 0.45rem;
+}
+
+.employee-sheet-search-result {
+    display: grid;
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr) auto;
+    gap: 0.5rem;
+    align-items: center;
+    width: 100%;
+    padding: 0.72rem 0.8rem;
+    border: 1px solid rgba(22, 32, 42, 0.08);
+    border-radius: var(--radius-sm);
+    background: rgba(240, 253, 250, 0.34);
+    color: var(--ink);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.employee-sheet-search-result:hover,
+.employee-sheet-search-result:focus-visible,
+.employee-sheet-search-result.is-selected {
+    border-color: rgba(15, 118, 110, 0.24);
+    background: rgba(15, 118, 110, 0.08);
+    outline: none;
+}
+
+.employee-sheet-result-title {
+    font-weight: 800;
+    overflow-wrap: anywhere;
+}
+
+.employee-sheet-result-meta,
+.employee-sheet-result-count,
+.employee-sheet-search-empty {
+    color: var(--muted);
+    font-size: 0.84rem;
+    line-height: 1.4;
+}
+
+.employee-sheet-result-count {
+    justify-self: end;
+    white-space: nowrap;
+}
+
+.employee-sheet-search-empty {
+    margin: 0;
+    padding: 0.75rem;
+    border: 1px dashed rgba(15, 118, 110, 0.2);
+    border-radius: var(--radius-sm);
+    background: rgba(255, 255, 255, 0.62);
+}
+
+.standalone-employee-selection {
+    display: grid;
+    gap: 0.9rem;
+}
+
 .employee-info-sheet {
     display: grid;
     gap: 0.9rem;
@@ -2205,8 +2291,14 @@ code {
     .field-grid,
     .overview-grid,
     .workspace-path-grid,
-    .action-grid {
+    .action-grid,
+    .employee-sheet-search-result {
         grid-template-columns: 1fr;
+    }
+
+    .employee-sheet-result-count {
+        justify-self: start;
+        white-space: normal;
     }
 
     .screen-header,

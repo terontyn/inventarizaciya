@@ -36,6 +36,7 @@ const REVIEW_SECTIONS = [
 
 const TREE_GROUPS = {
     WORKSPACE: "workspace",
+    EMPLOYEE_SHEET: "employee-sheet",
     ORG: "org",
     LOCATIONS: "locations",
     ALL_ASSETS: "all-assets",
@@ -44,6 +45,7 @@ const TREE_GROUPS = {
 
 const TREE_NODE_TYPES = {
     WORKSPACE: "workspace",
+    EMPLOYEE_SHEET: "employeeSheet",
     DEPARTMENT: "department",
     USER: "user",
     BRANCH: "branch",
@@ -383,12 +385,15 @@ const state = {
     expandedTreeNodes: new Set(),
     treeFilter: "",
     quickFindQuery: "",
+    employeeSheetSearchQuery: "",
+    employeeSheetSelectedUserId: "",
     technicalSearchQuery: "",
     technicalSearchResults: [],
     technicalSearchError: "",
     technicalSearchHasSearched: false,
     technicalSearchLastQuery: "",
     employeeSheetTechnicalHintsUserId: "",
+    employeeSheetTechnicalHintsScope: "",
     employeeSheetTechnicalHintsByAssetId: {},
     employeeSheetTechnicalHintsError: "",
     employeeSheetTechnicalHintsRequestId: 0,
@@ -584,6 +589,7 @@ function bindStaticEvents() {
     ui.treeFilter?.addEventListener("input", onTreeFilterInput);
     ui.workspaceTreeBody?.addEventListener("click", onTreeClick);
     ui.workspaceDetail?.addEventListener("click", onWorkspaceDetailClick);
+    ui.workspaceDetail?.addEventListener("input", onWorkspaceDetailInput);
     ui.workspaceDetail?.addEventListener("submit", onWorkspaceDetailSubmit);
     ui.screenNav?.addEventListener("click", onScreenNavClick);
     ui.workspaceOverview?.addEventListener("click", onScreenNavClick);
@@ -720,6 +726,9 @@ function clearSession() {
     state.selectedTreeNode = { type: TREE_NODE_TYPES.WORKSPACE };
     state.expandedTreeNodes = new Set();
     state.treeFilter = "";
+    state.quickFindQuery = "";
+    state.employeeSheetSearchQuery = "";
+    state.employeeSheetSelectedUserId = "";
     resetEmployeeSheetTechnicalHints();
     state.lastRoleAssignment = null;
     state.lastFeedback = null;
@@ -825,10 +834,14 @@ async function refreshAllData(options = {}) {
             state.selectedAdminItemId = null;
         }
 
+        syncStandaloneEmployeeSheetSelection();
         render();
         if (state.selectedTreeNode?.type === TREE_NODE_TYPES.USER) {
-            resetEmployeeSheetTechnicalHints(state.selectedTreeNode.id);
-            loadEmployeeSheetTechnicalHintsForUser(state.selectedTreeNode.id);
+            resetEmployeeSheetTechnicalHints(state.selectedTreeNode.id, "treeUser");
+            loadEmployeeSheetTechnicalHintsForUser(state.selectedTreeNode.id, { scope: "treeUser" });
+        } else if (state.selectedTreeNode?.type === TREE_NODE_TYPES.EMPLOYEE_SHEET && state.employeeSheetSelectedUserId) {
+            resetEmployeeSheetTechnicalHints(state.employeeSheetSelectedUserId, "standalone");
+            loadEmployeeSheetTechnicalHintsForUser(state.employeeSheetSelectedUserId, { scope: "standalone" });
         }
         if (!options.silent) {
             showFlash("Данные рабочего контура обновлены.", "success");
@@ -1094,35 +1107,91 @@ function extractErrorMessage(response, payload) {
     return `${response.status} ${response.statusText}`;
 }
 
-function resetEmployeeSheetTechnicalHints(userId = "") {
+function resetEmployeeSheetTechnicalHints(userId = "", scope = "") {
     state.employeeSheetTechnicalHintsUserId = String(userId || "");
+    state.employeeSheetTechnicalHintsScope = scope;
     state.employeeSheetTechnicalHintsByAssetId = {};
     state.employeeSheetTechnicalHintsError = "";
     state.employeeSheetTechnicalHintsRequestId += 1;
     state.busy.employeeSheetTechnicalHints = false;
 }
 
-function isCurrentEmployeeSheetHintsRequest(userId, requestId) {
-    return state.employeeSheetTechnicalHintsRequestId === requestId
-        && state.selectedTreeNode?.type === TREE_NODE_TYPES.USER
+function isCurrentEmployeeSheetHintsRequest(userId, requestId, scope) {
+    if (state.employeeSheetTechnicalHintsRequestId !== requestId || state.employeeSheetTechnicalHintsScope !== scope) {
+        return false;
+    }
+
+    if (scope === "standalone") {
+        return state.selectedTreeNode?.type === TREE_NODE_TYPES.EMPLOYEE_SHEET
+            && String(state.employeeSheetSelectedUserId || "") === String(userId || "");
+    }
+
+    return state.selectedTreeNode?.type === TREE_NODE_TYPES.USER
         && String(state.selectedTreeNode.id || "") === String(userId || "");
 }
 
 function selectUserNode(userId, options = {}) {
     const selectedUserId = String(userId || "");
     state.selectedTreeNode = { type: TREE_NODE_TYPES.USER, id: selectedUserId };
-    resetEmployeeSheetTechnicalHints(selectedUserId);
+    resetEmployeeSheetTechnicalHints(selectedUserId, "treeUser");
     render();
 
     if (options.scroll !== false) {
         scrollToElement(ui.workspaceDetail);
     }
 
-    loadEmployeeSheetTechnicalHintsForUser(selectedUserId);
+    loadEmployeeSheetTechnicalHintsForUser(selectedUserId, { scope: "treeUser" });
 }
 
-async function loadEmployeeSheetTechnicalHintsForUser(userId) {
+function selectEmployeeSheetNode(options = {}) {
+    state.selectedTreeNode = { type: TREE_NODE_TYPES.EMPLOYEE_SHEET };
+    syncStandaloneEmployeeSheetSelection();
+
+    if (state.employeeSheetSelectedUserId) {
+        resetEmployeeSheetTechnicalHints(state.employeeSheetSelectedUserId, "standalone");
+    } else {
+        resetEmployeeSheetTechnicalHints();
+    }
+
+    render();
+
+    if (options.scroll !== false) {
+        scrollToElement(ui.workspaceDetail);
+    }
+
+    if (state.employeeSheetSelectedUserId) {
+        loadEmployeeSheetTechnicalHintsForUser(state.employeeSheetSelectedUserId, { scope: "standalone" });
+    }
+}
+
+function selectStandaloneEmployeeSheetUser(userId) {
     const selectedUserId = String(userId || "");
+    if (!selectedUserId) {
+        return;
+    }
+
+    state.employeeSheetSelectedUserId = selectedUserId;
+    resetEmployeeSheetTechnicalHints(selectedUserId, "standalone");
+    render();
+    loadEmployeeSheetTechnicalHintsForUser(selectedUserId, { scope: "standalone" });
+}
+
+function syncStandaloneEmployeeSheetSelection() {
+    const selectedUserId = String(state.employeeSheetSelectedUserId || "");
+    if (!selectedUserId) {
+        return;
+    }
+
+    const exists = state.references.users.some((user) => String(user.id || "") === selectedUserId);
+    if (!exists) {
+        state.employeeSheetSelectedUserId = "";
+        resetEmployeeSheetTechnicalHints();
+    }
+}
+
+async function loadEmployeeSheetTechnicalHintsForUser(userId, options = {}) {
+    const selectedUserId = String(userId || "");
+    const scope = options.scope || "treeUser";
     const selectedUserExists = state.references.users.some((user) => String(user.id || "") === selectedUserId);
     if (!selectedUserId || !selectedUserExists || !hasConnectionContext() || !canAssetRead()) {
         return;
@@ -1131,6 +1200,7 @@ async function loadEmployeeSheetTechnicalHintsForUser(userId) {
     const requestId = state.employeeSheetTechnicalHintsRequestId + 1;
     state.employeeSheetTechnicalHintsRequestId = requestId;
     state.employeeSheetTechnicalHintsUserId = selectedUserId;
+    state.employeeSheetTechnicalHintsScope = scope;
     state.employeeSheetTechnicalHintsError = "";
     state.busy.employeeSheetTechnicalHints = true;
     render();
@@ -1138,21 +1208,21 @@ async function loadEmployeeSheetTechnicalHintsForUser(userId) {
     try {
         const params = new URLSearchParams({ user_id: selectedUserId });
         const response = await requestJson("asset", `/api/v1/assets/employee-sheet-technical-hints?${params.toString()}`);
-        if (!isCurrentEmployeeSheetHintsRequest(selectedUserId, requestId)) {
+        if (!isCurrentEmployeeSheetHintsRequest(selectedUserId, requestId, scope)) {
             return;
         }
 
         state.employeeSheetTechnicalHintsByAssetId = buildEmployeeSheetTechnicalHintsByAssetId(response);
         state.employeeSheetTechnicalHintsError = "";
     } catch (error) {
-        if (!isCurrentEmployeeSheetHintsRequest(selectedUserId, requestId)) {
+        if (!isCurrentEmployeeSheetHintsRequest(selectedUserId, requestId, scope)) {
             return;
         }
 
         state.employeeSheetTechnicalHintsByAssetId = {};
         state.employeeSheetTechnicalHintsError = "Технические подсказки временно недоступны.";
     } finally {
-        if (isCurrentEmployeeSheetHintsRequest(selectedUserId, requestId)) {
+        if (isCurrentEmployeeSheetHintsRequest(selectedUserId, requestId, scope)) {
             state.busy.employeeSheetTechnicalHints = false;
             render();
         }
@@ -1664,6 +1734,17 @@ function focusFirstFormControl(formId) {
     }
 }
 
+function focusEmployeeSheetSearchInput() {
+    const input = document.querySelector("[data-employee-sheet-search-input]");
+    if (input && typeof input.focus === "function") {
+        input.focus({ preventScroll: true });
+        const position = String(state.employeeSheetSearchQuery || "").length;
+        if (typeof input.setSelectionRange === "function") {
+            input.setSelectionRange(position, position);
+        }
+    }
+}
+
 function onReviewInteractionClick(event) {
     const screenButton = event.target.closest("[data-screen]");
     if (screenButton) {
@@ -1924,6 +2005,12 @@ function onWorkspaceDetailClick(event) {
         return;
     }
 
+    const employeeSheetResult = event.target.closest("[data-standalone-employee-id]");
+    if (employeeSheetResult) {
+        selectStandaloneEmployeeSheetUser(employeeSheetResult.dataset.standaloneEmployeeId);
+        return;
+    }
+
     const toggle = event.target.closest("[data-tree-toggle]");
     if (toggle) {
         toggleTreeExpansion(toggle.dataset.treeToggle);
@@ -1985,9 +2072,28 @@ function onWorkspaceDetailClick(event) {
     }
 }
 
+function onWorkspaceDetailInput(event) {
+    if (!event.target.matches("[data-employee-sheet-search-input]")) {
+        return;
+    }
+
+    state.employeeSheetSearchQuery = event.target.value || "";
+    render();
+    focusEmployeeSheetSearchInput();
+}
+
 function onWorkspaceDetailSubmit(event) {
     const form = event.target.closest("form");
     if (!form) {
+        return;
+    }
+
+    if (form.id === "employee-sheet-search-form") {
+        event.preventDefault();
+        const input = form.querySelector("[data-employee-sheet-search-input]");
+        state.employeeSheetSearchQuery = input?.value || "";
+        render();
+        focusEmployeeSheetSearchInput();
         return;
     }
 
@@ -2027,6 +2133,11 @@ function selectTreeNodeFromElement(element) {
             parentId: element.dataset.parentId || "",
             group: element.dataset.group || ""
         });
+        return;
+    }
+
+    if (type === TREE_NODE_TYPES.EMPLOYEE_SHEET) {
+        selectEmployeeSheetNode();
         return;
     }
 
@@ -2485,6 +2596,7 @@ function renderTreeNavigation() {
     const selectedPath = getSelectedTreePath();
     ui.workspaceTreeBody.innerHTML = [
         renderWorkspaceTreeGroup(selectedPath),
+        renderEmployeeSheetTreeNode(),
         renderOrgTreeGroup(selectedPath),
         renderLocationsTreeGroup(selectedPath),
         renderAllAssetsTreeGroup(selectedPath),
@@ -2584,6 +2696,19 @@ function renderWorkspaceTreeGroup(selectedPath) {
             })}
         `
     });
+}
+
+function renderEmployeeSheetTreeNode() {
+    return `
+        <section class="tree-group tree-single-node">
+            ${renderTreeNode({
+                type: TREE_NODE_TYPES.EMPLOYEE_SHEET,
+                label: "Информационный лист",
+                meta: "Поиск сотрудника и закреплённые устройства",
+                selected: state.selectedTreeNode.type === TREE_NODE_TYPES.EMPLOYEE_SHEET
+            })}
+        </section>
+    `;
 }
 
 function renderOrgTreeGroup(selectedPath) {
@@ -2861,6 +2986,10 @@ function renderTreeDetail() {
         ui.workspaceDetail.innerHTML = renderUserDetail(node.id);
         return;
     }
+    if (node.type === TREE_NODE_TYPES.EMPLOYEE_SHEET) {
+        ui.workspaceDetail.innerHTML = renderStandaloneEmployeeSheetView();
+        return;
+    }
     if (node.type === TREE_NODE_TYPES.BRANCH) {
         ui.workspaceDetail.innerHTML = renderBranchDetail(node.id);
         return;
@@ -2980,6 +3109,113 @@ function renderDepartmentDetail(departmentId) {
     `;
 }
 
+function renderStandaloneEmployeeSheetView() {
+    syncStandaloneEmployeeSheetSelection();
+    const selectedUser = state.references.users.find((user) => user.id === state.employeeSheetSelectedUserId) || null;
+
+    return `
+        <div class="standalone-employee-sheet stack">
+            ${renderDetailHeader("Информационный лист", "Информационный лист", "Поиск сотрудника, выбранная информация, закреплённые устройства и разрешённые технические подсказки.")}
+            ${renderStandaloneEmployeeSearch()}
+            ${selectedUser ? renderStandaloneEmployeeInfo(selectedUser) : ""}
+        </div>
+    `;
+}
+
+function renderStandaloneEmployeeSearch() {
+    return `
+        <section class="employee-sheet-search" aria-label="Поиск сотрудника">
+            <div class="panel-heading employee-sheet-search-heading">
+                <div>
+                    <p class="section-kicker">Сотрудник</p>
+                    <h3>Поиск сотрудника</h3>
+                </div>
+                <span class="summary-pill">Без поиска на сервере</span>
+            </div>
+            <form id="employee-sheet-search-form" class="employee-sheet-search-form">
+                <label class="field">
+                    <span>Информационный лист</span>
+                    <input
+                        data-employee-sheet-search-input
+                        type="search"
+                        value="${escapeAttribute(state.employeeSheetSearchQuery)}"
+                        placeholder="Найти сотрудника по имени"
+                        aria-describedby="employee-sheet-search-help"
+                        autocomplete="off"
+                    >
+                    <small id="employee-sheet-search-help">Поиск только по уже загруженным пользователям рабочего пространства. Без поиска на сервере.</small>
+                </label>
+            </form>
+            ${renderStandaloneEmployeeSearchResults()}
+        </section>
+    `;
+}
+
+function renderStandaloneEmployeeSearchResults() {
+    if (!canReferenceRead() || state.references.users.length === 0) {
+        return renderStandaloneEmployeeSearchState("Пользователи ещё не загружены. Подключите контур и обновите справочники.");
+    }
+
+    const query = normalizeQuickFindQuery(state.employeeSheetSearchQuery);
+    if (!query) {
+        return renderStandaloneEmployeeSearchState("Введите имя сотрудника");
+    }
+
+    const results = state.references.users
+        .filter((user) => matchesQuickFind(query, [user.name]))
+        .slice(0, QUICK_FIND_RESULT_LIMIT);
+
+    if (results.length === 0) {
+        return renderStandaloneEmployeeSearchState("Сотрудник не найден в загруженных данных.");
+    }
+
+    return `
+        <div class="employee-sheet-search-results" aria-label="Результаты поиска сотрудников">
+            ${results.map((user) => renderStandaloneEmployeeSearchResult(user)).join("")}
+        </div>
+    `;
+}
+
+function renderStandaloneEmployeeSearchState(copy) {
+    return `<p class="employee-sheet-search-empty">${escapeHtml(copy)}</p>`;
+}
+
+function renderStandaloneEmployeeSearchResult(user) {
+    const assets = getAssetsForUser(user.id);
+    const departmentName = resolveDepartmentName(user.department_id);
+    return `
+        <button
+            class="employee-sheet-search-result ${state.employeeSheetSelectedUserId === user.id ? "is-selected" : ""}"
+            type="button"
+            data-standalone-employee-id="${escapeAttribute(user.id)}"
+        >
+            <span class="employee-sheet-result-title">${escapeHtml(user.name || shortenTechnicalValue(user.id))}</span>
+            <span class="employee-sheet-result-meta">${escapeHtml(departmentName && departmentName !== "-" ? departmentName : "Подразделение не указано")}</span>
+            <span class="employee-sheet-result-count">${escapeHtml(formatAssetCount(assets.length, "нет закреплённых устройств"))}</span>
+        </button>
+    `;
+}
+
+function renderStandaloneEmployeeInfo(user) {
+    const assets = getAssetsForUser(user.id);
+    const departmentName = resolveDepartmentName(user.department_id);
+    return `
+        <section class="standalone-employee-selection" aria-label="Выбранная информация по сотруднику">
+            <div class="asset-summary-grid">
+                ${renderSummaryCard("Сотрудник", escapeHtml(user.name || "-"), "Выбран из уже загруженных пользователей рабочего пространства.")}
+                ${renderSummaryCard("Подразделение", escapeHtml(departmentName), user.department_id ? "Подразделение из загруженных справочников." : "Подразделение не указано.")}
+                ${renderSummaryCard("Закреплённые устройства", escapeHtml(String(assets.length)), "Активы из загруженного реестра с assigned_user_id этого сотрудника.")}
+            </div>
+            ${renderEmployeeInfoSheet(user, assets, departmentName, {
+                hintsScope: "standalone",
+                selectedUserId: user.id,
+                emptyDevicesTitle: "У сотрудника нет закреплённых устройств",
+                emptyDevicesCopy: "У сотрудника нет закреплённых устройств в загруженных данных."
+            })}
+        </section>
+    `;
+}
+
 function renderUserDetail(userId) {
     const user = state.references.users.find((item) => item.id === userId);
     if (!user) {
@@ -3021,9 +3257,15 @@ function renderUserDetail(userId) {
     `;
 }
 
-function renderEmployeeInfoSheet(user, assets, departmentName) {
+function renderEmployeeInfoSheet(user, assets, departmentName, options = {}) {
     const employeeName = optionalAssetText(user?.name) || shortenTechnicalValue(user?.id);
     const departmentCopy = departmentName && departmentName !== "-" ? departmentName : "Подразделение не указано";
+    const hintOptions = {
+        hintsScope: options.hintsScope || "treeUser",
+        selectedUserId: options.selectedUserId || user?.id || "",
+        emptyDevicesTitle: options.emptyDevicesTitle,
+        emptyDevicesCopy: options.emptyDevicesCopy
+    };
 
     return `
         <section class="employee-info-sheet" aria-label="Информационный лист сотрудника">
@@ -3052,31 +3294,33 @@ function renderEmployeeInfoSheet(user, assets, departmentName) {
                     </div>
                     <span class="summary-pill">${escapeHtml(String(assets.length))}</span>
                 </div>
-                ${assets.length > 0 ? renderEmployeeSheetTechnicalHintsStatus() : ""}
-                ${renderEmployeeDeviceList(assets)}
+                ${assets.length > 0 ? renderEmployeeSheetTechnicalHintsStatus(hintOptions) : ""}
+                ${renderEmployeeDeviceList(assets, hintOptions)}
             </section>
         </section>
     `;
 }
 
-function renderEmployeeDeviceList(assets) {
+function renderEmployeeDeviceList(assets, options = {}) {
     if (assets.length === 0) {
+        const title = options.emptyDevicesTitle || "Устройства не закреплены";
+        const copy = options.emptyDevicesCopy || "На сотрудника не закреплены устройства из загруженного реестра.";
         return `
             <div class="employee-info-empty">
-                <strong>Устройства не закреплены</strong>
-                <p>На сотрудника не закреплены устройства из загруженного реестра.</p>
+                <strong>${escapeHtml(title)}</strong>
+                <p>${escapeHtml(copy)}</p>
             </div>
         `;
     }
 
     return `
         <div class="employee-device-list">
-            ${assets.map((asset) => renderEmployeeDeviceCard(asset)).join("")}
+            ${assets.map((asset) => renderEmployeeDeviceCard(asset, options)).join("")}
         </div>
     `;
 }
 
-function renderEmployeeDeviceCard(asset) {
+function renderEmployeeDeviceCard(asset, options = {}) {
     return `
         <article class="employee-device-card">
             <div>
@@ -3101,12 +3345,16 @@ function renderEmployeeDeviceCard(asset) {
                     <dd>${renderLocationReference(asset.location_id)}</dd>
                 </div>
             </dl>
-            ${renderEmployeeDeviceTechnicalHints(asset)}
+            ${renderEmployeeDeviceTechnicalHints(asset, options)}
         </article>
     `;
 }
 
-function renderEmployeeSheetTechnicalHintsStatus() {
+function renderEmployeeSheetTechnicalHintsStatus(options = {}) {
+    if (!isEmployeeSheetTechnicalHintScopeActive(options)) {
+        return "";
+    }
+
     if (isBusy("employeeSheetTechnicalHints")) {
         return `<p class="employee-technical-hints-status">Загружаем технические подсказки...</p>`;
     }
@@ -3118,8 +3366,8 @@ function renderEmployeeSheetTechnicalHintsStatus() {
     return "";
 }
 
-function renderEmployeeDeviceTechnicalHints(asset) {
-    const rows = getEmployeeSheetTechnicalHintRows(asset);
+function renderEmployeeDeviceTechnicalHints(asset, options = {}) {
+    const rows = getEmployeeSheetTechnicalHintRows(asset, options);
     if (rows.length === 0) {
         return "";
     }
@@ -3136,11 +3384,24 @@ function renderEmployeeDeviceTechnicalHints(asset) {
     `;
 }
 
-function getEmployeeSheetTechnicalHintRows(asset) {
-    const selectedUserId = state.selectedTreeNode?.type === TREE_NODE_TYPES.USER
-        ? String(state.selectedTreeNode.id || "")
-        : "";
-    if (!asset?.id || !selectedUserId || state.employeeSheetTechnicalHintsUserId !== selectedUserId) {
+function isEmployeeSheetTechnicalHintScopeActive(options = {}) {
+    const scope = options.hintsScope || "treeUser";
+    const selectedUserId = String(options.selectedUserId || "");
+    if (!selectedUserId || state.employeeSheetTechnicalHintsUserId !== selectedUserId || state.employeeSheetTechnicalHintsScope !== scope) {
+        return false;
+    }
+
+    if (scope === "standalone") {
+        return state.selectedTreeNode?.type === TREE_NODE_TYPES.EMPLOYEE_SHEET
+            && String(state.employeeSheetSelectedUserId || "") === selectedUserId;
+    }
+
+    return state.selectedTreeNode?.type === TREE_NODE_TYPES.USER
+        && String(state.selectedTreeNode.id || "") === selectedUserId;
+}
+
+function getEmployeeSheetTechnicalHintRows(asset, options = {}) {
+    if (!asset?.id || !isEmployeeSheetTechnicalHintScopeActive(options)) {
         return [];
     }
 
@@ -3632,6 +3893,9 @@ function renderAdminSelectedTechnicalDetails(selectedItem) {
 
 function getSelectedTreeNodeLabel() {
     const node = state.selectedTreeNode || { type: TREE_NODE_TYPES.WORKSPACE };
+    if (node.type === TREE_NODE_TYPES.EMPLOYEE_SHEET) {
+        return "Информационный лист";
+    }
     if (node.type === TREE_NODE_TYPES.DEPARTMENT) {
         return getDepartmentTreeNodes().find((item) => item.id === node.id)?.name || "Подразделение";
     }
@@ -3663,6 +3927,9 @@ function getSelectedTreePath() {
     const node = state.selectedTreeNode || { type: TREE_NODE_TYPES.WORKSPACE };
     if (node.type === TREE_NODE_TYPES.WORKSPACE) {
         return [TREE_GROUPS.WORKSPACE];
+    }
+    if (node.type === TREE_NODE_TYPES.EMPLOYEE_SHEET) {
+        return [TREE_GROUPS.EMPLOYEE_SHEET];
     }
     if (node.type === TREE_NODE_TYPES.DEPARTMENT) {
         return [TREE_GROUPS.ORG, getDepartmentTreeKey(node.id)];
