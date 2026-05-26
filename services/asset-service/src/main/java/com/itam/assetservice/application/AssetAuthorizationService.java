@@ -23,10 +23,6 @@ public class AssetAuthorizationService {
         requireAnyRole(tenantId, authenticatedUserId, PilotRoleNames.ASSET_MUTATE_ROLES);
     }
 
-    public void requireRetireForbiddenByPilotCutline(UUID tenantId, UUID authenticatedUserId) {
-        requireAnyRole(tenantId, authenticatedUserId, Set.of());
-    }
-
     public void requireAnyRole(UUID tenantId, UUID authenticatedUserId, Set<String> allowedRoleNames) {
         try {
             boolean allowed = userServiceRoleLookup.findRoleNames(tenantId, authenticatedUserId).stream()

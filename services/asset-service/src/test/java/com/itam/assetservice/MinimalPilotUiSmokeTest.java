@@ -58,7 +58,7 @@ class MinimalPilotUiSmokeTest {
     }
 
     @Test
-    void appScriptUsesExistingContractsAndDoesNotSurfaceRetireEndpoint() throws Exception {
+    void appScriptUsesExistingContractsAndSurfacesBoundedRetireAction() throws Exception {
         mockMvc.perform(get("/app.js"))
             .andExpect(status().isOk())
             .andExpect(content().contentTypeCompatibleWith(MediaType.valueOf("application/javascript")))
@@ -66,6 +66,7 @@ class MinimalPilotUiSmokeTest {
             .andExpect(content().string(containsString("/assign")))
             .andExpect(content().string(containsString("/transfer")))
             .andExpect(content().string(containsString("/return")))
+            .andExpect(content().string(containsString("/retire")))
             .andExpect(content().string(containsString("/history")))
             .andExpect(content().string(containsString("/audit")))
             .andExpect(content().string(containsString("PRIMARY_SCREENS")))
@@ -95,6 +96,12 @@ class MinimalPilotUiSmokeTest {
                 assertThat(body, containsString("Выдать сотруднику"));
                 assertThat(body, containsString("Переместить"));
                 assertThat(body, containsString("Вернуть"));
+                assertThat(body, containsString("Жизненный цикл"));
+                assertThat(body, containsString("Списать актив"));
+                assertThat(body, containsString("Списать актив?"));
+                assertThat(body, containsString("Это не удаление записи"));
+                assertThat(body, containsString("Актив списан. История и audit сохранены."));
+                assertThat(body, containsString("RETIRED"));
                 assertThat(body, containsString("Информационный лист сотрудника"));
                 assertThat(body, containsString("Информационный лист"));
                 assertThat(body, containsString("employeeSheet"));
@@ -177,7 +184,6 @@ class MinimalPilotUiSmokeTest {
             .andExpect(content().string(containsString("/api/v1/locations")))
             .andExpect(content().string(containsString("/api/v1/users/${userId}/roles")))
             .andExpect(content().string(not(containsString("/internal/api/v1/users/"))))
-            .andExpect(content().string(not(containsString("/retire"))))
             .andExpect(content().string(not(containsString("/api/v1/inventory/"))))
             .andExpect(content().string(not(containsString("/api/v1/maintenance/"))))
             .andExpect(content().string(not(containsString("/api/v1/software/"))))
@@ -207,6 +213,13 @@ class MinimalPilotUiSmokeTest {
             .andExpect(content().string(not(containsString("print action"))))
             .andExpect(content().string(not(containsString("/archive"))))
             .andExpect(content().string(not(containsString("/delete"))))
+            .andExpect(content().string(not(containsString("bulk retire"))))
+            .andExpect(content().string(not(containsString("correction delete"))))
+            .andExpect(content().string(not(containsString("hard delete"))))
+            .andExpect(content().string(not(containsString("generic status editor"))))
+            .andExpect(content().string(not(containsString("data-quick-find-retire"))))
+            .andExpect(content().string(not(containsString("data-technical-search-retire"))))
+            .andExpect(content().string(not(containsString("data-employee-sheet-retire"))))
             .andExpect(content().string(not(containsString("Generic PATCH only"))))
             .andExpect(content().string(not(containsString("Mutate path"))))
             .andExpect(content().string(not(containsString("Master data"))))

@@ -273,7 +273,7 @@ public class AssetController {
     ) {
         UUID tenantId = requestContextExtractor.requireTenantId(servletRequest);
         UUID authenticatedUserId = requestContextExtractor.requireAuthenticatedUserId(servletRequest);
-        assetAuthorizationService.requireRetireForbiddenByPilotCutline(tenantId, authenticatedUserId);
+        assetAuthorizationService.requireAssetMutateAccess(tenantId, authenticatedUserId);
         AssetResponsibilityApplicationService.RetireResult result = assetResponsibilityApplicationService.retire(
             tenantId,
             id,

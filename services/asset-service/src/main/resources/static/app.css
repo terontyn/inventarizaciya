@@ -1070,6 +1070,11 @@ code {
     background: rgba(255, 255, 255, 0.38);
 }
 
+.asset-action-group-lifecycle {
+    border-style: dashed;
+    background: rgba(255, 247, 237, 0.52);
+}
+
 .asset-action-group-header {
     display: flex;
     justify-content: space-between;
@@ -1902,6 +1907,13 @@ code {
     background: rgba(240, 253, 250, 0.44);
 }
 
+.action-card-lifecycle {
+    padding: 0.9rem;
+    border: 1px solid rgba(154, 52, 18, 0.18);
+    border-radius: var(--radius-md);
+    background: rgba(255, 255, 255, 0.62);
+}
+
 .action-card-header {
     display: grid;
     gap: 0.2rem;
@@ -1917,6 +1929,26 @@ code {
     border-radius: var(--radius-sm);
     background: var(--warning-soft);
     color: var(--warning);
+}
+
+.retire-confirmation {
+    display: grid;
+    gap: 0.8rem;
+    padding: 0.9rem;
+    border: 1px solid rgba(154, 52, 18, 0.24);
+    border-radius: var(--radius-sm);
+    background: rgba(255, 237, 213, 0.72);
+}
+
+.retire-confirmation h5 {
+    margin: 0 0 0.35rem;
+    font-size: 1rem;
+}
+
+.retire-confirmation p {
+    margin: 0;
+    color: var(--ink);
+    line-height: 1.5;
 }
 
 .role-confirmation {

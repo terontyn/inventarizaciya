@@ -3138,3 +3138,105 @@ This closeout does not prove:
 The project remains in:
 
 **Project Stabilization / First-Adopter-Gated Hold**
+
+## Search Scope Expansion / printer_placement_note Technical Search Closeout Clarification
+
+Search Scope Expansion for `printer_placement_note` is accepted as completed at its approved bounded scope.
+
+### Delivery interpretation
+
+This implementation is accepted as:
+
+**bounded Technical Search-only searchable-key expansion with masked result display.**
+
+It adds `printer_placement_note` to the existing Technical Search endpoint without opening global search, backend unified search or advanced search scope.
+
+### Accepted scope
+
+Implemented scope:
+
+- added `printer_placement_note` to the existing Technical Search searchable-key allowlist;
+- added Technical Search label:
+  - `Примечание по размещению`;
+- classified `printer_placement_note` as sensitive/masked in Technical Search result rows;
+- preserved asset/device-only search results;
+- preserved existing endpoint:
+  - `GET /api/v1/assets/technical-attribute-search`;
+- preserved existing response shape;
+- preserved existing query parameters:
+  - `q`;
+  - `limit`;
+- preserved tenant scoping and asset read authorization;
+- preserved no-audit behavior for read-only search;
+- updated API tests.
+
+### Search result behavior
+
+For `printer_placement_note` matches, Technical Search returns:
+
+- `matched_field.key = printer_placement_note`;
+- `matched_field.label = Примечание по размещению`;
+- `matched_field.sensitive = true`;
+- `matched_field.masked = true`;
+- masked `matched_field.display_value`.
+
+The full raw placement note is not exposed in search result rows.
+
+### Preserved boundaries
+
+This implementation preserves:
+
+- asset `note` remains excluded from search;
+- Quick Find remains unchanged;
+- Quick Find does not search technical attributes;
+- Quick Find does not search `printer_placement_note`;
+- Employee Sheet remains unchanged;
+- Employee Sheet hints remain limited to:
+  - `hostname`;
+  - `extension_number`;
+  - `printer_network_name`;
+- Employee Sheet does not show `printer_placement_note`;
+- Asset Overview remains unchanged;
+- Asset Overview does not show `printer_placement_note`;
+- no frontend/static UI change was required.
+
+### Not opened
+
+This implementation did not open:
+
+- new endpoint;
+- DB/migration change;
+- response DTO contract change;
+- backend unified search;
+- global search;
+- Elasticsearch;
+- advanced filters;
+- saved views;
+- persistent preferences;
+- search over asset `note`;
+- audit/history search;
+- QR search;
+- Quick Find expansion;
+- Employee Sheet exposure;
+- Asset Overview exposure;
+- public lookup;
+- employee self-service;
+- Asset 360;
+- reporting/dashboard;
+- auth/IAM expansion;
+- new role model.
+
+### Non-claim rule
+
+This closeout does not prove:
+
+- release readiness;
+- FTOV start;
+- FTOV exit;
+- production readiness;
+- real tenant validation;
+- real day-to-day operational validation.
+
+The project remains in:
+
+**Project Stabilization / First-Adopter-Gated Hold**

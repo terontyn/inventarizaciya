@@ -42,6 +42,7 @@ Core Asset endpoints:
 
 Accepted bounded extension endpoints:
 
+- `GET /api/v1/assets/technical-attribute-search`
 - `GET /api/v1/assets/employee-sheet-technical-hints`
 
 ## Responsibility Flow Command Layer (candidate for next slice)
@@ -347,6 +348,120 @@ Recommended validation:
 Changes to `display_name` and `note` are Asset master-record updates and should be covered by existing update-asset audit behavior.
 
 No new audit event type is required by this API extension.
+
+## Technical Attribute Search API Extension
+
+This accepted API extension provides bounded tenant-scoped Technical Search for approved asset technical attributes.
+
+### Endpoint
+
+```http
+GET /api/v1/assets/technical-attribute-search
+```
+
+### Purpose
+
+Search managed workspace assets/devices by approved technical attributes.
+
+This endpoint is separate from Quick Find, Employee Sheet, Asset Overview and global search.
+
+### Request
+
+Supported query parameters:
+
+| Parameter | Required | Description |
+|---|---:|---|
+| `q` | yes | Search query. |
+| `limit` | no | Bounded result limit. |
+
+Unsupported query parameters are rejected.
+
+Tenant id is derived from authenticated workspace context and is not accepted as a request parameter.
+
+### Response behavior
+
+The endpoint returns asset/device results only.
+
+Each result may include matched technical field metadata:
+
+- `key`;
+- `label`;
+- `display_value`;
+- `sensitive`;
+- `masked`.
+
+Sensitive values are returned masked.
+
+Frontend consumers must not unmask values.
+
+### Searchable technical keys
+
+Searchable keys:
+
+- `hostname`;
+- `anydesk_id`;
+- `ip_address`;
+- `mac_address`;
+- `phone_ip`;
+- `extension_number`;
+- `sip_line_id`;
+- `printer_ip`;
+- `printer_network_name`;
+- `printer_placement_note`.
+
+### Explicitly excluded fields
+
+Excluded by default:
+
+- asset `note`;
+- audit/history;
+- QR payload;
+- arbitrary unsupported/generic fields;
+- tenant-defined custom keys;
+- user-service data;
+- reporting-service data.
+
+### printer_placement_note search behavior
+
+`printer_placement_note` is searchable only through the Technical Search endpoint.
+
+It is treated as sensitive/masked in Technical Search result rows because it is free-text placement context and may contain physical, person-adjacent, security or operational details.
+
+For matches on `printer_placement_note`, `matched_field` returns:
+
+- `key`: `printer_placement_note`;
+- `label`: `Примечание по размещению`;
+- `sensitive`: `true`;
+- `masked`: `true`;
+- `display_value`: masked value only.
+
+The full raw `printer_placement_note` value must not be exposed in Technical Search result rows.
+
+This does not change the endpoint response shape, authorization model, tenant scoping or supported query parameters.
+
+This does not add `printer_placement_note` to:
+
+- Quick Find;
+- Employee Sheet;
+- Asset Overview;
+- public lookup;
+- global search.
+
+### Boundary rules
+
+This endpoint does not change:
+
+- `GET /api/v1/assets`;
+- `GET /api/v1/assets/{id}`;
+- `PATCH /api/v1/assets/{id}`;
+- `PUT /api/v1/assets/{id}/technical-attributes`;
+- `GET /api/v1/assets/employee-sheet-technical-hints`;
+- Assign / Transfer / Return;
+- QR Lite;
+- Asset Overview;
+- Quick Find.
+
+No audit event is emitted because this is read-only search.
 
 ## Employee Sheet Technical Hints API Extension
 

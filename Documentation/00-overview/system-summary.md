@@ -2421,3 +2421,87 @@ It does not prove:
 - production readiness;
 - real tenant validation;
 - real day-to-day operational validation.
+
+## Current Baseline Update — Search Scope Expansion / printer_placement_note Technical Search Closeout
+
+Search Scope Expansion for `printer_placement_note` has been implemented and accepted as a bounded Technical Search-only expansion.
+
+The implementation adds `printer_placement_note` to the existing endpoint-based Technical Search surface only:
+
+- `GET /api/v1/assets/technical-attribute-search`
+
+Accepted implementation:
+
+- `printer_placement_note` is now searchable through Technical Search;
+- the field remains part of the existing controlled technical attribute model;
+- the search result remains asset/device-only;
+- matched field key is:
+  - `printer_placement_note`;
+- matched field label is:
+  - `Примечание по размещению`;
+- matched field is returned as:
+  - `sensitive = true`;
+  - `masked = true`;
+- `display_value` is masked;
+- the full raw placement note is not exposed in Technical Search result rows.
+
+Preserved Technical Search boundaries:
+
+- existing endpoint unchanged;
+- no new endpoint;
+- no response DTO contract change;
+- no DB/migration change;
+- existing tenant scoping preserved;
+- existing asset read authorization preserved;
+- read-only search behavior preserved;
+- no audit emitted for read-only search.
+
+Preserved search-surface boundaries:
+
+- Quick Find remains unchanged;
+- Quick Find remains frontend-only and loaded-state-only;
+- Quick Find does not search technical attributes;
+- Quick Find does not search `printer_placement_note`;
+- Quick Find does not search asset `note`;
+- standalone `Информационный лист` remains unchanged;
+- Employee Sheet hints remain limited to:
+  - `hostname`;
+  - `extension_number`;
+  - `printer_network_name`;
+- Employee Sheet does not show `printer_placement_note`;
+- Asset Overview remains unchanged;
+- Asset Overview does not show `printer_placement_note`.
+
+Still excluded:
+
+- asset `note`;
+- audit/history;
+- QR payload;
+- unsupported/custom technical keys;
+- global search;
+- advanced filters;
+- Elasticsearch;
+- saved views;
+- public lookup;
+- employee self-service;
+- Asset 360;
+- reporting/dashboard.
+
+Implementation scope:
+
+- bounded backend/API Technical Search allowlist expansion;
+- API tests updated;
+- no frontend/static UI change was required;
+- no Documentation change during implementation;
+- no build/package change.
+
+This remains internally validated implementation evidence only.
+
+It does not prove:
+
+- release readiness;
+- FTOV start;
+- FTOV exit;
+- production readiness;
+- real tenant validation;
+- real day-to-day operational validation.

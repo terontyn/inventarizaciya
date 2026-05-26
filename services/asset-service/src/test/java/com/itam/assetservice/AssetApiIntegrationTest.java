@@ -6,6 +6,7 @@ import static com.itam.assetservice.api.AuthenticatedRequestContextExtractor.AUT
 import static com.itam.assetservice.api.AuthenticatedRequestContextExtractor.CORRELATION_ID_HEADER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -15,7 +16,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.itam.assetservice.application.PilotRoleNames;
+import com.itam.assetservice.domain.AssetResponsibilityFactType;
 import com.itam.assetservice.domain.AssetStatus;
+import com.itam.assetservice.domain.AuditAction;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -273,46 +276,196 @@ class AssetApiIntegrationTest extends IntegrationTestSupport {
     }
 
     @Test
-    void allDefaultPilotRolesAreForbiddenFromRetire() throws Exception {
+    void assetOperatorCanRetireActiveAssetWithSafeLifecycleSemantics() throws Exception {
         UUID tenantId = UUID.randomUUID();
+        UUID assetOperatorId = UUID.randomUUID();
+        UUID assignedUserId = UUID.randomUUID();
+        UUID locationId = UUID.randomUUID();
         UUID assetId = insertAsset(
             tenantId,
             "LAP-001",
             "SN-001",
             "Laptop",
             AssetStatus.ACTIVE,
-            UUID.randomUUID(),
-            UUID.randomUUID()
+            assignedUserId,
+            locationId
         );
-        UUID tenantAdminId = UUID.randomUUID();
-        UUID assetOperatorId = UUID.randomUUID();
-        UUID supportReviewerId = UUID.randomUUID();
 
-        expectRoleLookup(tenantId, tenantAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
         expectRoleLookup(tenantId, assetOperatorId, List.of(PilotRoleNames.ASSET_OPERATOR));
-        expectRoleLookup(tenantId, supportReviewerId, List.of(PilotRoleNames.SUPPORT_REVIEWER));
-        mockMvc.perform(post("/api/v1/assets/{id}/retire", assetId)
-                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
-                .header(AUTHENTICATED_USER_HEADER, tenantAdminId)
-                .header(AUTHENTICATED_ACTOR_HEADER, "tenant-admin"))
-            .andExpect(status().isForbidden());
+        expectRoleLookup(tenantId, assetOperatorId, List.of(PilotRoleNames.ASSET_OPERATOR));
+        expectRoleLookup(tenantId, assetOperatorId, List.of(PilotRoleNames.ASSET_OPERATOR));
 
         mockMvc.perform(post("/api/v1/assets/{id}/retire", assetId)
                 .header(AUTHENTICATED_TENANT_HEADER, tenantId)
                 .header(AUTHENTICATED_USER_HEADER, assetOperatorId)
-                .header(AUTHENTICATED_ACTOR_HEADER, "asset-operator"))
-            .andExpect(status().isForbidden());
+                .header(AUTHENTICATED_ACTOR_HEADER, "asset-operator")
+                .header(CORRELATION_ID_HEADER, "corr-retire"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.id").value(assetId.toString()));
 
+        AssetRow assetRow = assetRow(tenantId, assetId);
+        assertThat(assetRow.status()).isEqualTo(AssetStatus.RETIRED);
+        assertThat(assetRow.assignedUserId()).isNull();
+        assertThat(assetRow.locationId()).isEqualTo(locationId);
+        assertThat(countRows("asset_responsibility_facts")).isEqualTo(1);
+        assertThat(countRows("local_audit_records")).isEqualTo(1);
+
+        ResponsibilityFactRow factRow = latestResponsibilityFactRow();
+        assertThat(factRow.factType()).isEqualTo("RETIRE");
+        assertThat(factRow.previousAssignedUserId()).isEqualTo(assignedUserId);
+        assertThat(factRow.newAssignedUserId()).isNull();
+        assertThat(factRow.previousLocationId()).isEqualTo(locationId);
+        assertThat(factRow.newLocationId()).isEqualTo(locationId);
+
+        AuditRow auditRow = latestAuditRow();
+        assertThat(auditRow.actionType()).isEqualTo("RETIRE");
+        assertThat(auditRow.correlationId()).isEqualTo("corr-retire");
+        assertThat(auditRow.changePayload()).contains("\"id\":\"" + assetId + "\"");
+
+        String detailBody = mockMvc.perform(get("/api/v1/assets/{id}", assetId)
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
+                .header(AUTHENTICATED_USER_HEADER, assetOperatorId))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.id").value(assetId.toString()))
+            .andExpect(jsonPath("$.status").value(AssetStatus.RETIRED))
+            .andExpect(jsonPath("$.location_id").value(locationId.toString()))
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+        assertThat(objectMapper.readTree(detailBody).get("assigned_user_id").isNull()).isTrue();
+
+        mockMvc.perform(get("/api/v1/assets")
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
+                .header(AUTHENTICATED_USER_HEADER, assetOperatorId))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$[0].id").value(assetId.toString()))
+            .andExpect(jsonPath("$[0].status").value(AssetStatus.RETIRED));
+
+        mockUserService.verify();
+    }
+
+    @Test
+    void readOnlyAndUnauthorizedCallersCannotRetire() throws Exception {
+        UUID tenantId = UUID.randomUUID();
+        UUID supportReviewerId = UUID.randomUUID();
+        UUID callerWithoutRoleId = UUID.randomUUID();
+        UUID assetId = insertAsset(
+            tenantId,
+            "LAP-READONLY",
+            "SN-READONLY",
+            "Laptop",
+            AssetStatus.ACTIVE,
+            UUID.randomUUID(),
+            UUID.randomUUID()
+        );
+
+        expectRoleLookup(tenantId, supportReviewerId, List.of(PilotRoleNames.SUPPORT_REVIEWER));
+        expectRoleLookup(tenantId, callerWithoutRoleId, List.of());
         mockMvc.perform(post("/api/v1/assets/{id}/retire", assetId)
                 .header(AUTHENTICATED_TENANT_HEADER, tenantId)
                 .header(AUTHENTICATED_USER_HEADER, supportReviewerId)
                 .header(AUTHENTICATED_ACTOR_HEADER, "support-reviewer"))
             .andExpect(status().isForbidden());
 
+        mockMvc.perform(post("/api/v1/assets/{id}/retire", assetId)
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
+                .header(AUTHENTICATED_USER_HEADER, callerWithoutRoleId)
+                .header(AUTHENTICATED_ACTOR_HEADER, "no-approved-role"))
+            .andExpect(status().isForbidden());
+
+        mockMvc.perform(post("/api/v1/assets/{id}/retire", assetId)
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
+                .header(AUTHENTICATED_ACTOR_HEADER, "missing-user"))
+            .andExpect(status().isBadRequest());
+
         mockUserService.verify();
         assertThat(assetRow(tenantId, assetId).status()).isEqualTo(AssetStatus.ACTIVE);
         assertThat(countRows("asset_responsibility_facts")).isEqualTo(0);
         assertThat(countRows("local_audit_records")).isEqualTo(0);
+    }
+
+    @Test
+    void crossTenantRetireIsRejected() throws Exception {
+        UUID tenantA = UUID.randomUUID();
+        UUID tenantB = UUID.randomUUID();
+        UUID tenantBAdminId = UUID.randomUUID();
+        UUID assetId = insertAsset(
+            tenantA,
+            "LAP-TENANT",
+            "SN-TENANT",
+            "Laptop",
+            AssetStatus.ACTIVE,
+            UUID.randomUUID(),
+            UUID.randomUUID()
+        );
+
+        expectRoleLookup(tenantB, tenantBAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+        mockMvc.perform(post("/api/v1/assets/{id}/retire", assetId)
+                .header(AUTHENTICATED_TENANT_HEADER, tenantB)
+                .header(AUTHENTICATED_USER_HEADER, tenantBAdminId)
+                .header(AUTHENTICATED_ACTOR_HEADER, "tenant-admin"))
+            .andExpect(status().isNotFound());
+
+        mockUserService.verify();
+        assertThat(assetRow(tenantA, assetId).status()).isEqualTo(AssetStatus.ACTIVE);
+        assertThat(countRows("asset_responsibility_facts")).isEqualTo(0);
+        assertThat(countRows("local_audit_records")).isEqualTo(0);
+    }
+
+    @Test
+    void alreadyRetiredAssetCannotBeRetiredAgainAndDoesNotDuplicateFactOrAudit() throws Exception {
+        UUID tenantId = UUID.randomUUID();
+        UUID tenantAdminId = UUID.randomUUID();
+        UUID previousUserId = UUID.randomUUID();
+        UUID locationId = UUID.randomUUID();
+        UUID assetId = insertAsset(
+            tenantId,
+            "LAP-RETIRED",
+            "SN-RETIRED",
+            "Laptop",
+            AssetStatus.RETIRED,
+            null,
+            locationId
+        );
+        insertResponsibilityFact(
+            tenantId,
+            assetId,
+            AssetResponsibilityFactType.RETIRE,
+            previousUserId,
+            null,
+            locationId,
+            locationId,
+            java.time.Instant.now()
+        );
+        insertAssetAuditRecord(
+            tenantId,
+            assetId,
+            AuditAction.RETIRE,
+            "asset-operator",
+            "corr-existing-retire",
+            "{\"id\":\"" + assetId + "\"}",
+            java.time.Instant.now()
+        );
+
+        expectRoleLookup(tenantId, tenantAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+        mockMvc.perform(post("/api/v1/assets/{id}/retire", assetId)
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
+                .header(AUTHENTICATED_USER_HEADER, tenantAdminId)
+                .header(AUTHENTICATED_ACTOR_HEADER, "tenant-admin"))
+            .andExpect(status().isConflict());
+
+        mockUserService.verify();
+        assertThat(assetRow(tenantId, assetId).status()).isEqualTo(AssetStatus.RETIRED);
+        assertThat(countRows("asset_responsibility_facts")).isEqualTo(1);
+        assertThat(countRows("local_audit_records")).isEqualTo(1);
+    }
+
+    @Test
+    void deleteAssetEndpointRemainsUnsupported() throws Exception {
+        UUID assetId = UUID.randomUUID();
+
+        mockMvc.perform(delete("/api/v1/assets/{id}", assetId))
+            .andExpect(status().isMethodNotAllowed());
     }
 
     @Test

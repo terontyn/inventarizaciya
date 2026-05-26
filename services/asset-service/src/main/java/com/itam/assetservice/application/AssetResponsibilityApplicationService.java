@@ -221,6 +221,9 @@ public class AssetResponsibilityApplicationService {
         AuditMetadata auditMetadata
     ) {
         Asset asset = requireAsset(tenantId, assetId);
+        if (AssetStatus.RETIRED.equalsIgnoreCase(asset.status())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Asset is already retired");
+        }
 
         Asset updatedAsset = assetRepository.updateCurrentState(
             tenantId,

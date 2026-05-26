@@ -1150,9 +1150,9 @@ Not approved by this note:
 - Astra Configuration Manager parity.
 
 
-### Planning priority after Quick Find / Technical Search Merge Semantics
+### Planning priority after Search Scope Expansion / printer_placement_note Technical Search
 
-Unified Create Launcher, Simplified Asset Actions UX, ADR-0005 Asset Delete Semantics, Controlled Employee Asset Information Sheet, Operational Search v1 Frontend Quick Find, Asset QR Lite Frontend Derived Display, Asset Type-Specific Technical Attributes v1, Search over Technical Attributes, Employee Sheet Technical Attribute Exposure, Standalone Employee Information Sheet Interface, and Quick Find / Technical Search Merge Semantics are implemented/accepted at their approved scope levels.
+Unified Create Launcher, Simplified Asset Actions UX, ADR-0005 Asset Delete Semantics, Controlled Employee Asset Information Sheet, Operational Search v1 Frontend Quick Find, Asset QR Lite Frontend Derived Display, Asset Type-Specific Technical Attributes v1, Search over Technical Attributes, Employee Sheet Technical Attribute Exposure, Standalone Employee Information Sheet Interface, Quick Find / Technical Search Merge Semantics, and Search Scope Expansion / printer_placement_note Technical Search are implemented/accepted at their approved scope levels.
 
 Standalone Employee Information Sheet Interface is accepted as:
 
@@ -1176,6 +1176,22 @@ Quick Find / Technical Search Merge Semantics is accepted as:
 - no advanced filters;
 - no search scope expansion.
 
+Search Scope Expansion / printer_placement_note Technical Search is accepted as:
+
+- a bounded Technical Search-only searchable-key expansion;
+- `printer_placement_note` searchable only through:
+  - `GET /api/v1/assets/technical-attribute-search`;
+- asset/device results only;
+- matched field label:
+  - `Примечание по размещению`;
+- sensitive/masked result display;
+- no raw placement note exposure in result rows;
+- no Quick Find expansion;
+- no Employee Sheet expansion;
+- no Asset Overview exposure;
+- no search over asset `note`;
+- no backend/global search expansion.
+
 Employee Sheet Technical Attribute Exposure is accepted as:
 
 - backend/API tenant-scoped Employee Sheet technical hints endpoint;
@@ -1183,7 +1199,7 @@ Employee Sheet Technical Attribute Exposure is accepted as:
 - low-sensitivity assigned-asset hints only;
 - read-only selected employee/user detail enhancement.
 
-Accepted hints:
+Accepted Employee Sheet hints remain:
 
 - `hostname`;
 - `extension_number`;
@@ -1199,7 +1215,7 @@ The next stage should be the next owner-selected bounded feature gate or the def
 
 Possible optional branches:
 
-- `Search Scope Expansion Decision Gate` for `note` / `printer_placement_note`;
+- `Search Scope Expansion Decision Gate` for asset `note` only;
 - separate product/architecture gates for global search, advanced filters, reporting/dashboard, discovery/scanner, employee self-service, export/PDF/print or Asset 360.
 
 Do not open these branches implicitly.
@@ -1595,6 +1611,93 @@ Required next step:
 - no further Quick Find / Technical Search Merge Semantics implementation is opened by this closeout;
 - if owner wants unified backend search, open separate backend/API decision gate;
 - if owner wants search over `note` or `printer_placement_note`, open separate search-scope decision gate;
+- if owner wants global search, Elasticsearch, advanced filters, saved views, reporting/dashboard, Asset 360, public lookup or employee self-service, open separate product/architecture decision first;
+- otherwise continue to the next owner-selected bounded feature gate or the deferred integrated stabilization / verification gate.
+
+This backlog closeout does not prove release readiness, FTOV start, FTOV exit, production readiness, real tenant validation, or real day-to-day operational validation.
+
+#### Search Scope Expansion / printer_placement_note Technical Search
+
+Status: implemented and accepted as bounded Technical Search-only searchable-key expansion with masked result display.
+
+Intent:
+
+- allow managed workspace users to find printer assets by placement note context;
+- keep the expansion inside the existing Technical Search surface;
+- avoid exposing raw free-text placement notes in result rows;
+- avoid Quick Find, Employee Sheet, Asset Overview, global search or advanced search expansion.
+
+Accepted implementation:
+
+- added `printer_placement_note` to the existing Technical Search searchable-key allowlist;
+- preserved existing endpoint:
+  - `GET /api/v1/assets/technical-attribute-search`;
+- added matched field label:
+  - `Примечание по размещению`;
+- classified `printer_placement_note` as sensitive/masked for Technical Search result rows;
+- result rows return asset/device results only;
+- raw `printer_placement_note` value is not exposed as `display_value`;
+- existing response DTO shape remains unchanged;
+- existing query parameters remain unchanged;
+- existing tenant scoping remains unchanged;
+- existing asset read authorization remains unchanged;
+- no audit is emitted for read-only search;
+- API tests were updated.
+
+Accepted matched field behavior:
+
+- `matched_field.key = printer_placement_note`;
+- `matched_field.label = Примечание по размещению`;
+- `matched_field.sensitive = true`;
+- `matched_field.masked = true`;
+- `matched_field.display_value` is masked.
+
+Preserved boundaries:
+
+- asset `note` remains excluded;
+- Quick Find remains unchanged;
+- Quick Find remains frontend-only and loaded-state-only;
+- Quick Find does not search technical attributes;
+- Quick Find does not search `printer_placement_note`;
+- Employee Sheet remains unchanged;
+- Employee Sheet hints remain only:
+  - `hostname`;
+  - `extension_number`;
+  - `printer_network_name`;
+- Employee Sheet does not show `printer_placement_note`;
+- Asset Overview remains unchanged;
+- Asset Overview does not show `printer_placement_note`;
+- Asset Technical Details edit behavior remains unchanged;
+- QR Lite remains unchanged;
+- Assign / Transfer / Return remain unchanged.
+
+Not opened:
+
+- new endpoint;
+- DB/migration changes;
+- response DTO contract changes;
+- backend unified search;
+- global search;
+- Elasticsearch;
+- advanced filters;
+- saved views;
+- persistent preferences;
+- search over asset `note`;
+- audit/history search;
+- QR search;
+- public lookup;
+- employee self-service;
+- Asset 360;
+- reporting/dashboard;
+- auth/IAM expansion;
+- new role model.
+
+Required next step:
+
+- no further Search Scope Expansion implementation is opened by this closeout;
+- if owner wants search over asset `note`, open a separate search-scope decision gate;
+- if owner wants Quick Find technical attribute search, open a separate UI/product decision gate;
+- if owner wants Employee Sheet placement-note exposure, open a separate Employee Sheet exposure decision gate;
 - if owner wants global search, Elasticsearch, advanced filters, saved views, reporting/dashboard, Asset 360, public lookup or employee self-service, open separate product/architecture decision first;
 - otherwise continue to the next owner-selected bounded feature gate or the deferred integrated stabilization / verification gate.
 
