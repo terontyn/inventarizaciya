@@ -2704,7 +2704,8 @@ Preserved boundaries:
 - no bulk archive;
 - no bulk hide;
 - no restore-to-ACTIVE;
-- no bulk Unarchive;- no workflow engine;
+- no bulk Unarchive;
+- no workflow engine;
 - no approval workflow;
 - no new role model;
 - no auth/IAM expansion;

@@ -724,6 +724,16 @@ code {
     line-height: 1.4;
 }
 
+.quick-find-note-marker {
+    justify-self: start;
+    padding: 0.12rem 0.42rem;
+    border-radius: 999px;
+    background: rgba(15, 118, 110, 0.1);
+    color: #0f766e;
+    font-size: 0.74rem;
+    font-weight: 800;
+}
+
 .quick-find-empty,
 .quick-find-more {
     margin: 0;

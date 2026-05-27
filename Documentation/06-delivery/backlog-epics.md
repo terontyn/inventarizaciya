@@ -1258,7 +1258,8 @@ Archive / Hide Lifecycle Visibility is accepted as:
 - no generic PATCH archive;
 - no generic status editor;
 - no bulk archive;
-- no recovery / unarchive.
+- no restore-to-ACTIVE;
+- no bulk Unarchive.
 
 Recovery / Unarchive Lifecycle Visibility is accepted as:
 
@@ -1974,7 +1975,8 @@ Preserved boundaries:
 - no Archive for ACTIVE assets;
 - no bulk archive;
 - no bulk hide;
-- no recovery / unarchive;
+- no restore-to-ACTIVE;
+- no bulk Unarchive;
 - no destructive erase;
 - no workflow engine;
 - no approval workflow;

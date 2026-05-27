@@ -144,6 +144,7 @@ class MinimalPilotUiSmokeTest {
                 assertThat(body, containsString("Без поиска на сервере"));
                 assertThat(body, containsString("Поиск: сотрудник, инвентарный номер, название, серийный номер"));
                 assertThat(body, containsString("Можно искать сотрудника, инвентарный номер, название актива, серийный номер или тип устройства"));
+                assertThat(body, containsString("Совпадение по комментарию"));
                 assertThat(body, containsString("QR Lite"));
                 assertThat(body, containsString("QR по инвентарному номеру"));
                 assertThat(body, containsString("Производный QR"));
@@ -206,6 +207,11 @@ class MinimalPilotUiSmokeTest {
             .andExpect(content().string(not(containsString("full-name lookup"))))
             .andExpect(content().string(not(containsString("employee self-service"))))
             .andExpect(content().string(not(containsString("note search"))))
+            .andExpect(content().string(not(containsString("note snippet"))))
+            .andExpect(content().string(not(containsString("note highlight"))))
+            .andExpect(content().string(not(containsString("raw note"))))
+            .andExpect(content().string(not(containsString("data-employee-sheet-note"))))
+            .andExpect(content().string(not(containsString("data-technical-search-note"))))
             .andExpect(content().string(not(containsString("audit/history search"))))
             .andExpect(content().string(not(containsString("scanner"))))
             .andExpect(content().string(not(containsString("scan"))))

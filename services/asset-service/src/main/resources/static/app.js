@@ -2617,12 +2617,23 @@ function buildQuickFindResults(query) {
         ? state.references.users.filter((user) => matchesQuickFind(query, [user.name]))
         : [];
     const assets = canAssetRead()
-        ? state.assets.filter((asset) => matchesQuickFind(query, [
-            asset.asset_tag,
-            asset.display_name,
-            asset.serial_number,
-            asset.asset_type
-        ]))
+        ? state.assets.map((asset) => {
+            const matchesLoadedIdentity = matchesQuickFind(query, [
+                asset.asset_tag,
+                asset.display_name,
+                asset.serial_number,
+                asset.asset_type
+            ]);
+            const matchesNote = matchesQuickFind(query, [asset.note]);
+
+            if (!matchesLoadedIdentity && !matchesNote) {
+                return null;
+            }
+
+            return matchesNote
+                ? { ...asset, quick_find_note_match: true }
+                : asset;
+        }).filter(Boolean)
         : [];
 
     return {
@@ -2679,6 +2690,7 @@ function renderQuickFindAssetResult(asset) {
         <button class="quick-find-result" type="button" data-quick-find-type="asset" data-asset-id="${escapeAttribute(asset.id)}">
             <span class="quick-find-title">${escapeHtml(assetDisplayTitle(asset))}</span>
             <span class="quick-find-meta">${escapeHtml(meta || "Данные актива")}</span>
+            ${asset.quick_find_note_match ? `<span class="quick-find-note-marker">Совпадение по комментарию</span>` : ""}
             ${responsibility ? `<span class="quick-find-meta">${escapeHtml(responsibility)}</span>` : ""}
         </button>
     `;
