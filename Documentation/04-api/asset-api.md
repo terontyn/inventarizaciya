@@ -281,7 +281,7 @@ Retire preserves the Asset record, audit evidence and responsibility history.
 
 Archive preserves the Asset record, audit evidence and responsibility history while hiding already retired assets from default working lists.
 
-Any future Correction Delete, bulk Retire, bulk Archive, recovery / unarchive or broader lifecycle expansion requires separate planning, access rules, audit semantics and tests.
+Any future Correction Delete, bulk Retire, bulk Archive, restore-to-ACTIVE, bulk Unarchive or broader lifecycle recovery expansion requires separate planning, access rules, audit semantics and tests.
 
 
 ## Not Fixed In This Document

@@ -2161,7 +2161,9 @@ This acceptance does not open:
 - recovery / unretire;
 - Archive / Hide implementation beyond the accepted bounded Archive visibility command;
 - bulk archive;
-- recovery / unarchive;
+- restore-to-ACTIVE;
+- bulk Unarchive;
+- broader lifecycle recovery expansion;
 - Archive for ACTIVE assets;
 - Correction Delete implementation;
 - hard delete implementation;
@@ -3373,7 +3375,7 @@ This implementation is accepted as:
 
 It adds Archive as a visibility command after Retire.
 
-It does not open delete, hard delete, Correction Delete, status `ARCHIVED`, generic status editing, recovery / unarchive or bulk archive scope.
+It does not open delete, hard delete, Correction Delete, status `ARCHIVED`, generic status editing, restore-to-ACTIVE, bulk Unarchive or bulk archive scope.
 
 ### Accepted scope
 
@@ -3472,7 +3474,8 @@ This implementation preserves:
 - no Archive for ACTIVE assets;
 - no bulk archive;
 - no bulk hide;
-- no recovery / unarchive;
+- no restore-to-ACTIVE;
+- no bulk Unarchive;
 - no workflow engine;
 - no approval workflow;
 - no new role model;

@@ -682,7 +682,8 @@ Required next step:
 - no further Delete / Archive Semantics implementation is opened by this historical ADR/product semantics decision;
 - bounded Retire exposure has already been implemented and accepted separately;
 - bounded Archive visibility has already been implemented and accepted separately;
-- if owner wants Correction Delete, bulk Retire, bulk Archive, recovery / unarchive or Archive for ACTIVE assets, open a separate lifecycle decision gate;
+- bounded Recovery / Unarchive visibility reversal has already been implemented and accepted separately;
+- if owner wants Correction Delete, bulk Retire, bulk Archive, restore-to-ACTIVE, bulk Unarchive or Archive for ACTIVE assets, open a separate lifecycle decision gate;
 - otherwise continue to the next owner-selected bounded feature gate or deferred integrated stabilization / verification gate.
 
 #### 4. End-User Asset Information View
@@ -1999,7 +2000,8 @@ Preserved UI boundaries:
 Required next step:
 
 - no further Archive / Hide implementation is opened by this closeout;
-- if owner wants Recovery / Unarchive, open a separate lifecycle decision gate;
+- bounded Recovery / Unarchive visibility reversal has already been implemented and accepted separately;
+- if owner wants restore-to-ACTIVE, assignment restoration or bulk Unarchive, open a separate lifecycle decision gate;
 - if owner wants Correction Delete, open a separate strict correction-delete decision gate;
 - if owner wants bulk archive, open a separate bulk-action decision gate;
 - if owner wants Archive for ACTIVE assets, open a separate lifecycle visibility decision gate;

@@ -2703,8 +2703,8 @@ Preserved boundaries:
 - no Archive for ACTIVE assets;
 - no bulk archive;
 - no bulk hide;
-- no recovery / unarchive;
-- no workflow engine;
+- no restore-to-ACTIVE;
+- no bulk Unarchive;- no workflow engine;
 - no approval workflow;
 - no new role model;
 - no auth/IAM expansion;
