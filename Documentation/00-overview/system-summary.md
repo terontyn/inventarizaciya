@@ -60,7 +60,7 @@ MVP должен позволять одному tenant:
 - ADR-0002 Role / permission model: tenant-scoped RBAC; User ↔ Role is many-to-many; permissions are attached to roles only.
 - ADR-0003 Org hierarchy: no separate Org entity; Department is managerial dimension; Branch / Location are physical dimensions; Location belongs to Branch.
 - ADR-0004 Asset CRUD vs history: generic CRUD manages only Asset master record; responsibility-changing operations use dedicated flows.
-- ADR-0005 Asset delete semantics: public hard delete is rejected for the current stage; `DELETE /api/v1/assets/{id}` remains unsupported; Retire is the canonical safe lifecycle removal semantics; Archive / Hide and Correction Delete remain deferred decisions.
+- ADR-0005 Asset delete semantics: public hard delete is rejected for the current stage; `DELETE /api/v1/assets/{id}` remains unsupported; Retire is the canonical safe lifecycle removal semantics; Archive / Hide is accepted only as bounded persisted Archive visibility semantics for already `RETIRED` assets; Correction Delete remains deferred.
 - ADR-0007 Audit contract: critical writes produce durable local audit records and are delivered asynchronously to central audit storage.
 - ADR-0009 Inventory-to-assign handoff semantics: successful assign in `asset-service` is the canonical trigger point for inventory-side storage custody consumption; handoff is internal-only asynchronous; assign success does not require synchronous inventory completion; eventual consistency is accepted for the first contour.
 
@@ -1446,7 +1446,7 @@ Canonical asset delete semantics are now:
 - Retire is not Correction Delete;
 - Retire is not ordinary generic PATCH;
 - `POST /api/v1/assets/{id}/retire` is now product-exposed as a bounded dedicated lifecycle command by the later Retire Exposure / Safe Lifecycle Removal closeout;
-- Archive / Hide remains deferred visibility semantics;
+- Archive / Hide has since been accepted only as bounded persisted Archive visibility semantics for already `RETIRED` assets by the later Archive / Hide Lifecycle Visibility closeout;
 - Correction Delete remains a future candidate only for mistaken records with strict no-history constraints;
 - Correction Delete is not approved for implementation now.
 
@@ -1460,7 +1460,7 @@ The following remain not authorized:
 
 - `DELETE /api/v1/assets/{id}`;
 - hard delete;
-- Archive / Hide;
+- Archive / Hide beyond the accepted bounded Archive visibility command for already `RETIRED` assets;
 - Correction Delete;
 - bulk Retire;
 - recovery / unretire;
@@ -2603,6 +2603,128 @@ Implementation scope:
 
 - bounded backend/API lifecycle exposure;
 - bounded selected-asset frontend action;
+- API tests updated;
+- static UI smoke coverage updated;
+- no Documentation change during implementation;
+- no build/package change.
+
+This remains internally validated implementation evidence only.
+
+It does not prove:
+
+- release readiness;
+- FTOV start;
+- FTOV exit;
+- production readiness;
+- real tenant validation;
+- real day-to-day operational validation.
+
+## Current Baseline Update — Archive / Hide Lifecycle Visibility Closeout
+
+Archive / Hide Lifecycle Visibility has been implemented and accepted as a bounded persisted visibility capability for already retired assets.
+
+The implementation adds a dedicated Archive command:
+
+- `POST /api/v1/assets/{id}/archive`
+
+Accepted semantics:
+
+- Archive is a visibility command;
+- Archive is not delete;
+- Archive is not hard delete;
+- Archive is not Correction Delete;
+- Archive is not Retire;
+- Archive does not replace Retire;
+- Archive is not ordinary PATCH;
+- Archive is not generic status editing;
+- Archive is allowed only after Retire;
+- Archive is allowed only for assets with `status = RETIRED`;
+- Archive is not allowed for `ACTIVE` assets.
+
+Accepted persisted visibility state:
+
+- `archived_at TIMESTAMP WITH TIME ZONE NULL`;
+- `archived_at IS NULL` means not archived;
+- `archived_at IS NOT NULL` means archived / hidden from default working lists.
+
+Accepted Archive behavior:
+
+- `archived_at` is set;
+- `status` remains `RETIRED`;
+- `assigned_user_id` is not changed by Archive;
+- `location_id` is preserved;
+- no responsibility fact is appended for Archive;
+- one `ARCHIVE` audit event is emitted;
+- Asset record remains readable;
+- responsibility history remains preserved;
+- audit history remains preserved.
+
+Repeated Archive behavior:
+
+- already archived assets cannot be archived again;
+- repeated Archive is rejected through a safe conflict/business-rule guard;
+- repeated Archive does not change `archived_at`;
+- repeated Archive does not emit duplicate `ARCHIVE` audit events;
+- repeated Archive does not append responsibility facts.
+
+Accepted list/detail behavior:
+
+- default `GET /api/v1/assets` excludes archived assets;
+- archived assets are available through the explicit discovery path:
+  - `GET /api/v1/assets?visibility=archived`;
+- `GET /api/v1/assets/{id}` remains readable for archived assets by authorized users;
+- archived asset detail exposes archived visibility state.
+
+Accepted search / sheet behavior:
+
+- Quick Find excludes archived assets by default through the default loaded asset state;
+- Technical Search excludes archived assets by default;
+- Employee Sheet hints exclude archived assets;
+- Employee Sheet does not expose Archive actions or archived assets.
+
+Accepted frontend exposure:
+
+- Archive action is exposed only inside selected Asset Actions;
+- Archive action is placed in the lifecycle block;
+- user-facing action label:
+  - `Архивировать актив`;
+- confirmation copy states this is not deletion;
+- an explicit `Архив` discovery group/path is available in the workspace tree/navigation.
+
+Preserved boundaries:
+
+- no `DELETE /api/v1/assets/{id}`;
+- no hard delete;
+- no physical erase;
+- no Correction Delete;
+- no new lifecycle status `ARCHIVED`;
+- no Archive through generic PATCH;
+- no generic status editor;
+- no Archive for ACTIVE assets;
+- no bulk archive;
+- no bulk hide;
+- no recovery / unarchive;
+- no workflow engine;
+- no approval workflow;
+- no new role model;
+- no auth/IAM expansion;
+- no cross-service orchestration;
+- no inventory/warehouse movement semantics;
+- no Employee Sheet actions;
+- no Quick Find row actions;
+- no Technical Search row actions;
+- no public lookup;
+- no employee self-service;
+- no Asset 360;
+- no reporting/dashboard dependency.
+
+Implementation scope:
+
+- bounded backend/API command;
+- DB migration for `archived_at`;
+- bounded repository/list/search filtering;
+- bounded selected-asset frontend lifecycle action;
+- explicit `Архив` discovery path;
 - API tests updated;
 - static UI smoke coverage updated;
 - no Documentation change during implementation;

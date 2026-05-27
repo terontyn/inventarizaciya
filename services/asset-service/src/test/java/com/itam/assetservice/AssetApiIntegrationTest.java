@@ -638,6 +638,211 @@ class AssetApiIntegrationTest extends IntegrationTestSupport {
     }
 
     @Test
+    void assetOperatorCanUnarchiveArchivedRetiredAssetWithVisibilitySemantics() throws Exception {
+        UUID tenantId = UUID.randomUUID();
+        UUID assetOperatorId = UUID.randomUUID();
+        UUID locationId = UUID.randomUUID();
+        UUID assetId = insertAsset(
+            tenantId,
+            "RET-UNARCHIVE",
+            "SN-UNARCHIVE",
+            "Laptop",
+            AssetStatus.RETIRED,
+            null,
+            locationId
+        );
+        setArchivedAt(tenantId, assetId, java.time.Instant.parse("2026-01-01T00:00:00Z"));
+        insertTechnicalAttribute(tenantId, assetId, "hostname", "unarchived-host");
+
+        expectRoleLookup(tenantId, assetOperatorId, List.of(PilotRoleNames.ASSET_OPERATOR));
+        expectRoleLookup(tenantId, assetOperatorId, List.of(PilotRoleNames.ASSET_OPERATOR));
+        expectRoleLookup(tenantId, assetOperatorId, List.of(PilotRoleNames.ASSET_OPERATOR));
+        expectRoleLookup(tenantId, assetOperatorId, List.of(PilotRoleNames.ASSET_OPERATOR));
+        expectRoleLookup(tenantId, assetOperatorId, List.of(PilotRoleNames.ASSET_OPERATOR));
+        expectRoleLookup(tenantId, assetOperatorId, List.of(PilotRoleNames.ASSET_OPERATOR));
+
+        mockMvc.perform(post("/api/v1/assets/{id}/unarchive", assetId)
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
+                .header(AUTHENTICATED_USER_HEADER, assetOperatorId)
+                .header(AUTHENTICATED_ACTOR_HEADER, "asset-operator")
+                .header(CORRELATION_ID_HEADER, "corr-unarchive"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.id").value(assetId.toString()));
+
+        assertThat(archivedAt(tenantId, assetId)).isNull();
+        AssetRow assetRow = assetRow(tenantId, assetId);
+        assertThat(assetRow.status()).isEqualTo(AssetStatus.RETIRED);
+        assertThat(assetRow.assignedUserId()).isNull();
+        assertThat(assetRow.locationId()).isEqualTo(locationId);
+        assertThat(countRows("asset_responsibility_facts")).isZero();
+        assertThat(auditCount(tenantId, assetId, AuditAction.UNARCHIVE)).isEqualTo(1);
+        AuditRow auditRow = latestAuditRow();
+        assertThat(auditRow.actionType()).isEqualTo("UNARCHIVE");
+        assertThat(auditRow.correlationId()).isEqualTo("corr-unarchive");
+        assertThat(auditRow.changePayload()).contains("\"id\":\"" + assetId + "\"");
+
+        mockMvc.perform(get("/api/v1/assets")
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
+                .header(AUTHENTICATED_USER_HEADER, assetOperatorId))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.length()").value(1))
+            .andExpect(jsonPath("$[0].id").value(assetId.toString()))
+            .andExpect(jsonPath("$[0].status").value(AssetStatus.RETIRED))
+            .andExpect(jsonPath("$[0].archived_at").isEmpty());
+
+        mockMvc.perform(get("/api/v1/assets")
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
+                .header(AUTHENTICATED_USER_HEADER, assetOperatorId)
+                .param("visibility", "archived"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$").isEmpty());
+
+        mockMvc.perform(get("/api/v1/assets/{id}", assetId)
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
+                .header(AUTHENTICATED_USER_HEADER, assetOperatorId))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.id").value(assetId.toString()))
+            .andExpect(jsonPath("$.status").value(AssetStatus.RETIRED))
+            .andExpect(jsonPath("$.location_id").value(locationId.toString()))
+            .andExpect(jsonPath("$.archived_at").isEmpty());
+
+        mockMvc.perform(get("/api/v1/assets/technical-attribute-search")
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
+                .header(AUTHENTICATED_USER_HEADER, assetOperatorId)
+                .param("q", "unarchived-host"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.results.length()").value(1))
+            .andExpect(jsonPath("$.results[0].asset_id").value(assetId.toString()));
+
+        mockMvc.perform(get("/api/v1/assets/employee-sheet-technical-hints")
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
+                .header(AUTHENTICATED_USER_HEADER, assetOperatorId)
+                .param("user_id", UUID.randomUUID().toString()))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.assets").isEmpty());
+
+        mockUserService.verify();
+    }
+
+    @Test
+    void unarchiveRejectsActiveNonArchivedReadOnlyUnauthorizedAndCrossTenantRequests() throws Exception {
+        UUID tenantA = UUID.randomUUID();
+        UUID tenantB = UUID.randomUUID();
+        UUID assetOperatorId = UUID.randomUUID();
+        UUID supportReviewerId = UUID.randomUUID();
+        UUID noRoleUserId = UUID.randomUUID();
+        UUID tenantBAdminId = UUID.randomUUID();
+        UUID activeAssetId = insertAsset(
+            tenantA,
+            "ACTIVE-UNARCHIVE",
+            "SN-ACTIVE-UNARCHIVE",
+            "Laptop",
+            AssetStatus.ACTIVE,
+            null,
+            UUID.randomUUID()
+        );
+        UUID retiredAssetId = insertAsset(
+            tenantA,
+            "RET-NON-ARCHIVED",
+            "SN-RET-NON-ARCHIVED",
+            "Laptop",
+            AssetStatus.RETIRED,
+            null,
+            UUID.randomUUID()
+        );
+        UUID archivedAssetId = insertAsset(
+            tenantA,
+            "RET-ARCHIVED-READONLY",
+            "SN-RET-ARCHIVED-READONLY",
+            "Laptop",
+            AssetStatus.RETIRED,
+            null,
+            UUID.randomUUID()
+        );
+        setArchivedAt(tenantA, activeAssetId, java.time.Instant.parse("2026-01-01T00:00:00Z"));
+        setArchivedAt(tenantA, archivedAssetId, java.time.Instant.parse("2026-01-02T00:00:00Z"));
+
+        expectRoleLookup(tenantA, assetOperatorId, List.of(PilotRoleNames.ASSET_OPERATOR));
+        expectRoleLookup(tenantA, assetOperatorId, List.of(PilotRoleNames.ASSET_OPERATOR));
+        expectRoleLookup(tenantA, supportReviewerId, List.of(PilotRoleNames.SUPPORT_REVIEWER));
+        expectRoleLookup(tenantA, noRoleUserId, List.of());
+        expectRoleLookup(tenantB, tenantBAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+
+        mockMvc.perform(post("/api/v1/assets/{id}/unarchive", activeAssetId)
+                .header(AUTHENTICATED_TENANT_HEADER, tenantA)
+                .header(AUTHENTICATED_USER_HEADER, assetOperatorId)
+                .header(AUTHENTICATED_ACTOR_HEADER, "asset-operator"))
+            .andExpect(status().isConflict());
+
+        mockMvc.perform(post("/api/v1/assets/{id}/unarchive", retiredAssetId)
+                .header(AUTHENTICATED_TENANT_HEADER, tenantA)
+                .header(AUTHENTICATED_USER_HEADER, assetOperatorId)
+                .header(AUTHENTICATED_ACTOR_HEADER, "asset-operator"))
+            .andExpect(status().isConflict());
+
+        mockMvc.perform(post("/api/v1/assets/{id}/unarchive", archivedAssetId)
+                .header(AUTHENTICATED_TENANT_HEADER, tenantA)
+                .header(AUTHENTICATED_USER_HEADER, supportReviewerId)
+                .header(AUTHENTICATED_ACTOR_HEADER, "support-reviewer"))
+            .andExpect(status().isForbidden());
+
+        mockMvc.perform(post("/api/v1/assets/{id}/unarchive", archivedAssetId)
+                .header(AUTHENTICATED_TENANT_HEADER, tenantA)
+                .header(AUTHENTICATED_USER_HEADER, noRoleUserId)
+                .header(AUTHENTICATED_ACTOR_HEADER, "no-approved-role"))
+            .andExpect(status().isForbidden());
+
+        mockMvc.perform(post("/api/v1/assets/{id}/unarchive", archivedAssetId)
+                .header(AUTHENTICATED_TENANT_HEADER, tenantB)
+                .header(AUTHENTICATED_USER_HEADER, tenantBAdminId)
+                .header(AUTHENTICATED_ACTOR_HEADER, "tenant-b-admin"))
+            .andExpect(status().isNotFound());
+
+        mockUserService.verify();
+        assertThat(archivedAt(tenantA, activeAssetId)).isNotNull();
+        assertThat(archivedAt(tenantA, retiredAssetId)).isNull();
+        assertThat(archivedAt(tenantA, archivedAssetId)).isNotNull();
+        assertThat(countRows("asset_responsibility_facts")).isZero();
+        assertThat(countRows("local_audit_records")).isZero();
+    }
+
+    @Test
+    void alreadyUnarchivedAssetCannotBeUnarchivedAgainAndDoesNotDuplicateAudit() throws Exception {
+        UUID tenantId = UUID.randomUUID();
+        UUID tenantAdminId = UUID.randomUUID();
+        UUID assetId = insertAsset(
+            tenantId,
+            "RET-ALREADY-UNARCHIVED",
+            "SN-ALREADY-UNARCHIVED",
+            "Laptop",
+            AssetStatus.RETIRED,
+            null,
+            UUID.randomUUID()
+        );
+        insertAssetAuditRecord(
+            tenantId,
+            assetId,
+            AuditAction.UNARCHIVE,
+            "asset-operator",
+            "corr-existing-unarchive",
+            "{\"id\":\"" + assetId + "\"}",
+            java.time.Instant.parse("2026-01-01T00:00:00Z")
+        );
+
+        expectRoleLookup(tenantId, tenantAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
+        mockMvc.perform(post("/api/v1/assets/{id}/unarchive", assetId)
+                .header(AUTHENTICATED_TENANT_HEADER, tenantId)
+                .header(AUTHENTICATED_USER_HEADER, tenantAdminId)
+                .header(AUTHENTICATED_ACTOR_HEADER, "tenant-admin"))
+            .andExpect(status().isConflict());
+
+        mockUserService.verify();
+        assertThat(archivedAt(tenantId, assetId)).isNull();
+        assertThat(auditCount(tenantId, assetId, AuditAction.UNARCHIVE)).isEqualTo(1);
+        assertThat(countRows("asset_responsibility_facts")).isZero();
+    }
+
+    @Test
     void deleteAssetEndpointRemainsUnsupported() throws Exception {
         UUID assetId = UUID.randomUUID();
 

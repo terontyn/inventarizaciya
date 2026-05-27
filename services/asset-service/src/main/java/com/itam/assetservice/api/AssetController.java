@@ -303,6 +303,22 @@ public class AssetController {
         return new ArchiveAssetResponse(result.id());
     }
 
+    @PostMapping("/{id}/unarchive")
+    public UnarchiveAssetResponse unarchive(
+        @PathVariable UUID id,
+        HttpServletRequest servletRequest
+    ) {
+        UUID tenantId = requestContextExtractor.requireTenantId(servletRequest);
+        UUID authenticatedUserId = requestContextExtractor.requireAuthenticatedUserId(servletRequest);
+        assetAuthorizationService.requireAssetMutateAccess(tenantId, authenticatedUserId);
+        AssetApplicationService.UnarchiveResult result = assetApplicationService.unarchive(
+            tenantId,
+            id,
+            requestContextExtractor.requireAuditMetadata(servletRequest)
+        );
+        return new UnarchiveAssetResponse(result.id());
+    }
+
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record AssetCreateRequest(
         @NotBlank String assetTag,
@@ -596,6 +612,9 @@ public class AssetController {
     }
 
     public record ArchiveAssetResponse(UUID id) {
+    }
+
+    public record UnarchiveAssetResponse(UUID id) {
     }
 
     public record AssetHistoryResponse(UUID assetId, List<AssetHistoryItemResponse> items) {

@@ -226,7 +226,8 @@ const AUDIT_ACTION_LABELS = {
     RETURN: "Возврат",
     RETURN_ASSET: "Возврат",
     RETIRE: "Списание",
-    ARCHIVE: "Архивирование"
+    ARCHIVE: "Архивирование",
+    UNARCHIVE: "Разархивирование"
 };
 
 const ACTION_MESSAGES = {
@@ -238,6 +239,7 @@ const ACTION_MESSAGES = {
     assetReturned: "Return выполнен. Текущая пользовательская ответственность завершена.",
     assetRetired: "Актив списан. История и audit сохранены.",
     assetArchived: "Актив архивирован. Запись, история и audit сохранены.",
+    assetUnarchived: "Актив разархивирован. Он снова доступен в рабочих списках как списанный актив.",
     setupSaved: "Запись настройки сохранена.",
     roleAssigned: "Роль назначена пользователю. Изменение сохранено.",
     actionFailed: "Не удалось выполнить действие. Проверьте данные и повторите попытку."
@@ -349,6 +351,7 @@ function createEmptyBusyState() {
         returnAsset: false,
         retireAsset: false,
         archiveAsset: false,
+        unarchiveAsset: false,
         refreshAsset: false,
         technicalSearch: false,
         employeeSheetTechnicalHints: false,
@@ -390,6 +393,7 @@ const state = {
     technicalAttributesEditing: false,
     retireConfirming: false,
     archiveConfirming: false,
+    unarchiveConfirming: false,
     selectedTreeNode: { type: TREE_NODE_TYPES.WORKSPACE },
     expandedTreeNodes: new Set(),
     treeFilter: "",
@@ -938,6 +942,7 @@ async function loadAssetBundle(assetId) {
         state.technicalAttributesEditing = false;
         state.retireConfirming = false;
         state.archiveConfirming = false;
+        state.unarchiveConfirming = false;
         state.assetHistory = history.items ?? [];
         state.assetAudit = audit.items ?? [];
     });
@@ -1693,6 +1698,28 @@ async function onAssetDetailSubmit(event) {
                 scrollToElement(ui.workspaceDetail || ui.assetDetailPanel);
                 showActionSuccess("assetArchived", { scope: FEEDBACK_SCOPES.ASSET, assetId: state.selectedAssetId });
             });
+            return;
+        }
+
+        if (form.id === "asset-unarchive-form") {
+            if (isBusy("unarchiveAsset")) {
+                return;
+            }
+            if (!isAssetRetired(state.selectedAsset) || !isAssetArchived(state.selectedAsset)) {
+                showFlash("Разархивировать можно только архивный актив в статусе RETIRED.", "warning");
+                return;
+            }
+            await withBusy("unarchiveAsset", async () => {
+                await requestJson("asset", `/api/v1/assets/${state.selectedAssetId}/unarchive`, {
+                    method: "POST"
+                });
+                state.unarchiveConfirming = false;
+                state.activeAssetSection = "actions";
+                state.expandedTreeNodes.add(TREE_GROUPS.ALL_ASSETS);
+                await refreshAssets();
+                scrollToElement(ui.workspaceDetail || ui.assetDetailPanel);
+                showActionSuccess("assetUnarchived", { scope: FEEDBACK_SCOPES.ASSET, assetId: state.selectedAssetId });
+            });
         }
     } catch (error) {
         showActionError(error, { scope: FEEDBACK_SCOPES.ASSET, assetId: state.selectedAssetId });
@@ -1709,6 +1736,10 @@ function onAssetInteractionClick(event) {
     }
 
     if (handleArchiveLifecycleClick(event)) {
+        return;
+    }
+
+    if (handleUnarchiveLifecycleClick(event)) {
         return;
     }
 
@@ -1836,6 +1867,41 @@ function handleArchiveLifecycleClick(event) {
     const cancelButton = event.target.closest("[data-asset-archive-cancel]");
     if (cancelButton) {
         state.archiveConfirming = false;
+        state.activeAssetSection = "actions";
+        render();
+        scrollToElement(ui.workspaceDetail || ui.assetDetailPanel);
+        return true;
+    }
+
+    return false;
+}
+
+function handleUnarchiveLifecycleClick(event) {
+    const openButton = event.target.closest("[data-asset-unarchive-open]");
+    if (openButton) {
+        if (!canAssetMutate()) {
+            showFlash("Текущая роль доступна только для просмотра.", "warning");
+            return true;
+        }
+        if (!isAssetRetired(state.selectedAsset)) {
+            showFlash("Разархивировать можно только актив в статусе RETIRED.", "warning");
+            return true;
+        }
+        if (!isAssetArchived(state.selectedAsset)) {
+            showFlash("Актив не находится в архиве.", "warning");
+            return true;
+        }
+        state.unarchiveConfirming = true;
+        state.activeAssetSection = "actions";
+        render();
+        scrollToElement(ui.workspaceDetail || ui.assetDetailPanel);
+        focusFirstFormControl("asset-unarchive-form");
+        return true;
+    }
+
+    const cancelButton = event.target.closest("[data-asset-unarchive-cancel]");
+    if (cancelButton) {
+        state.unarchiveConfirming = false;
         state.activeAssetSection = "actions";
         render();
         scrollToElement(ui.workspaceDetail || ui.assetDetailPanel);
@@ -4858,6 +4924,7 @@ function renderAssetLifecycleSection(asset) {
             <p class="asset-action-group-note">Списание переводит актив в RETIRED. Архив скрывает уже списанный актив из рабочих списков, но запись, история и audit остаются доступными.</p>
             ${renderRetireCard(asset)}
             ${renderArchiveCard(asset)}
+            ${renderUnarchiveCard(asset)}
         </div>
     `;
 }
@@ -4935,6 +5002,28 @@ function renderArchiveCard(asset) {
     `;
 }
 
+function renderUnarchiveCard(asset) {
+    if (!isAssetRetired(asset) || !isAssetArchived(asset)) {
+        return "";
+    }
+
+    const busy = isBusy("unarchiveAsset");
+    return `
+        <article class="action-card action-card-lifecycle">
+            <div class="action-card-header">
+                <p class="section-kicker">Архив</p>
+                <h4>Разархивировать актив</h4>
+            </div>
+            <p class="muted-note">Актив вернётся в рабочие списки только как списанный RETIRED актив.</p>
+            ${state.unarchiveConfirming ? renderUnarchiveConfirmation(busy) : `
+                <div class="button-row button-row-inline">
+                    <button class="button button-secondary" type="button" data-asset-unarchive-open ${busy ? "disabled" : ""}>Разархивировать актив</button>
+                </div>
+            `}
+        </article>
+    `;
+}
+
 function renderRetireConfirmation(busy) {
     return `
         <div class="retire-confirmation" role="alert">
@@ -4945,6 +5034,21 @@ function renderRetireConfirmation(busy) {
             <form id="asset-retire-form" class="button-row button-row-inline">
                 <button class="button button-primary ${busy ? "is-loading" : ""}" type="submit" ${busy ? "disabled" : ""}>${busy ? "Списываем" : "Списать актив"}</button>
                 <button class="button button-ghost" type="button" data-asset-retire-cancel ${busy ? "disabled" : ""}>Отмена</button>
+            </form>
+        </div>
+    `;
+}
+
+function renderUnarchiveConfirmation(busy) {
+    return `
+        <div class="unarchive-confirmation" role="alert">
+            <div>
+                <h5>Разархивировать актив?</h5>
+                <p>Актив снова появится в рабочих списках как списанный RETIRED актив. Запись, история ответственности и audit сохранятся. Это не восстановление в эксплуатацию.</p>
+            </div>
+            <form id="asset-unarchive-form" class="button-row button-row-inline">
+                <button class="button button-primary ${busy ? "is-loading" : ""}" type="submit" ${busy ? "disabled" : ""}>${busy ? "Разархивируем" : "Разархивировать актив"}</button>
+                <button class="button button-ghost" type="button" data-asset-unarchive-cancel ${busy ? "disabled" : ""}>Отмена</button>
             </form>
         </div>
     `;

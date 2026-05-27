@@ -68,6 +68,7 @@ class MinimalPilotUiSmokeTest {
             .andExpect(content().string(containsString("/return")))
             .andExpect(content().string(containsString("/retire")))
             .andExpect(content().string(containsString("/archive")))
+            .andExpect(content().string(containsString("/unarchive")))
             .andExpect(content().string(containsString("/history")))
             .andExpect(content().string(containsString("/audit")))
             .andExpect(content().string(containsString("PRIMARY_SCREENS")))
@@ -108,6 +109,10 @@ class MinimalPilotUiSmokeTest {
                 assertThat(body, containsString("история ответственности и audit сохранятся"));
                 assertThat(body, containsString("Актив архивирован. Запись, история и audit сохранены."));
                 assertThat(body, containsString("Архив"));
+                assertThat(body, containsString("Разархивировать актив"));
+                assertThat(body, containsString("Разархивировать актив?"));
+                assertThat(body, containsString("Это не восстановление в эксплуатацию"));
+                assertThat(body, containsString("Актив разархивирован. Он снова доступен в рабочих списках как списанный актив."));
                 assertThat(body, containsString("RETIRED"));
                 assertThat(body, containsString("Информационный лист сотрудника"));
                 assertThat(body, containsString("Информационный лист"));
@@ -221,17 +226,25 @@ class MinimalPilotUiSmokeTest {
             .andExpect(content().string(not(containsString("/delete"))))
             .andExpect(content().string(not(containsString("bulk retire"))))
             .andExpect(content().string(not(containsString("bulk archive"))))
+            .andExpect(content().string(not(containsString("bulk unarchive"))))
             .andExpect(content().string(not(containsString("correction delete"))))
             .andExpect(content().string(not(containsString("hard delete"))))
             .andExpect(content().string(not(containsString("generic status editor"))))
-            .andExpect(content().string(not(containsString("unarchive"))))
             .andExpect(content().string(not(containsString("recovery"))))
+            .andExpect(content().string(not(containsString("Восстановить в работу"))))
+            .andExpect(content().string(not(containsString("Вернуть в эксплуатацию"))))
+            .andExpect(content().string(not(containsString("Сделать активным"))))
+            .andExpect(content().string(not(containsString("Назначить обратно"))))
+            .andExpect(content().string(not(containsString("Откатить списание"))))
             .andExpect(content().string(not(containsString("data-quick-find-retire"))))
             .andExpect(content().string(not(containsString("data-technical-search-retire"))))
             .andExpect(content().string(not(containsString("data-employee-sheet-retire"))))
             .andExpect(content().string(not(containsString("data-quick-find-archive"))))
             .andExpect(content().string(not(containsString("data-technical-search-archive"))))
             .andExpect(content().string(not(containsString("data-employee-sheet-archive"))))
+            .andExpect(content().string(not(containsString("data-quick-find-unarchive"))))
+            .andExpect(content().string(not(containsString("data-technical-search-unarchive"))))
+            .andExpect(content().string(not(containsString("data-employee-sheet-unarchive"))))
             .andExpect(content().string(not(containsString("Generic PATCH only"))))
             .andExpect(content().string(not(containsString("Mutate path"))))
             .andExpect(content().string(not(containsString("Master data"))))

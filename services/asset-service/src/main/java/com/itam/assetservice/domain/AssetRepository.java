@@ -43,4 +43,6 @@ public interface AssetRepository {
     );
 
     Optional<Asset> archive(UUID tenantId, UUID id, Instant archivedAt);
+
+    Optional<Asset> unarchive(UUID tenantId, UUID id);
 }

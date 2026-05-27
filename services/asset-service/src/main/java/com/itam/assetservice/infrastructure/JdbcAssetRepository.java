@@ -190,6 +190,20 @@ public class JdbcAssetRepository implements AssetRepository {
         return updated == 0 ? Optional.empty() : findById(scopedTenantId, id);
     }
 
+    @Override
+    public Optional<Asset> unarchive(UUID tenantId, UUID id) {
+        UUID scopedTenantId = SqlTenantScope.requireTenantId(tenantId);
+        MapSqlParameterSource parameters = new MapSqlParameterSource()
+            .addValue("tenantId", scopedTenantId)
+            .addValue("id", id);
+        int updated = jdbcTemplate.update(
+            "UPDATE assets SET archived_at = NULL "
+                + "WHERE tenant_id = :tenantId AND id = :id AND archived_at IS NOT NULL",
+            parameters
+        );
+        return updated == 0 ? Optional.empty() : findById(scopedTenantId, id);
+    }
+
     private static Instant toInstant(Timestamp timestamp) {
         return timestamp == null ? null : timestamp.toInstant();
     }

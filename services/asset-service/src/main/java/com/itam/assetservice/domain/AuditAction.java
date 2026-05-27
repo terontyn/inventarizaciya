@@ -8,5 +8,6 @@ public enum AuditAction {
     RETURN,
     RETIRE,
     ARCHIVE,
+    UNARCHIVE,
     ASSET_TECHNICAL_ATTRIBUTES_UPDATED
 }

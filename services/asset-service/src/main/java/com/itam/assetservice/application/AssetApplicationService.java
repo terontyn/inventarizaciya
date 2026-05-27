@@ -238,6 +238,41 @@ public class AssetApplicationService {
         return new ArchiveResult(archivedAsset.id());
     }
 
+    @Transactional
+    public UnarchiveResult unarchive(UUID tenantId, UUID id, AuditMetadata auditMetadata) {
+        Asset asset = findById(tenantId, id);
+        if (!AssetStatus.RETIRED.equalsIgnoreCase(asset.status())) {
+            throw new ResponseStatusException(
+                HttpStatus.CONFLICT,
+                "Only archived retired assets can be unarchived"
+            );
+        }
+        if (asset.archivedAt() == null) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Asset is not archived");
+        }
+
+        Instant previousArchivedAt = asset.archivedAt();
+        Asset unarchivedAsset = assetRepository.unarchive(tenantId, id)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.CONFLICT, "Asset is not archived"));
+        auditWriter.record(
+            tenantId,
+            auditMetadata,
+            AuditEntity.ASSET,
+            unarchivedAsset.id(),
+            AuditAction.UNARCHIVE,
+            new AssetUnarchiveAuditPayload(
+                unarchivedAsset.id(),
+                unarchivedAsset.assetTag(),
+                unarchivedAsset.status(),
+                unarchivedAsset.assignedUserId(),
+                unarchivedAsset.locationId(),
+                previousArchivedAt,
+                unarchivedAsset.archivedAt()
+            )
+        );
+        return new UnarchiveResult(unarchivedAsset.id());
+    }
+
     private String normalizeDisplayName(String displayName) {
         return InputNormalizer.optionalTrimmed(
             displayName,
@@ -279,6 +314,20 @@ public class AssetApplicationService {
     ) {
     }
 
+    private record AssetUnarchiveAuditPayload(
+        UUID id,
+        String assetTag,
+        String status,
+        UUID assignedUserId,
+        UUID locationId,
+        Instant previousArchivedAt,
+        Instant archivedAt
+    ) {
+    }
+
     public record ArchiveResult(UUID id) {
+    }
+
+    public record UnarchiveResult(UUID id) {
     }
 }

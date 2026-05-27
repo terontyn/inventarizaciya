@@ -642,6 +642,7 @@ Boundary:
 - deletion must not erase responsibility history by default;
 - implementation requires separate product decision and likely backend/API/DB planning.
 
+
 ADR/product semantics status:
 
 - ADR-0005 Asset Delete Semantics is accepted;
@@ -649,7 +650,7 @@ ADR/product semantics status:
 - `DELETE /api/v1/assets/{id}` remains unsupported;
 - Retire is the canonical safe lifecycle removal semantics;
 - `POST /api/v1/assets/{id}/retire` is now product-exposed as a bounded dedicated lifecycle command by the later Retire Exposure / Safe Lifecycle Removal closeout;
-- Archive / Hide remains deferred visibility semantics;
+- Archive / Hide has since been accepted only as bounded persisted Archive visibility semantics for already `RETIRED` assets by the later Archive / Hide Lifecycle Visibility closeout;
 - Correction Delete remains a future candidate only for mistaken records with strict no-history constraints;
 - Correction Delete is not approved for implementation now.
 
@@ -663,13 +664,14 @@ The following remain not authorized:
 
 - `DELETE /api/v1/assets/{id}`;
 - hard delete;
-- Archive / Hide;
+- Archive / Hide beyond the accepted bounded Archive visibility command;
 - Correction Delete;
 - bulk Retire;
-- recovery / unretire;
+- bulk Archive;
+- recovery / unarchive;
+- Archive for ACTIVE assets;
 - ordinary PATCH status transition;
 - generic status editor;
-- DB migrations;
 - new role model;
 - auth/IAM expansion.
 
@@ -677,7 +679,8 @@ Required next step:
 
 - no further Delete / Archive Semantics implementation is opened by this historical ADR/product semantics decision;
 - bounded Retire exposure has already been implemented and accepted separately;
-- if owner wants Archive / Hide, Correction Delete, bulk Retire or recovery / unretire, open a separate lifecycle decision gate;
+- bounded Archive visibility has already been implemented and accepted separately;
+- if owner wants Correction Delete, bulk Retire, bulk Archive, recovery / unarchive or Archive for ACTIVE assets, open a separate lifecycle decision gate;
 - otherwise continue to the next owner-selected bounded feature gate or deferred integrated stabilization / verification gate.
 
 #### 4. End-User Asset Information View
@@ -1160,9 +1163,9 @@ Not approved by this note:
 - Astra Configuration Manager parity.
 
 
-### Planning priority after Retire Exposure / Safe Lifecycle Removal
+### Planning priority after Archive / Hide Lifecycle Visibility
 
-Unified Create Launcher, Simplified Asset Actions UX, ADR-0005 Asset Delete Semantics, Controlled Employee Asset Information Sheet, Operational Search v1 Frontend Quick Find, Asset QR Lite Frontend Derived Display, Asset Type-Specific Technical Attributes v1, Search over Technical Attributes, Employee Sheet Technical Attribute Exposure, Standalone Employee Information Sheet Interface, Quick Find / Technical Search Merge Semantics, Search Scope Expansion / printer_placement_note Technical Search, and Retire Exposure / Safe Lifecycle Removal are implemented/accepted at their approved scope levels.
+Unified Create Launcher, Simplified Asset Actions UX, ADR-0005 Asset Delete Semantics, Controlled Employee Asset Information Sheet, Operational Search v1 Frontend Quick Find, Asset QR Lite Frontend Derived Display, Asset Type-Specific Technical Attributes v1, Search over Technical Attributes, Employee Sheet Technical Attribute Exposure, Standalone Employee Information Sheet Interface, Quick Find / Technical Search Merge Semantics, Search Scope Expansion / printer_placement_note Technical Search, Retire Exposure / Safe Lifecycle Removal, and Archive / Hide Lifecycle Visibility are implemented/accepted at their approved scope levels.
 
 Standalone Employee Information Sheet Interface is accepted as:
 
@@ -1223,6 +1226,36 @@ Retire Exposure / Safe Lifecycle Removal is accepted as:
 - no generic status editor;
 - no bulk retire;
 - no recovery / unretire.
+
+Archive / Hide Lifecycle Visibility is accepted as:
+
+- a bounded persisted visibility capability for already retired assets;
+- dedicated endpoint:
+  - `POST /api/v1/assets/{id}/archive`;
+- persisted visibility field:
+  - `archived_at`;
+- allowed only for `RETIRED` assets;
+- rejected for `ACTIVE` assets;
+- `status` remains `RETIRED`;
+- Archive does not change `assigned_user_id`;
+- Archive preserves `location_id`;
+- Archive does not append responsibility facts;
+- Archive emits one `ARCHIVE` audit event;
+- repeated Archive is guarded;
+- default asset list excludes archived assets;
+- explicit archive discovery path:
+  - `GET /api/v1/assets?visibility=archived`;
+- selected Asset Actions lifecycle UI only;
+- user-facing action:
+  - `Архивировать актив`;
+- explicit `Архив` discovery group/path;
+- no delete / hard delete / physical erase;
+- no Correction Delete;
+- no status `ARCHIVED`;
+- no generic PATCH archive;
+- no generic status editor;
+- no bulk archive;
+- no recovery / unarchive.
 
 Employee Sheet Technical Attribute Exposure is accepted as:
 
@@ -1823,6 +1856,119 @@ Required next step:
 - if owner wants recovery / unretire, open a separate lifecycle decision gate;
 - if owner wants bulk retire, open a separate bulk-action decision gate;
 - if owner wants inventory/warehouse movement on Retire, open a separate cross-context lifecycle decision gate;
+- otherwise continue to the next owner-selected bounded feature gate or the deferred integrated stabilization / verification gate.
+
+This backlog closeout does not prove release readiness, FTOV start, FTOV exit, production readiness, real tenant validation, or real day-to-day operational validation.
+
+#### Archive / Hide Lifecycle Visibility
+
+Status: implemented and accepted as bounded persisted Archive visibility semantics for already retired assets.
+
+Intent:
+
+- reduce default working-list noise from old retired assets;
+- preserve Asset record, responsibility history and audit evidence;
+- keep Archive separate from Retire;
+- avoid hard delete, physical erase, Correction Delete, generic PATCH archive or generic status editing;
+- keep archived assets discoverable through an explicit archive path.
+
+Accepted implementation:
+
+- added DB-backed archive visibility field:
+  - `archived_at`;
+- added dedicated command endpoint:
+  - `POST /api/v1/assets/{id}/archive`;
+- added explicit archive discovery path:
+  - `GET /api/v1/assets?visibility=archived`;
+- added `ARCHIVE` audit action;
+- reused existing asset mutate/lifecycle authorization cutline;
+- read-only actors remain forbidden;
+- Support Reviewer remains read-only / forbidden;
+- no new role model was introduced;
+- no auth/IAM expansion was introduced;
+- UI action added only inside selected Asset Actions lifecycle block;
+- action label:
+  - `Архивировать актив`;
+- confirmation copy explains that this is not deletion;
+- explicit `Архив` discovery group/path added;
+- API tests updated;
+- static UI smoke coverage updated.
+
+Accepted Archive behavior:
+
+- only assets with `status = RETIRED` can be archived;
+- `ACTIVE` assets cannot be archived;
+- `archived_at` is set on successful Archive;
+- `status` remains `RETIRED`;
+- `assigned_user_id` is not changed by Archive;
+- current `location_id` is preserved;
+- no responsibility fact is appended for Archive;
+- one `ARCHIVE` audit event is emitted;
+- Asset record remains readable by id;
+- responsibility history remains preserved;
+- audit history remains preserved.
+
+Repeated Archive behavior:
+
+- already archived assets cannot be archived again;
+- repeated Archive returns safe conflict/business-rule rejection;
+- repeated Archive does not change `archived_at`;
+- repeated Archive does not emit duplicate `ARCHIVE` audit events;
+- repeated Archive does not append responsibility facts.
+
+Accepted visibility behavior:
+
+- default `GET /api/v1/assets` excludes archived assets;
+- `GET /api/v1/assets?visibility=archived` returns archived assets only;
+- archived assets remain readable by `GET /api/v1/assets/{id}`;
+- Quick Find excludes archived assets by default;
+- Technical Search excludes archived assets by default;
+- Employee Sheet hints exclude archived assets;
+- Employee Sheet does not expose Archive actions or archived assets.
+
+Preserved boundaries:
+
+- no `DELETE /api/v1/assets/{id}`;
+- no hard delete;
+- no physical erase;
+- no Correction Delete;
+- no new lifecycle status `ARCHIVED`;
+- no Archive through generic PATCH;
+- no generic status editor;
+- no Archive for ACTIVE assets;
+- no bulk archive;
+- no bulk hide;
+- no recovery / unarchive;
+- no destructive erase;
+- no workflow engine;
+- no approval workflow;
+- no cross-service orchestration;
+- no inventory/warehouse movement semantics;
+- no employee self-service;
+- no public lookup;
+- no Asset 360;
+- no reporting/dashboard dependency.
+
+Preserved UI boundaries:
+
+- Unified Create unchanged;
+- Employee Sheet / `Информационный лист` unchanged;
+- Quick Find result rows unchanged;
+- Technical Search result rows unchanged;
+- Asset Overview unchanged as a primary action surface;
+- generic master-record edit unchanged;
+- Setup/Admin unchanged;
+- asset list rows unchanged as direct action surfaces;
+- tree rows unchanged as direct action surfaces.
+
+Required next step:
+
+- no further Archive / Hide implementation is opened by this closeout;
+- if owner wants Recovery / Unarchive, open a separate lifecycle decision gate;
+- if owner wants Correction Delete, open a separate strict correction-delete decision gate;
+- if owner wants bulk archive, open a separate bulk-action decision gate;
+- if owner wants Archive for ACTIVE assets, open a separate lifecycle visibility decision gate;
+- if owner wants archive-aware global search, advanced filters, reporting/dashboard, Asset 360, public lookup or employee self-service, open separate product/architecture decision first;
 - otherwise continue to the next owner-selected bounded feature gate or the deferred integrated stabilization / verification gate.
 
 This backlog closeout does not prove release readiness, FTOV start, FTOV exit, production readiness, real tenant validation, or real day-to-day operational validation.

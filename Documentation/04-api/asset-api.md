@@ -46,6 +46,7 @@ Accepted asset lifecycle command endpoints:
 - `POST /api/v1/assets/{id}/transfer`
 - `POST /api/v1/assets/{id}/return`
 - `POST /api/v1/assets/{id}/retire`
+- `POST /api/v1/assets/{id}/archive`
 
 Accepted bounded extension endpoints:
 
@@ -240,6 +241,7 @@ Authorization:
 - transfer asset
 - return asset
 - retire asset
+- archive asset
 
 ## Restrictions
 - `DELETE /api/v1/assets/{id}` не включается в v1;
@@ -248,7 +250,7 @@ Authorization:
 
 ## Delete / Archive Semantics
 
-Asset delete semantics are governed by ADR-0005.
+Asset delete and archive semantics are governed by ADR-0005.
 
 Canonical API rules:
 
@@ -256,17 +258,24 @@ Canonical API rules:
 - Public hard delete is rejected for the current stage.
 - Generic `PATCH /api/v1/assets/{id}` must not perform delete, archive, retire or status-transition behavior.
 - Retire remains a dedicated command flow and not ordinary PATCH.
-- `POST /api/v1/assets/{id}/retire` is now product-exposed as a bounded dedicated lifecycle command.
-- Retire exposure does not authorize hard delete, archive / hide, correction delete, ordinary PATCH status transitions or generic status editing.
-- Archive / Hide endpoints are not approved.
+- `POST /api/v1/assets/{id}/retire` is product-exposed as a bounded dedicated lifecycle command.
+- `POST /api/v1/assets/{id}/archive` is product-exposed as a bounded persisted visibility command for already `RETIRED` assets only.
+- Archive is not delete, hard delete, physical erase, Correction Delete, Retire, ordinary PATCH or generic status edit.
 - Correction Delete endpoint is not approved.
 - Hard Delete endpoint is not approved.
+- Recovery / unarchive is not approved.
+- Bulk archive is not approved.
 
-Retire remains the canonical safe lifecycle removal command for the current stage.
+Retire remains the canonical safe lifecycle removal command.
+
+Archive is the accepted visibility command for already retired assets.
 
 Retire preserves the Asset record, audit evidence and responsibility history.
 
-Any future Archive / Hide, Correction Delete, bulk Retire, recovery / unretire or broader lifecycle expansion requires separate planning, access rules, audit semantics and tests.
+Archive preserves the Asset record, audit evidence and responsibility history while hiding already retired assets from default working lists.
+
+Any future Correction Delete, bulk Retire, bulk Archive, recovery / unarchive or broader lifecycle expansion requires separate planning, access rules, audit semantics and tests.
+
 
 ## Not Fixed In This Document
 Намеренно не фиксируются:
@@ -274,9 +283,9 @@ Any future Archive / Hide, Correction Delete, bulk Retire, recovery / unretire o
 - full response body schema;
 - error model;
 - pagination/filter parameter names;
-- Archive / Hide endpoint semantics;
 - Correction Delete endpoint semantics;
-- Retire exposure / access rules;
+- recovery / unarchive endpoint semantics;
+- bulk archive endpoint semantics;
 - final history storage schema;
 - отдельная canonical entity/table `AssetReturn`;
 - event contract;
@@ -284,7 +293,9 @@ Any future Archive / Hide, Correction Delete, bulk Retire, recovery / unretire o
 
 ## Out of Scope
 - hard delete workflow
-- Archive / Hide workflow
+- bulk archive workflow
+- recovery / unarchive workflow
+- archive for ACTIVE assets
 - Correction Delete workflow
 - bulk command APIs
 - attachment API
@@ -676,3 +687,95 @@ This endpoint does not change:
 - Quick Find.
 
 No audit event is emitted because this is read-only hint retrieval.
+
+### 5. Archive
+
+#### Accepted endpoint
+
+- `POST /api/v1/assets/{id}/archive`
+
+#### Command intent
+
+- hide an already retired Asset from default working lists while preserving the Asset record, responsibility history and audit evidence.
+
+#### Request minimum
+
+- body minimum не фиксируется; asset identity в path достаточно для минимального command contract.
+
+#### Response minimum
+
+- `id`
+
+#### Accepted Archive semantics
+
+Archive is product-exposed as a bounded persisted visibility command for already `RETIRED` assets only.
+
+Archive is not:
+
+- delete;
+- hard delete;
+- physical erase;
+- Correction Delete;
+- Retire;
+- ordinary PATCH;
+- generic status edit.
+
+Accepted Archive behavior:
+
+- `archived_at` is set;
+- `status` remains `RETIRED`;
+- `assigned_user_id` is not changed by Archive;
+- `location_id` is preserved;
+- no responsibility fact is appended;
+- one `ARCHIVE` audit event is emitted;
+- Asset record remains readable by id;
+- responsibility history remains preserved;
+- audit history remains preserved.
+
+Eligibility:
+
+- Archive is allowed only for assets with `status = RETIRED`;
+- Archive is rejected for `ACTIVE` assets;
+- Archive is rejected for already archived assets.
+
+Repeated Archive behavior:
+
+- already archived assets cannot be archived again;
+- repeated Archive must not change `archived_at`;
+- repeated Archive must not emit duplicate `ARCHIVE` audit events;
+- repeated Archive must not append responsibility facts;
+- repeated Archive is rejected through the existing project business-error / conflict style.
+
+Authorization:
+
+- Archive uses the existing asset mutate/lifecycle authorization cutline;
+- read-only actors remain forbidden;
+- no new role model is introduced by Archive exposure;
+- no auth/IAM expansion is introduced by Archive exposure.
+
+#### Archive visibility read behavior
+
+Default list:
+
+- `GET /api/v1/assets` returns non-archived working assets only.
+
+Archived discovery path:
+
+- `GET /api/v1/assets?visibility=archived` returns archived assets only.
+
+Detail:
+
+- `GET /api/v1/assets/{id}` remains readable for archived assets by authorized users.
+
+Read model:
+
+- Asset read surfaces may include `archived_at`;
+- `archived_at = null` means not archived;
+- non-null `archived_at` means archived / hidden from default working lists.
+
+#### Boundary rule
+
+- `archive` не является delete workflow;
+- `archive` не является status transition to `ARCHIVED`;
+- `archive` не выполняется через generic PATCH;
+- `archive` не доступен для `ACTIVE` assets.
