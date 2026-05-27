@@ -1,5 +1,6 @@
 package com.itam.assetservice.domain;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -18,6 +19,8 @@ public interface AssetRepository {
     );
 
     List<Asset> findAll(UUID tenantId);
+
+    List<Asset> findArchived(UUID tenantId);
 
     Optional<Asset> findById(UUID tenantId, UUID id);
 
@@ -38,4 +41,6 @@ public interface AssetRepository {
         UUID assignedUserId,
         UUID locationId
     );
+
+    Optional<Asset> archive(UUID tenantId, UUID id, Instant archivedAt);
 }

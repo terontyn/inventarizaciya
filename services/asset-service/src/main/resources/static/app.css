@@ -1931,7 +1931,8 @@ code {
     color: var(--warning);
 }
 
-.retire-confirmation {
+.retire-confirmation,
+.archive-confirmation {
     display: grid;
     gap: 0.8rem;
     padding: 0.9rem;
@@ -1940,12 +1941,14 @@ code {
     background: rgba(255, 237, 213, 0.72);
 }
 
-.retire-confirmation h5 {
+.retire-confirmation h5,
+.archive-confirmation h5 {
     margin: 0 0 0.35rem;
     font-size: 1rem;
 }
 
-.retire-confirmation p {
+.retire-confirmation p,
+.archive-confirmation p {
     margin: 0;
     color: var(--ink);
     line-height: 1.5;
@@ -2278,9 +2281,18 @@ code {
     background: var(--accent-soft);
 }
 
+.status-badge + .status-badge {
+    margin-left: 0.35rem;
+}
+
 .status-badge.status-retired {
     color: var(--warning);
     background: var(--warning-soft);
+}
+
+.status-badge.status-archived {
+    color: var(--muted);
+    background: rgba(22, 32, 42, 0.08);
 }
 
 .status-badge.status-unknown {

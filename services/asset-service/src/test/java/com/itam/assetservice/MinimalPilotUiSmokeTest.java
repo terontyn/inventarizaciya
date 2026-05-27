@@ -58,7 +58,7 @@ class MinimalPilotUiSmokeTest {
     }
 
     @Test
-    void appScriptUsesExistingContractsAndSurfacesBoundedRetireAction() throws Exception {
+    void appScriptUsesExistingContractsAndSurfacesBoundedLifecycleActions() throws Exception {
         mockMvc.perform(get("/app.js"))
             .andExpect(status().isOk())
             .andExpect(content().contentTypeCompatibleWith(MediaType.valueOf("application/javascript")))
@@ -67,6 +67,7 @@ class MinimalPilotUiSmokeTest {
             .andExpect(content().string(containsString("/transfer")))
             .andExpect(content().string(containsString("/return")))
             .andExpect(content().string(containsString("/retire")))
+            .andExpect(content().string(containsString("/archive")))
             .andExpect(content().string(containsString("/history")))
             .andExpect(content().string(containsString("/audit")))
             .andExpect(content().string(containsString("PRIMARY_SCREENS")))
@@ -101,6 +102,12 @@ class MinimalPilotUiSmokeTest {
                 assertThat(body, containsString("Списать актив?"));
                 assertThat(body, containsString("Это не удаление записи"));
                 assertThat(body, containsString("Актив списан. История и audit сохранены."));
+                assertThat(body, containsString("Архивировать актив"));
+                assertThat(body, containsString("Архивировать актив?"));
+                assertThat(body, containsString("Актив будет скрыт из рабочих списков"));
+                assertThat(body, containsString("история ответственности и audit сохранятся"));
+                assertThat(body, containsString("Актив архивирован. Запись, история и audit сохранены."));
+                assertThat(body, containsString("Архив"));
                 assertThat(body, containsString("RETIRED"));
                 assertThat(body, containsString("Информационный лист сотрудника"));
                 assertThat(body, containsString("Информационный лист"));
@@ -211,15 +218,20 @@ class MinimalPilotUiSmokeTest {
             .andExpect(content().string(not(containsString("Excel"))))
             .andExpect(content().string(not(containsString("window.print"))))
             .andExpect(content().string(not(containsString("print action"))))
-            .andExpect(content().string(not(containsString("/archive"))))
             .andExpect(content().string(not(containsString("/delete"))))
             .andExpect(content().string(not(containsString("bulk retire"))))
+            .andExpect(content().string(not(containsString("bulk archive"))))
             .andExpect(content().string(not(containsString("correction delete"))))
             .andExpect(content().string(not(containsString("hard delete"))))
             .andExpect(content().string(not(containsString("generic status editor"))))
+            .andExpect(content().string(not(containsString("unarchive"))))
+            .andExpect(content().string(not(containsString("recovery"))))
             .andExpect(content().string(not(containsString("data-quick-find-retire"))))
             .andExpect(content().string(not(containsString("data-technical-search-retire"))))
             .andExpect(content().string(not(containsString("data-employee-sheet-retire"))))
+            .andExpect(content().string(not(containsString("data-quick-find-archive"))))
+            .andExpect(content().string(not(containsString("data-technical-search-archive"))))
+            .andExpect(content().string(not(containsString("data-employee-sheet-archive"))))
             .andExpect(content().string(not(containsString("Generic PATCH only"))))
             .andExpect(content().string(not(containsString("Mutate path"))))
             .andExpect(content().string(not(containsString("Master data"))))

@@ -91,11 +91,15 @@ public class AssetController {
     }
 
     @GetMapping
-    public List<AssetResponse> list(HttpServletRequest servletRequest) {
+    public List<AssetResponse> list(
+        @RequestParam(required = false) String visibility,
+        HttpServletRequest servletRequest
+    ) {
         UUID tenantId = requestContextExtractor.requireTenantId(servletRequest);
         UUID authenticatedUserId = requestContextExtractor.requireAuthenticatedUserId(servletRequest);
         assetAuthorizationService.requireAssetReadAccess(tenantId, authenticatedUserId);
-        return assetApplicationService.findAll(tenantId).stream()
+        rejectUnsupportedAssetListParameters(servletRequest);
+        return assetApplicationService.findAll(tenantId, visibility).stream()
             .map(AssetResponse::from)
             .toList();
     }
@@ -190,6 +194,7 @@ public class AssetController {
             request.touchesAssignedUserId(),
             request.touchesLocationId(),
             request.touchesTechnicalAttributes(),
+            request.touchesArchivedAt(),
             requestContextExtractor.requireAuditMetadata(servletRequest)
         ));
     }
@@ -282,6 +287,22 @@ public class AssetController {
         return new RetireAssetResponse(result.id());
     }
 
+    @PostMapping("/{id}/archive")
+    public ArchiveAssetResponse archive(
+        @PathVariable UUID id,
+        HttpServletRequest servletRequest
+    ) {
+        UUID tenantId = requestContextExtractor.requireTenantId(servletRequest);
+        UUID authenticatedUserId = requestContextExtractor.requireAuthenticatedUserId(servletRequest);
+        assetAuthorizationService.requireAssetMutateAccess(tenantId, authenticatedUserId);
+        AssetApplicationService.ArchiveResult result = assetApplicationService.archive(
+            tenantId,
+            id,
+            requestContextExtractor.requireAuditMetadata(servletRequest)
+        );
+        return new ArchiveAssetResponse(result.id());
+    }
+
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record AssetCreateRequest(
         @NotBlank String assetTag,
@@ -303,7 +324,8 @@ public class AssetController {
         JsonNode note,
         JsonNode assignedUserId,
         JsonNode locationId,
-        JsonNode technicalAttributes
+        JsonNode technicalAttributes,
+        JsonNode archivedAt
     ) {
         public boolean touchesDisplayName() {
             return displayName != null;
@@ -323,6 +345,10 @@ public class AssetController {
 
         public boolean touchesTechnicalAttributes() {
             return technicalAttributes != null;
+        }
+
+        public boolean touchesArchivedAt() {
+            return archivedAt != null;
         }
 
         public String displayNameValue() {
@@ -356,7 +382,8 @@ public class AssetController {
         UUID assignedUserId,
         UUID locationId,
         String displayName,
-        String note
+        String note,
+        Instant archivedAt
     ) {
 
         private static AssetResponse from(Asset asset) {
@@ -369,7 +396,8 @@ public class AssetController {
                 asset.assignedUserId(),
                 asset.locationId(),
                 asset.displayName(),
-                asset.note()
+                asset.note(),
+                asset.archivedAt()
             );
         }
     }
@@ -384,6 +412,7 @@ public class AssetController {
         UUID locationId,
         String displayName,
         String note,
+        Instant archivedAt,
         TechnicalAttributesResponse technicalAttributes
     ) {
 
@@ -401,6 +430,7 @@ public class AssetController {
                 asset.locationId(),
                 asset.displayName(),
                 asset.note(),
+                asset.archivedAt(),
                 TechnicalAttributesResponse.from(technicalAttributes)
             );
         }
@@ -565,6 +595,9 @@ public class AssetController {
     public record RetireAssetResponse(UUID id) {
     }
 
+    public record ArchiveAssetResponse(UUID id) {
+    }
+
     public record AssetHistoryResponse(UUID assetId, List<AssetHistoryItemResponse> items) {
     }
 
@@ -668,6 +701,18 @@ public class AssetController {
                 throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
                     "technical attribute search supports only q and limit"
+                );
+            }
+        }
+    }
+
+    private static void rejectUnsupportedAssetListParameters(HttpServletRequest request) {
+        Set<String> supportedParameters = Set.of("visibility");
+        for (String parameterName : request.getParameterMap().keySet()) {
+            if (!supportedParameters.contains(parameterName)) {
+                throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "asset list supports only visibility"
                 );
             }
         }

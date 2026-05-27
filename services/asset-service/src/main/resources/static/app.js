@@ -61,7 +61,8 @@ const FALLBACK_BRANCH_ID = "__no_branch__";
 const ASSET_GROUPS = {
     ASSIGNED: "assigned",
     UNASSIGNED: "unassigned",
-    RETIRED: "retired"
+    RETIRED: "retired",
+    ARCHIVED: "archived"
 };
 
 const CREATE_TARGETS = {
@@ -224,7 +225,8 @@ const AUDIT_ACTION_LABELS = {
     TRANSFER_ASSET: "Перемещение",
     RETURN: "Возврат",
     RETURN_ASSET: "Возврат",
-    RETIRE: "Списание"
+    RETIRE: "Списание",
+    ARCHIVE: "Архивирование"
 };
 
 const ACTION_MESSAGES = {
@@ -235,6 +237,7 @@ const ACTION_MESSAGES = {
     assetTransferred: "Transfer выполнен. Изменение ответственности зафиксировано.",
     assetReturned: "Return выполнен. Текущая пользовательская ответственность завершена.",
     assetRetired: "Актив списан. История и audit сохранены.",
+    assetArchived: "Актив архивирован. Запись, история и audit сохранены.",
     setupSaved: "Запись настройки сохранена.",
     roleAssigned: "Роль назначена пользователю. Изменение сохранено.",
     actionFailed: "Не удалось выполнить действие. Проверьте данные и повторите попытку."
@@ -345,6 +348,7 @@ function createEmptyBusyState() {
         transferAsset: false,
         returnAsset: false,
         retireAsset: false,
+        archiveAsset: false,
         refreshAsset: false,
         technicalSearch: false,
         employeeSheetTechnicalHints: false,
@@ -364,6 +368,7 @@ const state = {
     profileLabel: "",
     capabilities: createEmptyCapabilities(),
     assets: [],
+    archivedAssets: [],
     selectedAssetId: null,
     selectedAsset: null,
     assetHistory: [],
@@ -384,6 +389,7 @@ const state = {
     selectedAdminItemId: null,
     technicalAttributesEditing: false,
     retireConfirming: false,
+    archiveConfirming: false,
     selectedTreeNode: { type: TREE_NODE_TYPES.WORKSPACE },
     expandedTreeNodes: new Set(),
     treeFilter: "",
@@ -889,9 +895,14 @@ async function refreshAllData(options = {}) {
 
 async function refreshAssets() {
     await withLoading("assets", async () => {
-        state.assets = await requestJson("asset", "/api/v1/assets");
+        const [assets, archivedAssets] = await Promise.all([
+            requestJson("asset", "/api/v1/assets"),
+            requestJson("asset", "/api/v1/assets?visibility=archived")
+        ]);
+        state.assets = assets;
+        state.archivedAssets = archivedAssets;
 
-        if (state.assets.length === 0) {
+        if (state.assets.length === 0 && state.archivedAssets.length === 0) {
             state.selectedAssetId = null;
             state.selectedAsset = null;
             state.assetHistory = [];
@@ -899,9 +910,17 @@ async function refreshAssets() {
             return;
         }
 
-        const nextAssetId = state.selectedAssetId && state.assets.some((item) => item.id === state.selectedAssetId)
+        const knownAssets = [...state.assets, ...state.archivedAssets];
+        const nextAssetId = state.selectedAssetId && knownAssets.some((item) => item.id === state.selectedAssetId)
             ? state.selectedAssetId
-            : state.assets[0].id;
+            : state.assets[0]?.id;
+        if (!nextAssetId) {
+            state.selectedAssetId = null;
+            state.selectedAsset = null;
+            state.assetHistory = [];
+            state.assetAudit = [];
+            return;
+        }
         await loadAssetBundle(nextAssetId);
     });
 }
@@ -918,6 +937,7 @@ async function loadAssetBundle(assetId) {
         state.selectedAsset = asset;
         state.technicalAttributesEditing = false;
         state.retireConfirming = false;
+        state.archiveConfirming = false;
         state.assetHistory = history.items ?? [];
         state.assetAudit = audit.items ?? [];
     });
@@ -1651,6 +1671,28 @@ async function onAssetDetailSubmit(event) {
                 scrollToElement(ui.workspaceDetail || ui.assetDetailPanel);
                 showActionSuccess("assetRetired", { scope: FEEDBACK_SCOPES.ASSET, assetId: state.selectedAssetId });
             });
+            return;
+        }
+
+        if (form.id === "asset-archive-form") {
+            if (isBusy("archiveAsset")) {
+                return;
+            }
+            if (!isAssetRetired(state.selectedAsset) || isAssetArchived(state.selectedAsset)) {
+                showFlash("Архивировать можно только уже списанный и ещё не архивированный актив.", "warning");
+                return;
+            }
+            await withBusy("archiveAsset", async () => {
+                await requestJson("asset", `/api/v1/assets/${state.selectedAssetId}/archive`, {
+                    method: "POST"
+                });
+                state.archiveConfirming = false;
+                state.activeAssetSection = "actions";
+                state.expandedTreeNodes.add(TREE_GROUPS.ALL_ASSETS);
+                await refreshAssets();
+                scrollToElement(ui.workspaceDetail || ui.assetDetailPanel);
+                showActionSuccess("assetArchived", { scope: FEEDBACK_SCOPES.ASSET, assetId: state.selectedAssetId });
+            });
         }
     } catch (error) {
         showActionError(error, { scope: FEEDBACK_SCOPES.ASSET, assetId: state.selectedAssetId });
@@ -1663,6 +1705,10 @@ function onAssetInteractionClick(event) {
     }
 
     if (handleRetireLifecycleClick(event)) {
+        return;
+    }
+
+    if (handleArchiveLifecycleClick(event)) {
         return;
     }
 
@@ -1755,6 +1801,41 @@ function handleRetireLifecycleClick(event) {
     const cancelButton = event.target.closest("[data-asset-retire-cancel]");
     if (cancelButton) {
         state.retireConfirming = false;
+        state.activeAssetSection = "actions";
+        render();
+        scrollToElement(ui.workspaceDetail || ui.assetDetailPanel);
+        return true;
+    }
+
+    return false;
+}
+
+function handleArchiveLifecycleClick(event) {
+    const openButton = event.target.closest("[data-asset-archive-open]");
+    if (openButton) {
+        if (!canAssetMutate()) {
+            showFlash("Текущая роль доступна только для просмотра.", "warning");
+            return true;
+        }
+        if (!isAssetRetired(state.selectedAsset)) {
+            showFlash("Архивировать можно только актив в статусе RETIRED.", "warning");
+            return true;
+        }
+        if (isAssetArchived(state.selectedAsset)) {
+            showFlash("Актив уже находится в архиве.", "warning");
+            return true;
+        }
+        state.archiveConfirming = true;
+        state.activeAssetSection = "actions";
+        render();
+        scrollToElement(ui.workspaceDetail || ui.assetDetailPanel);
+        focusFirstFormControl("asset-archive-form");
+        return true;
+    }
+
+    const cancelButton = event.target.closest("[data-asset-archive-cancel]");
+    if (cancelButton) {
+        state.archiveConfirming = false;
         state.activeAssetSection = "actions";
         render();
         scrollToElement(ui.workspaceDetail || ui.assetDetailPanel);
@@ -2969,7 +3050,7 @@ function renderAllAssetsTreeGroup(selectedPath) {
     return renderTreeGroup({
         key: TREE_GROUPS.ALL_ASSETS,
         label: "Все активы",
-        count: formatAssetCount(state.assets.length),
+        count: formatAssetCount(state.assets.length + state.archivedAssets.length),
         selectedPath,
         body
     });
@@ -3050,6 +3131,9 @@ function renderAssetTreeNode(asset, context = {}) {
     }
     metaParts.push(asset.asset_type || "-");
     metaParts.push(String(asset.status || "UNKNOWN").toUpperCase());
+    if (isAssetArchived(asset)) {
+        metaParts.push("Архив");
+    }
     return renderTreeNode({
         type: TREE_NODE_TYPES.ASSET,
         label: title,
@@ -3574,16 +3658,20 @@ function renderAllAssetsGroupDetail(groupKey) {
     const group = getAllAssetGroups().find((item) => item.key === groupKey) || getAllAssetGroups()[0];
     const title = group ? group.label : "Все активы";
     const assets = group ? group.assets : [];
+    const archiveView = group?.key === ASSET_GROUPS.ARCHIVED;
+    const headerCopy = archiveView
+        ? "Архив показывает уже скрытые из рабочих списков активы без восстановления и без действий в строках."
+        : "Fallback-группа построена только из уже загруженного списка активов.";
 
     return `
         <div class="stack">
-            ${renderDetailHeader("Все активы", title, "Fallback-группа построена только из уже загруженного списка активов.")}
+            ${renderDetailHeader("Все активы", title, headerCopy)}
             <div class="asset-summary-grid">
                 ${renderSummaryCard("Активов", escapeHtml(String(assets.length)), "Клиентская группировка для ориентации.")}
                 ${renderSummaryCard("Без ответственного", escapeHtml(String(state.assets.filter((asset) => !asset.assigned_user_id).length)), "Активы без assigned_user_id остаются видимыми.")}
                 ${renderSummaryCard("Без локации", escapeHtml(String(state.assets.filter((asset) => !asset.location_id).length)), "Активы без location_id не скрываются.")}
             </div>
-            ${canAssetMutate() ? renderAssetCreatePanelMarkup() : ""}
+            ${canAssetMutate() && !archiveView ? renderAssetCreatePanelMarkup() : ""}
             ${renderAssetList(assets, { empty: "В этой группе нет активов из загруженного реестра.", source: "all", group: group?.key || "" })}
         </div>
     `;
@@ -3770,7 +3858,7 @@ function renderAssetList(assets, options = {}) {
                         <tr class="${asset.id === state.selectedAssetId ? "is-active" : ""}">
                             <td>${renderAssetIdentity(asset)}</td>
                             <td>${escapeHtml(asset.asset_type || "-")}</td>
-                            <td>${renderStatusBadge(asset.status)}</td>
+                            <td>${renderStatusBadge(asset.status)}${renderArchivedBadge(asset)}</td>
                             <td>${renderUserReference(asset.assigned_user_id)}</td>
                             <td>${renderLocationReference(asset.location_id)}</td>
                             <td>
@@ -4004,7 +4092,7 @@ function getSelectedTreeNodeLabel() {
     if (node.type === TREE_NODE_TYPES.ASSET) {
         const asset = state.selectedAsset?.id === node.id
             ? state.selectedAsset
-            : state.assets.find((item) => item.id === node.id);
+            : findLoadedAssetById(node.id);
         return asset ? assetDisplayTitle(asset) : "Актив";
     }
     if (node.type === TREE_NODE_TYPES.ASSET_GROUP) {
@@ -4178,11 +4266,17 @@ function getAllAssetGroups() {
         });
     }
 
+    groups.push({
+        key: ASSET_GROUPS.ARCHIVED,
+        label: "Архив",
+        assets: state.archivedAssets
+    });
+
     return groups;
 }
 
 function hasRetiredStatusSupport() {
-    return state.assets.some((asset) => Object.prototype.hasOwnProperty.call(asset, "status"));
+    return [...state.assets, ...state.archivedAssets].some((asset) => Object.prototype.hasOwnProperty.call(asset, "status"));
 }
 
 function renderUserServiceUrlPreview() {
@@ -4474,6 +4568,7 @@ function renderAssetDetail() {
                     <div class="asset-card-title">
                         <h3>${escapeHtml(assetDisplayTitle(asset))}</h3>
                         ${renderStatusBadge(asset.status)}
+                        ${renderArchivedBadge(asset)}
                     </div>
                     <div class="asset-card-meta">
                         <span class="reference-meta">Инв. тег: ${escapeHtml(assetCanonicalTag(asset) || "-")}</span>
@@ -4552,6 +4647,7 @@ function renderAssetOverviewSection(asset, canMutate) {
                 ${renderSummaryCard("Инвентарный тег", escapeHtml(assetCanonicalTag(asset) || "-"), "Главный пользовательский идентификатор в реестре.")}
                 ${renderSummaryCard("Название актива", escapeHtml(displayName), "Отображаемое название для узнавания. Инвентарный тег остаётся каноническим идентификатором.")}
                 ${renderSummaryCard("Статус", renderStatusBadge(asset.status), "Не кодирует текущую ответственность.")}
+                ${isAssetArchived(asset) ? renderSummaryCard("Архив", renderArchivedBadge(asset), "Скрыт из рабочих списков; запись, история и audit сохраняются.") : ""}
                 ${renderSummaryCard("Тип", escapeHtml(asset.asset_type), "Поле карточки актива.")}
                 ${renderSummaryCard("Серийный номер", escapeHtml(asset.serial_number), "Поле карточки актива.")}
                 ${renderSummaryCard("Ответственный", renderUserReference(asset.assigned_user_id), "Текущая пользовательская ответственность.")}
@@ -4749,17 +4845,19 @@ function getResponsibilityActionGuidance(hasCurrentUser) {
 }
 
 function renderAssetLifecycleSection(asset) {
+    const archived = isAssetArchived(asset);
     return `
         <div class="asset-action-group asset-action-group-lifecycle">
             <div class="asset-action-group-header">
                 <div>
                     <p class="section-kicker">Жизненный цикл</p>
-                    <h4 class="asset-action-group-title">Списать актив</h4>
+                    <h4 class="asset-action-group-title">Списать или архивировать актив</h4>
                 </div>
-                <span class="summary-pill">${escapeHtml(isAssetRetired(asset) ? "RETIRED" : "отдельная команда")}</span>
+                <span class="summary-pill">${escapeHtml(archived ? "Архив" : isAssetRetired(asset) ? "RETIRED" : "отдельная команда")}</span>
             </div>
-            <p class="asset-action-group-note">Списание переводит актив в RETIRED, завершает текущую ответственность сотрудника и оставляет запись, историю и audit доступными.</p>
+            <p class="asset-action-group-note">Списание переводит актив в RETIRED. Архив скрывает уже списанный актив из рабочих списков, но запись, история и audit остаются доступными.</p>
             ${renderRetireCard(asset)}
+            ${renderArchiveCard(asset)}
         </div>
     `;
 }
@@ -4794,6 +4892,49 @@ function renderRetireCard(asset) {
     `;
 }
 
+function renderArchiveCard(asset) {
+    const retired = isAssetRetired(asset);
+    const archived = isAssetArchived(asset);
+    const busy = isBusy("archiveAsset");
+
+    if (archived) {
+        return `
+            <div class="journey-banner tone-readonly">
+                <div class="journey-copy">
+                    <strong>Актив находится в архиве</strong>
+                    <p>Архив скрывает актив из рабочих списков. Запись, история ответственности и audit сохранятся.</p>
+                </div>
+            </div>
+        `;
+    }
+
+    if (!retired) {
+        return `
+            <div class="journey-banner tone-readonly">
+                <div class="journey-copy">
+                    <strong>Архив доступен после списания</strong>
+                    <p>Архивировать можно только актив в статусе RETIRED. Это не удаление.</p>
+                </div>
+            </div>
+        `;
+    }
+
+    return `
+        <article class="action-card action-card-lifecycle">
+            <div class="action-card-header">
+                <p class="section-kicker">Архив</p>
+                <h4>Архивировать актив</h4>
+            </div>
+            <p class="muted-note">Используйте только для скрытия уже списанного актива из рабочих списков.</p>
+            ${state.archiveConfirming ? renderArchiveConfirmation(busy) : `
+                <div class="button-row button-row-inline">
+                    <button class="button button-secondary" type="button" data-asset-archive-open ${busy ? "disabled" : ""}>Архивировать актив</button>
+                </div>
+            `}
+        </article>
+    `;
+}
+
 function renderRetireConfirmation(busy) {
     return `
         <div class="retire-confirmation" role="alert">
@@ -4804,6 +4945,21 @@ function renderRetireConfirmation(busy) {
             <form id="asset-retire-form" class="button-row button-row-inline">
                 <button class="button button-primary ${busy ? "is-loading" : ""}" type="submit" ${busy ? "disabled" : ""}>${busy ? "Списываем" : "Списать актив"}</button>
                 <button class="button button-ghost" type="button" data-asset-retire-cancel ${busy ? "disabled" : ""}>Отмена</button>
+            </form>
+        </div>
+    `;
+}
+
+function renderArchiveConfirmation(busy) {
+    return `
+        <div class="archive-confirmation" role="alert">
+            <div>
+                <h5>Архивировать актив?</h5>
+                <p>Актив будет скрыт из рабочих списков. Запись, история ответственности и audit сохранятся. Это не удаление.</p>
+            </div>
+            <form id="asset-archive-form" class="button-row button-row-inline">
+                <button class="button button-primary ${busy ? "is-loading" : ""}" type="submit" ${busy ? "disabled" : ""}>${busy ? "Архивируем" : "Архивировать актив"}</button>
+                <button class="button button-ghost" type="button" data-asset-archive-cancel ${busy ? "disabled" : ""}>Отмена</button>
             </form>
         </div>
     `;
@@ -6097,6 +6253,14 @@ function isAssetRetired(asset) {
     return String(asset?.status || "").toUpperCase() === "RETIRED";
 }
 
+function isAssetArchived(asset) {
+    return Boolean(asset?.archived_at);
+}
+
+function findLoadedAssetById(assetId) {
+    return [...state.assets, ...state.archivedAssets].find((asset) => asset.id === assetId) || null;
+}
+
 function getNextResponsibilityHint(asset) {
     if (!asset) {
         return "-";
@@ -6288,6 +6452,13 @@ function renderStatusBadge(status) {
             ? "status-badge status-retired"
             : "status-badge status-unknown";
     return `<span class="${className}">${escapeHtml(normalized)}</span>`;
+}
+
+function renderArchivedBadge(asset) {
+    if (!isAssetArchived(asset)) {
+        return "";
+    }
+    return `<span class="status-badge status-archived">Архив</span>`;
 }
 
 function describeHistoryFact(factType) {

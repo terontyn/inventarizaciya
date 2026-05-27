@@ -2,7 +2,7 @@
 
 Status: approved
 Owner: product
-Last Updated: 2026-05-26
+Last Updated: 2026-05-27
 
 ## Wave 1 Epics
 
@@ -622,7 +622,7 @@ Preserved:
 
 #### 3. Delete / Archive Semantics
 
-Status: accepted as ADR/product semantics decision; implementation not approved.
+Status: accepted as ADR/product semantics decision; bounded Retire exposure later implemented and accepted.
 
 Purpose:
 
@@ -648,27 +648,37 @@ ADR/product semantics status:
 - public hard delete is rejected for the current stage;
 - `DELETE /api/v1/assets/{id}` remains unsupported;
 - Retire is the canonical safe lifecycle removal semantics;
-- existing backend `/retire` route remains blocked / not product-exposed until separately approved for exposure;
+- `POST /api/v1/assets/{id}/retire` is now product-exposed as a bounded dedicated lifecycle command by the later Retire Exposure / Safe Lifecycle Removal closeout;
 - Archive / Hide remains deferred visibility semantics;
 - Correction Delete remains a future candidate only for mistaken records with strict no-history constraints;
 - Correction Delete is not approved for implementation now.
 
-This decision does not authorize:
+This historical decision did not originally authorize Retire exposure.
 
-- unlocking `/retire`;
-- exposing Retire in UI;
-- adding Archive / Hide;
-- adding Correction Delete;
-- adding hard delete;
-- adding DB migrations;
-- changing role/IAM behavior;
-- Codex implementation.
+It has since been superseded only for bounded Retire exposure by:
+
+- `Retire Exposure / Safe Lifecycle Removal`.
+
+The following remain not authorized:
+
+- `DELETE /api/v1/assets/{id}`;
+- hard delete;
+- Archive / Hide;
+- Correction Delete;
+- bulk Retire;
+- recovery / unretire;
+- ordinary PATCH status transition;
+- generic status editor;
+- DB migrations;
+- new role model;
+- auth/IAM expansion.
 
 Required next step:
 
-- no implementation step is opened by this ADR/product semantics decision;
-- if owner explicitly wants to expose Retire, open `Retire Exposure / Unlock Planning Packet`;
-- otherwise continue to the next owner-approved planning candidate.
+- no further Delete / Archive Semantics implementation is opened by this historical ADR/product semantics decision;
+- bounded Retire exposure has already been implemented and accepted separately;
+- if owner wants Archive / Hide, Correction Delete, bulk Retire or recovery / unretire, open a separate lifecycle decision gate;
+- otherwise continue to the next owner-selected bounded feature gate or deferred integrated stabilization / verification gate.
 
 #### 4. End-User Asset Information View
 
@@ -1150,9 +1160,9 @@ Not approved by this note:
 - Astra Configuration Manager parity.
 
 
-### Planning priority after Search Scope Expansion / printer_placement_note Technical Search
+### Planning priority after Retire Exposure / Safe Lifecycle Removal
 
-Unified Create Launcher, Simplified Asset Actions UX, ADR-0005 Asset Delete Semantics, Controlled Employee Asset Information Sheet, Operational Search v1 Frontend Quick Find, Asset QR Lite Frontend Derived Display, Asset Type-Specific Technical Attributes v1, Search over Technical Attributes, Employee Sheet Technical Attribute Exposure, Standalone Employee Information Sheet Interface, Quick Find / Technical Search Merge Semantics, and Search Scope Expansion / printer_placement_note Technical Search are implemented/accepted at their approved scope levels.
+Unified Create Launcher, Simplified Asset Actions UX, ADR-0005 Asset Delete Semantics, Controlled Employee Asset Information Sheet, Operational Search v1 Frontend Quick Find, Asset QR Lite Frontend Derived Display, Asset Type-Specific Technical Attributes v1, Search over Technical Attributes, Employee Sheet Technical Attribute Exposure, Standalone Employee Information Sheet Interface, Quick Find / Technical Search Merge Semantics, Search Scope Expansion / printer_placement_note Technical Search, and Retire Exposure / Safe Lifecycle Removal are implemented/accepted at their approved scope levels.
 
 Standalone Employee Information Sheet Interface is accepted as:
 
@@ -1191,6 +1201,28 @@ Search Scope Expansion / printer_placement_note Technical Search is accepted as:
 - no Asset Overview exposure;
 - no search over asset `note`;
 - no backend/global search expansion.
+
+Retire Exposure / Safe Lifecycle Removal is accepted as:
+
+- a bounded safe lifecycle action;
+- existing endpoint exposed:
+  - `POST /api/v1/assets/{id}/retire`;
+- dedicated lifecycle command only;
+- selected Asset Actions tab only;
+- user-facing action:
+  - `Списать актив`;
+- `status = RETIRED` after successful Retire;
+- active `assigned_user_id` is cleared;
+- current `location_id` is preserved;
+- `RETIRE` responsibility fact is appended once;
+- `RETIRE` audit event is emitted once;
+- repeated Retire is guarded;
+- no duplicate `RETIRE` fact/audit on repeated Retire;
+- no delete / archive / hide / correction delete;
+- no ordinary PATCH status transition;
+- no generic status editor;
+- no bulk retire;
+- no recovery / unretire.
 
 Employee Sheet Technical Attribute Exposure is accepted as:
 
@@ -1699,6 +1731,98 @@ Required next step:
 - if owner wants Quick Find technical attribute search, open a separate UI/product decision gate;
 - if owner wants Employee Sheet placement-note exposure, open a separate Employee Sheet exposure decision gate;
 - if owner wants global search, Elasticsearch, advanced filters, saved views, reporting/dashboard, Asset 360, public lookup or employee self-service, open separate product/architecture decision first;
+- otherwise continue to the next owner-selected bounded feature gate or the deferred integrated stabilization / verification gate.
+
+This backlog closeout does not prove release readiness, FTOV start, FTOV exit, production readiness, real tenant validation, or real day-to-day operational validation.
+
+#### Retire Exposure / Safe Lifecycle Removal
+
+Status: implemented and accepted as bounded safe lifecycle command exposure plus selected-asset frontend action.
+
+Intent:
+
+- allow managed workspace users with existing mutate/lifecycle authority to safely remove an asset from active operation;
+- preserve Asset record, responsibility history and audit evidence;
+- avoid hard delete, archive / hide, correction delete, ordinary PATCH status transition or generic status editing;
+- keep Retire visible only as a deliberate selected-asset lifecycle action.
+
+Accepted implementation:
+
+- existing endpoint exposed:
+  - `POST /api/v1/assets/{id}/retire`;
+- response remains:
+  - `{ id }`;
+- Retire uses existing asset mutate/lifecycle authorization cutline;
+- read-only actors remain forbidden;
+- Support Reviewer remains read-only / forbidden;
+- no new role model was introduced;
+- no auth/IAM expansion was introduced;
+- UI action added only inside selected Asset Actions tab;
+- action label:
+  - `Списать актив`;
+- confirmation copy explains that this is not deletion;
+- API tests updated;
+- static UI smoke coverage updated.
+
+Accepted Retire behavior:
+
+- active asset status becomes `RETIRED`;
+- active `assigned_user_id` is cleared;
+- current `location_id` is preserved;
+- one `RETIRE` responsibility fact is appended;
+- one `RETIRE` audit event is emitted;
+- Asset record remains readable;
+- responsibility history remains preserved;
+- retired assets remain visible through existing retired/spisannye grouping.
+
+Repeated Retire behavior:
+
+- already `RETIRED` assets cannot be retired again;
+- repeated Retire returns safe conflict/business-rule rejection;
+- repeated Retire does not append duplicate `RETIRE` facts;
+- repeated Retire does not emit duplicate `RETIRE` audit events.
+
+Preserved boundaries:
+
+- no `DELETE /api/v1/assets/{id}`;
+- no hard delete;
+- no archive / hide;
+- no correction delete;
+- no ordinary PATCH status transition;
+- no generic status editor;
+- no bulk retire;
+- no recovery / unretire;
+- no destructive erase;
+- no new endpoint;
+- no DB/migration change;
+- no new role model;
+- no auth/IAM expansion;
+- no workflow engine;
+- no approval workflow;
+- no cross-service orchestration;
+- no inventory/warehouse movement semantics;
+- no employee self-service.
+
+Preserved UI boundaries:
+
+- Unified Create unchanged;
+- Employee Sheet / `Информационный лист` unchanged;
+- Quick Find unchanged;
+- Technical Search unchanged;
+- Asset Overview unchanged;
+- generic master-record edit unchanged;
+- Setup/Admin unchanged;
+- asset list rows unchanged;
+- tree rows unchanged.
+
+Required next step:
+
+- no further Retire Exposure implementation is opened by this closeout;
+- if owner wants Archive / Hide, open a separate lifecycle visibility decision gate;
+- if owner wants Correction Delete, open a separate strict correction-delete decision gate;
+- if owner wants recovery / unretire, open a separate lifecycle decision gate;
+- if owner wants bulk retire, open a separate bulk-action decision gate;
+- if owner wants inventory/warehouse movement on Retire, open a separate cross-context lifecycle decision gate;
 - otherwise continue to the next owner-selected bounded feature gate or the deferred integrated stabilization / verification gate.
 
 This backlog closeout does not prove release readiness, FTOV start, FTOV exit, production readiness, real tenant validation, or real day-to-day operational validation.

@@ -40,6 +40,13 @@ Core Asset endpoints:
 - `GET /api/v1/assets/{id}`
 - `PATCH /api/v1/assets/{id}`
 
+Accepted asset lifecycle command endpoints:
+
+- `POST /api/v1/assets/{id}/assign`
+- `POST /api/v1/assets/{id}/transfer`
+- `POST /api/v1/assets/{id}/return`
+- `POST /api/v1/assets/{id}/retire`
+
 Accepted bounded extension endpoints:
 
 - `GET /api/v1/assets/technical-attribute-search`
@@ -141,7 +148,7 @@ Accepted bounded extension endpoints:
 
 ### 4. Retire
 
-#### Candidate endpoint
+#### Accepted endpoint
 - `POST /api/v1/assets/{id}/retire`
 
 #### Command intent
@@ -158,6 +165,43 @@ Accepted bounded extension endpoints:
 - operational use Asset завершен;
 - если существовала текущая активная пользовательская ответственность, после retirement она больше не считается активной;
 - операция считается critical write и должна попадать в audit.
+
+#### Accepted exposure semantics
+
+Retire is product-exposed as a bounded dedicated lifecycle command.
+
+Retire is not:
+
+- delete;
+- hard delete;
+- archive / hide;
+- correction delete;
+- ordinary PATCH;
+- generic status edit.
+
+Accepted Retire behavior:
+
+- `status` becomes `RETIRED`;
+- current `assigned_user_id` is cleared;
+- current `location_id` is preserved;
+- one `RETIRE` responsibility fact is appended;
+- one `RETIRE` audit event is emitted;
+- Asset record remains readable;
+- responsibility history remains preserved.
+
+Repeated Retire behavior:
+
+- already `RETIRED` assets cannot be retired again;
+- repeated Retire must not append duplicate `RETIRE` responsibility facts;
+- repeated Retire must not emit duplicate `RETIRE` audit events;
+- repeated Retire is rejected through the existing project business-error / conflict style.
+
+Authorization:
+
+- Retire uses the existing asset mutate/lifecycle authorization cutline;
+- read-only actors remain forbidden;
+- no new role model is introduced by Retire exposure;
+- no auth/IAM expansion is introduced by Retire exposure.
 
 #### Boundary rule
 - `retire` не является delete workflow;
@@ -211,14 +255,18 @@ Canonical API rules:
 - `DELETE /api/v1/assets/{id}` remains unsupported.
 - Public hard delete is rejected for the current stage.
 - Generic `PATCH /api/v1/assets/{id}` must not perform delete, archive, retire or status-transition behavior.
-- Retire, if product-exposed later, remains a dedicated command flow and not ordinary PATCH.
-- Existing backend `/retire` route presence does not mean current product exposure.
-- Existing `/retire` remains blocked / not product-exposed until separately approved for exposure.
+- Retire remains a dedicated command flow and not ordinary PATCH.
+- `POST /api/v1/assets/{id}/retire` is now product-exposed as a bounded dedicated lifecycle command.
+- Retire exposure does not authorize hard delete, archive / hide, correction delete, ordinary PATCH status transitions or generic status editing.
 - Archive / Hide endpoints are not approved.
 - Correction Delete endpoint is not approved.
 - Hard Delete endpoint is not approved.
 
-Any future exposure of Retire, Archive / Hide or Correction Delete requires separate planning, access rules, audit semantics and tests.
+Retire remains the canonical safe lifecycle removal command for the current stage.
+
+Retire preserves the Asset record, audit evidence and responsibility history.
+
+Any future Archive / Hide, Correction Delete, bulk Retire, recovery / unretire or broader lifecycle expansion requires separate planning, access rules, audit semantics and tests.
 
 ## Not Fixed In This Document
 Намеренно не фиксируются:
@@ -238,7 +286,6 @@ Any future exposure of Retire, Archive / Hide or Correction Delete requires sepa
 - hard delete workflow
 - Archive / Hide workflow
 - Correction Delete workflow
-- Retire exposure unless separately approved
 - bulk command APIs
 - attachment API
 - barcode / QR workflows

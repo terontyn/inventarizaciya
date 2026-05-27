@@ -1,5 +1,6 @@
 package com.itam.assetservice.domain;
 
+import java.time.Instant;
 import java.util.UUID;
 
 public record Asset(
@@ -12,6 +13,7 @@ public record Asset(
     UUID assignedUserId,
     UUID locationId,
     String displayName,
-    String note
+    String note,
+    Instant archivedAt
 ) {
 }

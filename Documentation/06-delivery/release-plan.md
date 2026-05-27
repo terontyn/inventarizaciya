@@ -2,7 +2,7 @@
 
 Status: approved
 Owner: product
-Last Updated: 2026-05-26
+Last Updated: 2026-05-27
 
 ## MVP Timeline
 Срок MVP: 6–8 недель
@@ -2130,7 +2130,7 @@ It establishes the canonical product/domain interpretation of Asset delete behav
 - public hard delete is rejected for the current stage;
 - `DELETE /api/v1/assets/{id}` remains unsupported;
 - Retire is the canonical safe lifecycle removal semantics;
-- existing backend `/retire` route remains blocked / not product-exposed until separately approved for exposure;
+- `POST /api/v1/assets/{id}/retire` is now product-exposed as a bounded dedicated lifecycle command by the later Retire Exposure / Safe Lifecycle Removal closeout;
 - Archive / Hide remains deferred visibility semantics;
 - Correction Delete remains a future candidate only for mistaken records with strict no-history constraints.
 
@@ -2144,7 +2144,7 @@ The accepted semantics preserve:
 - Assign as dedicated flow;
 - Transfer as dedicated flow;
 - Return as dedicated flow;
-- Retire as dedicated lifecycle command if exposed later;
+- Retire as an already exposed bounded dedicated lifecycle command;
 - generic edit as master-record-only;
 - ordinary PATCH as not a status-transition, delete, archive or retire path.
 
@@ -2156,8 +2156,9 @@ This acceptance does not open:
 - DB changes;
 - migrations;
 - new endpoints;
-- Retire unlock;
-- Retire UI action;
+- any Retire exposure beyond the accepted bounded selected-asset lifecycle action;
+- bulk Retire;
+- recovery / unretire;
 - Archive / Hide implementation;
 - Correction Delete implementation;
 - hard delete implementation;
@@ -3225,6 +3226,122 @@ This implementation did not open:
 - reporting/dashboard;
 - auth/IAM expansion;
 - new role model.
+
+### Non-claim rule
+
+This closeout does not prove:
+
+- release readiness;
+- FTOV start;
+- FTOV exit;
+- production readiness;
+- real tenant validation;
+- real day-to-day operational validation.
+
+The project remains in:
+
+**Project Stabilization / First-Adopter-Gated Hold**
+
+## Retire Exposure / Safe Lifecycle Removal Closeout Clarification
+
+Retire Exposure / Safe Lifecycle Removal is accepted as completed at its approved bounded scope.
+
+### Delivery interpretation
+
+This implementation is accepted as:
+
+**bounded backend/API lifecycle command exposure plus selected-asset frontend action.**
+
+It exposes Retire as a safe lifecycle action without opening delete, archive, hide, correction delete, bulk lifecycle actions or generic status editing.
+
+### Accepted scope
+
+Implemented scope:
+
+- exposed existing dedicated endpoint:
+  - `POST /api/v1/assets/{id}/retire`;
+- preserved response shape:
+  - `{ id }`;
+- used existing asset mutate/lifecycle authorization cutline;
+- preserved read-only restrictions;
+- kept Support Reviewer forbidden;
+- added repeated-Retire guard;
+- exposed UI action only in selected Asset Actions tab;
+- added explicit user confirmation;
+- updated API tests;
+- updated static UI smoke coverage.
+
+### Retire behavior
+
+For active assets, Retire:
+
+- sets `status = RETIRED`;
+- clears active `assigned_user_id`;
+- preserves current `location_id`;
+- appends one `RETIRE` responsibility fact;
+- emits one `RETIRE` audit event;
+- preserves Asset record visibility;
+- preserves responsibility history and audit evidence.
+
+### Repeated Retire behavior
+
+Already `RETIRED` assets cannot be retired again.
+
+Repeated Retire:
+
+- returns a safe conflict/business-rule rejection;
+- does not append duplicate `RETIRE` responsibility facts;
+- does not emit duplicate `RETIRE` audit events.
+
+### Frontend behavior
+
+Retire is exposed only as:
+
+- selected Asset;
+- Actions tab;
+- lifecycle block/action:
+  - `Списать актив`.
+
+Confirmation copy makes clear:
+
+- the asset will become `RETIRED`;
+- current employee responsibility will end;
+- history and audit remain preserved;
+- this is not deletion.
+
+### Preserved boundaries
+
+This implementation preserves:
+
+- no `DELETE /api/v1/assets/{id}`;
+- no hard delete;
+- no archive / hide;
+- no correction delete;
+- no ordinary PATCH status transition;
+- no generic status editor;
+- no bulk retire;
+- no recovery / unretire;
+- no new endpoint;
+- no DB/migration change;
+- no new role model;
+- no auth/IAM expansion;
+- no workflow engine;
+- no approval workflow;
+- no inventory/warehouse movement semantics.
+
+### Preserved UI boundaries
+
+Retire is not exposed in:
+
+- Unified Create;
+- Employee Sheet / `Информационный лист`;
+- Quick Find result rows;
+- Technical Search result rows;
+- Asset Overview as a primary destructive button;
+- Setup/Admin;
+- generic master-record edit;
+- asset list rows;
+- tree rows.
 
 ### Non-claim rule
 

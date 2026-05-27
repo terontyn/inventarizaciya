@@ -7,5 +7,6 @@ public enum AuditAction {
     TRANSFER,
     RETURN,
     RETIRE,
+    ARCHIVE,
     ASSET_TECHNICAL_ATTRIBUTES_UPDATED
 }

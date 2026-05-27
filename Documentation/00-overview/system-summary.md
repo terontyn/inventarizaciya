@@ -2,7 +2,7 @@
 
 Status: approved
 Owner: project
-Last Updated: 2026-05-25
+Last Updated: 2026-05-27
 
 ## Purpose
 IT Asset Management SaaS для учета активов, оргструктуры, ответственности за технику и истории критических изменений.
@@ -1445,20 +1445,30 @@ Canonical asset delete semantics are now:
 - Retire is not Archive / Hide;
 - Retire is not Correction Delete;
 - Retire is not ordinary generic PATCH;
-- existing backend `/retire` route remains blocked / not product-exposed until separately approved for exposure;
+- `POST /api/v1/assets/{id}/retire` is now product-exposed as a bounded dedicated lifecycle command by the later Retire Exposure / Safe Lifecycle Removal closeout;
 - Archive / Hide remains deferred visibility semantics;
 - Correction Delete remains a future candidate only for mistaken records with strict no-history constraints;
 - Correction Delete is not approved for implementation now.
 
-This ADR acceptance does not authorize:
+This historical ADR acceptance did not originally authorize Retire exposure.
 
-- unlocking `/retire`;
-- exposing Retire in UI;
-- adding Archive / Hide;
-- adding Correction Delete;
-- adding hard delete;
-- adding DB migrations;
-- changing role/IAM behavior.
+It has since been superseded only for bounded Retire exposure by:
+
+- `Current Baseline Update — Retire Exposure / Safe Lifecycle Removal Closeout`.
+
+The following remain not authorized:
+
+- `DELETE /api/v1/assets/{id}`;
+- hard delete;
+- Archive / Hide;
+- Correction Delete;
+- bulk Retire;
+- recovery / unretire;
+- ordinary PATCH status transition;
+- generic status editor;
+- DB migrations;
+- new role model;
+- auth/IAM expansion.
 
 This remains a docs/ADR semantics acceptance only.
 
@@ -2492,6 +2502,109 @@ Implementation scope:
 - bounded backend/API Technical Search allowlist expansion;
 - API tests updated;
 - no frontend/static UI change was required;
+- no Documentation change during implementation;
+- no build/package change.
+
+This remains internally validated implementation evidence only.
+
+It does not prove:
+
+- release readiness;
+- FTOV start;
+- FTOV exit;
+- production readiness;
+- real tenant validation;
+- real day-to-day operational validation.
+
+## Current Baseline Update — Retire Exposure / Safe Lifecycle Removal Closeout
+
+Retire Exposure / Safe Lifecycle Removal has been implemented and accepted as a bounded safe lifecycle action for selected assets.
+
+The implementation exposes the existing dedicated lifecycle command:
+
+- `POST /api/v1/assets/{id}/retire`
+
+Accepted semantics:
+
+- Retire is a dedicated lifecycle command;
+- Retire is not delete;
+- Retire is not archive / hide;
+- Retire is not correction delete;
+- Retire is not ordinary PATCH;
+- Retire preserves the Asset record;
+- Retire preserves responsibility history;
+- Retire preserves audit evidence.
+
+Accepted implementation:
+
+- existing `/retire` route is exposed through the existing asset mutate/lifecycle authorization cutline;
+- mutate-capable asset actors may retire according to the existing cutline;
+- read-only actors remain forbidden;
+- Support Reviewer remains read-only / forbidden;
+- no new role model was introduced;
+- no auth/IAM expansion was introduced.
+
+Retire state behavior:
+
+- active asset becomes `RETIRED`;
+- active `assigned_user_id` is cleared;
+- current `location_id` is preserved;
+- one `RETIRE` responsibility fact is appended;
+- one `RETIRE` audit event is emitted;
+- list/detail reads continue to show the asset safely;
+- retired assets remain visible through the existing retired/spisannye grouping.
+
+Repeated Retire behavior:
+
+- already `RETIRED` assets cannot be retired again;
+- repeated Retire is rejected through a safe conflict/business-rule guard;
+- repeated Retire does not append duplicate `RETIRE` facts;
+- repeated Retire does not emit duplicate `RETIRE` audit events.
+
+Frontend exposure:
+
+- Retire is exposed only inside selected Asset Actions;
+- user-facing action label:
+  - `Списать актив`;
+- confirmation makes clear that this is not deletion;
+- Retire action is hidden or disabled for read-only users;
+- Retire action is hidden or disabled for already `RETIRED` assets.
+
+Preserved boundaries:
+
+- no `DELETE /api/v1/assets/{id}`;
+- no hard delete;
+- no archive / hide;
+- no correction delete;
+- no bulk retire;
+- no recovery / unretire;
+- no ordinary PATCH status transition;
+- no generic status editor;
+- no DB/migration change;
+- no new endpoint;
+- no new role model;
+- no auth/IAM expansion;
+- no workflow engine;
+- no approval workflow;
+- no cross-service orchestration;
+- no inventory/warehouse movement semantics.
+
+Preserved UI surfaces:
+
+- Unified Create unchanged;
+- Employee Sheet / `Информационный лист` unchanged;
+- Quick Find unchanged;
+- Technical Search unchanged;
+- Asset Overview unchanged;
+- generic master-record edit unchanged;
+- Setup/Admin unchanged.
+
+Implementation scope:
+
+- bounded backend/API lifecycle exposure;
+- bounded selected-asset frontend action;
+- API tests updated;
+- static UI smoke coverage updated;
 - no Documentation change during implementation;
 - no build/package change.
 
