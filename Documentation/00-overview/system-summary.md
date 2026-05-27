@@ -2740,3 +2740,122 @@ It does not prove:
 - production readiness;
 - real tenant validation;
 - real day-to-day operational validation.
+
+## Current Baseline Update — Recovery / Unarchive Lifecycle Visibility Closeout
+
+Recovery / Unarchive Lifecycle Visibility has been implemented and accepted as a bounded visibility reversal for archived retired assets.
+
+The implementation adds a dedicated Unarchive command:
+
+- `POST /api/v1/assets/{id}/unarchive`
+
+Accepted semantics:
+
+- Unarchive is a visibility reversal command;
+- Unarchive is not restore-to-ACTIVE;
+- Unarchive is not reactivation;
+- Unarchive is not Retire rollback;
+- Unarchive is not assignment restoration;
+- Unarchive is not location restoration;
+- Unarchive is not Correction Delete;
+- Unarchive is not hard delete;
+- Unarchive is not ordinary PATCH;
+- Unarchive is not generic status editing.
+
+Accepted eligibility:
+
+- Unarchive is allowed only for assets with `status = RETIRED`;
+- Unarchive is allowed only when `archived_at IS NOT NULL`;
+- Unarchive is rejected for `ACTIVE` assets;
+- Unarchive is rejected for non-archived assets;
+- Unarchive uses the existing asset mutate/lifecycle authorization cutline;
+- read-only actors remain forbidden;
+- no new role model was introduced;
+- no auth/IAM expansion was introduced.
+
+Accepted Unarchive behavior:
+
+- `archived_at` is cleared;
+- `status` remains `RETIRED`;
+- `assigned_user_id` is not restored;
+- `assigned_user_id` is not changed;
+- `location_id` is preserved;
+- no responsibility fact is appended;
+- one `UNARCHIVE` audit event is emitted;
+- Asset record remains readable;
+- responsibility history remains preserved;
+- audit history remains preserved.
+
+Repeated Unarchive behavior:
+
+- already non-archived assets cannot be unarchived again;
+- repeated Unarchive is rejected through a safe conflict/business-rule guard;
+- repeated Unarchive does not emit duplicate `UNARCHIVE` audit events;
+- repeated Unarchive does not append responsibility facts.
+
+Accepted list/detail/search behavior:
+
+- default `GET /api/v1/assets` includes the unarchived retired asset again;
+- `GET /api/v1/assets?visibility=archived` no longer includes the unarchived asset;
+- `GET /api/v1/assets/{id}` remains readable before and after Unarchive;
+- Quick Find can include the asset again only through refreshed default loaded state;
+- Technical Search can include the asset again only after `archived_at` is null and the query matches;
+- Employee Sheet still does not include the asset because assignment is not restored.
+
+Accepted frontend exposure:
+
+- Unarchive action is exposed only inside selected Asset Actions;
+- Unarchive action is placed in the lifecycle block;
+- user-facing action label:
+  - `Разархивировать актив`;
+- confirmation copy states this is not restoration to operation.
+
+Preserved boundaries:
+
+- no restore to `ACTIVE`;
+- no reactivation;
+- no previous assignee restoration;
+- no assignment restoration;
+- no location restoration;
+- no Retire rollback;
+- no inventory/warehouse movement;
+- no `DELETE /api/v1/assets/{id}`;
+- no hard delete;
+- no Correction Delete;
+- no bulk unarchive;
+- no generic PATCH archive manipulation;
+- no generic status editor;
+- no workflow engine;
+- no approval workflow;
+- no new role model;
+- no auth/IAM expansion;
+- no cross-service orchestration;
+- no Employee Sheet actions;
+- no Quick Find row actions;
+- no Technical Search row actions;
+- no public lookup;
+- no employee self-service;
+- no Asset 360;
+- no reporting/dashboard dependency.
+
+Implementation scope:
+
+- bounded backend/API command;
+- bounded repository update using existing `archived_at`;
+- bounded selected-asset frontend lifecycle action;
+- API tests updated;
+- static UI smoke coverage updated;
+- no DB/migration change;
+- no Documentation change during implementation;
+- no build/package change.
+
+This remains internally validated implementation evidence only.
+
+It does not prove:
+
+- release readiness;
+- FTOV start;
+- FTOV exit;
+- production readiness;
+- real tenant validation;
+- real day-to-day operational validation.

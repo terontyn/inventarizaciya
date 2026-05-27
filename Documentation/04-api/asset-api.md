@@ -47,6 +47,7 @@ Accepted asset lifecycle command endpoints:
 - `POST /api/v1/assets/{id}/return`
 - `POST /api/v1/assets/{id}/retire`
 - `POST /api/v1/assets/{id}/archive`
+- `POST /api/v1/assets/{id}/unarchive`
 
 Accepted bounded extension endpoints:
 
@@ -242,6 +243,7 @@ Authorization:
 - return asset
 - retire asset
 - archive asset
+- unarchive asset
 
 ## Restrictions
 - `DELETE /api/v1/assets/{id}` не включается в v1;
@@ -263,8 +265,13 @@ Canonical API rules:
 - Archive is not delete, hard delete, physical erase, Correction Delete, Retire, ordinary PATCH or generic status edit.
 - Correction Delete endpoint is not approved.
 - Hard Delete endpoint is not approved.
-- Recovery / unarchive is not approved.
+- `POST /api/v1/assets/{id}/unarchive` is product-exposed as a bounded visibility reversal command for archived `RETIRED` assets only.
+- Unarchive is not restore-to-ACTIVE, reactivation, Retire rollback or assignment restoration.
 - Bulk archive is not approved.
+
+Unarchive is the accepted visibility reversal command for archived retired assets.
+
+Unarchive clears `archived_at` while preserving `status = RETIRED`, responsibility history and audit evidence.
 
 Retire remains the canonical safe lifecycle removal command.
 
@@ -284,7 +291,8 @@ Any future Correction Delete, bulk Retire, bulk Archive, recovery / unarchive or
 - error model;
 - pagination/filter parameter names;
 - Correction Delete endpoint semantics;
-- recovery / unarchive endpoint semantics;
+- restore-to-ACTIVE endpoint semantics;
+- bulk unarchive endpoint semantics;
 - bulk archive endpoint semantics;
 - final history storage schema;
 - отдельная canonical entity/table `AssetReturn`;
@@ -294,7 +302,8 @@ Any future Correction Delete, bulk Retire, bulk Archive, recovery / unarchive or
 ## Out of Scope
 - hard delete workflow
 - bulk archive workflow
-- recovery / unarchive workflow
+- restore-to-ACTIVE workflow
+- bulk unarchive workflow
 - archive for ACTIVE assets
 - Correction Delete workflow
 - bulk command APIs
@@ -779,3 +788,104 @@ Read model:
 - `archive` не является status transition to `ARCHIVED`;
 - `archive` не выполняется через generic PATCH;
 - `archive` не доступен для `ACTIVE` assets.
+
+### 6. Unarchive
+
+#### Accepted endpoint
+
+- `POST /api/v1/assets/{id}/unarchive`
+
+#### Command intent
+
+- return an archived retired Asset from archive visibility to normal non-archived retired visibility.
+
+This is visibility reversal only.
+
+It is not restoration to operation.
+
+#### Request minimum
+
+- body minimum не фиксируется; asset identity in path is sufficient for the minimum command contract.
+
+#### Response minimum
+
+- `id`
+
+#### Accepted Unarchive semantics
+
+Unarchive is product-exposed as a bounded visibility reversal command for archived `RETIRED` assets only.
+
+Unarchive is not:
+
+- restore-to-ACTIVE;
+- reactivation;
+- Retire rollback;
+- assignment restoration;
+- previous assignee restoration;
+- location restoration;
+- Correction Delete;
+- hard delete;
+- ordinary PATCH;
+- generic status edit.
+
+Accepted Unarchive behavior:
+
+- `archived_at` is cleared;
+- `status` remains `RETIRED`;
+- `assigned_user_id` is not restored;
+- `assigned_user_id` is not changed;
+- `location_id` is preserved;
+- no responsibility fact is appended;
+- one `UNARCHIVE` audit event is emitted;
+- Asset record remains readable by id;
+- responsibility history remains preserved;
+- audit history remains preserved.
+
+Eligibility:
+
+- Unarchive is allowed only for assets with `status = RETIRED`;
+- Unarchive is allowed only when `archived_at IS NOT NULL`;
+- Unarchive is rejected for `ACTIVE` assets;
+- Unarchive is rejected for non-archived assets.
+
+Repeated Unarchive behavior:
+
+- already non-archived assets cannot be unarchived again;
+- repeated Unarchive must not emit duplicate `UNARCHIVE` audit events;
+- repeated Unarchive must not append responsibility facts;
+- repeated Unarchive is rejected through the existing project business-error / conflict style.
+
+Authorization:
+
+- Unarchive uses the existing asset mutate/lifecycle authorization cutline;
+- read-only actors remain forbidden;
+- no new role model is introduced by Unarchive exposure;
+- no auth/IAM expansion is introduced by Unarchive exposure.
+
+#### Unarchive visibility read behavior
+
+Default list after Unarchive:
+
+- `GET /api/v1/assets` returns the asset again as a non-archived retired asset.
+
+Archived discovery path after Unarchive:
+
+- `GET /api/v1/assets?visibility=archived` no longer returns the asset.
+
+Detail:
+
+- `GET /api/v1/assets/{id}` remains readable before and after Unarchive.
+
+Read model:
+
+- `archived_at` becomes `null`;
+- `status` remains `RETIRED`.
+
+#### Boundary rule
+
+- `unarchive` не является restore-to-ACTIVE workflow;
+- `unarchive` не является rollback of Retire;
+- `unarchive` не восстанавливает `assigned_user_id`;
+- `unarchive` не выполняется через generic PATCH;
+- `unarchive` не доступен для `ACTIVE` assets;
+- `unarchive` не выполняет inventory/warehouse movement.

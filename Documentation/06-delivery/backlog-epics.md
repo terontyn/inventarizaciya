@@ -668,7 +668,9 @@ The following remain not authorized:
 - Correction Delete;
 - bulk Retire;
 - bulk Archive;
-- recovery / unarchive;
+- restore-to-ACTIVE;
+- bulk Unarchive;
+- broader lifecycle recovery expansion;
 - Archive for ACTIVE assets;
 - ordinary PATCH status transition;
 - generic status editor;
@@ -1163,9 +1165,9 @@ Not approved by this note:
 - Astra Configuration Manager parity.
 
 
-### Planning priority after Archive / Hide Lifecycle Visibility
+### Planning priority after Recovery / Unarchive Lifecycle Visibility
 
-Unified Create Launcher, Simplified Asset Actions UX, ADR-0005 Asset Delete Semantics, Controlled Employee Asset Information Sheet, Operational Search v1 Frontend Quick Find, Asset QR Lite Frontend Derived Display, Asset Type-Specific Technical Attributes v1, Search over Technical Attributes, Employee Sheet Technical Attribute Exposure, Standalone Employee Information Sheet Interface, Quick Find / Technical Search Merge Semantics, Search Scope Expansion / printer_placement_note Technical Search, Retire Exposure / Safe Lifecycle Removal, and Archive / Hide Lifecycle Visibility are implemented/accepted at their approved scope levels.
+Unified Create Launcher, Simplified Asset Actions UX, ADR-0005 Asset Delete Semantics, Controlled Employee Asset Information Sheet, Operational Search v1 Frontend Quick Find, Asset QR Lite Frontend Derived Display, Asset Type-Specific Technical Attributes v1, Search over Technical Attributes, Employee Sheet Technical Attribute Exposure, Standalone Employee Information Sheet Interface, Quick Find / Technical Search Merge Semantics, Search Scope Expansion / printer_placement_note Technical Search, Retire Exposure / Safe Lifecycle Removal, Archive / Hide Lifecycle Visibility, and Recovery / Unarchive Lifecycle Visibility are implemented/accepted at their approved scope levels.
 
 Standalone Employee Information Sheet Interface is accepted as:
 
@@ -1256,6 +1258,39 @@ Archive / Hide Lifecycle Visibility is accepted as:
 - no generic status editor;
 - no bulk archive;
 - no recovery / unarchive.
+
+Recovery / Unarchive Lifecycle Visibility is accepted as:
+
+- a bounded visibility reversal capability for archived retired assets;
+- dedicated endpoint:
+  - `POST /api/v1/assets/{id}/unarchive`;
+- uses existing persisted visibility field:
+  - `archived_at`;
+- allowed only for archived `RETIRED` assets;
+- rejected for `ACTIVE` assets;
+- rejected for non-archived assets;
+- clears `archived_at`;
+- `status` remains `RETIRED`;
+- Unarchive does not restore `assigned_user_id`;
+- Unarchive does not change `assigned_user_id`;
+- Unarchive preserves `location_id`;
+- Unarchive does not append responsibility facts;
+- Unarchive emits one `UNARCHIVE` audit event;
+- repeated Unarchive is guarded;
+- default asset list includes the asset again after Unarchive;
+- archive discovery list excludes the asset after Unarchive;
+- selected Asset Actions lifecycle UI only;
+- user-facing action:
+  - `Разархивировать актив`;
+- no restore-to-ACTIVE;
+- no reactivation;
+- no Retire rollback;
+- no assignment restoration;
+- no hard delete;
+- no Correction Delete;
+- no generic PATCH archive manipulation;
+- no generic status editor;
+- no bulk unarchive.
 
 Employee Sheet Technical Attribute Exposure is accepted as:
 
@@ -1969,6 +2004,116 @@ Required next step:
 - if owner wants bulk archive, open a separate bulk-action decision gate;
 - if owner wants Archive for ACTIVE assets, open a separate lifecycle visibility decision gate;
 - if owner wants archive-aware global search, advanced filters, reporting/dashboard, Asset 360, public lookup or employee self-service, open separate product/architecture decision first;
+- otherwise continue to the next owner-selected bounded feature gate or the deferred integrated stabilization / verification gate.
+
+This backlog closeout does not prove release readiness, FTOV start, FTOV exit, production readiness, real tenant validation, or real day-to-day operational validation.
+
+#### Recovery / Unarchive Lifecycle Visibility
+
+Status: implemented and accepted as bounded visibility reversal for archived retired assets.
+
+Intent:
+
+- allow archived retired assets to return from archive visibility to normal non-archived retired visibility;
+- preserve Asset record, responsibility history and audit evidence;
+- keep Unarchive separate from restore-to-ACTIVE;
+- avoid reactivation, Retire rollback, assignment restoration, hard delete, Correction Delete, generic PATCH archive manipulation or generic status editing.
+
+Accepted implementation:
+
+- added dedicated command endpoint:
+  - `POST /api/v1/assets/{id}/unarchive`;
+- uses existing archive visibility field:
+  - `archived_at`;
+- no DB migration was added;
+- added `UNARCHIVE` audit action;
+- reused existing asset mutate/lifecycle authorization cutline;
+- read-only actors remain forbidden;
+- no new role model was introduced;
+- no auth/IAM expansion was introduced;
+- UI action added only inside selected Asset Actions lifecycle block;
+- action label:
+  - `Разархивировать актив`;
+- confirmation copy explains that this is not restoration to operation;
+- API tests updated;
+- static UI smoke coverage updated.
+
+Accepted Unarchive behavior:
+
+- only archived assets with `status = RETIRED` can be unarchived;
+- `ACTIVE` assets cannot be unarchived;
+- non-archived assets cannot be unarchived;
+- `archived_at` is cleared on successful Unarchive;
+- `status` remains `RETIRED`;
+- `assigned_user_id` is not restored;
+- `assigned_user_id` is not changed;
+- current `location_id` is preserved;
+- no responsibility fact is appended for Unarchive;
+- one `UNARCHIVE` audit event is emitted;
+- Asset record remains readable by id;
+- responsibility history remains preserved;
+- audit history remains preserved.
+
+Repeated Unarchive behavior:
+
+- already non-archived assets cannot be unarchived again;
+- repeated Unarchive returns safe conflict/business-rule rejection;
+- repeated Unarchive does not emit duplicate `UNARCHIVE` audit events;
+- repeated Unarchive does not append responsibility facts.
+
+Accepted visibility behavior:
+
+- default `GET /api/v1/assets` includes the asset again after Unarchive;
+- `GET /api/v1/assets?visibility=archived` excludes the asset after Unarchive;
+- archived and unarchived assets remain readable by `GET /api/v1/assets/{id}`;
+- Quick Find can include the asset again through refreshed default loaded state;
+- Technical Search can include the asset again after `archived_at` is null;
+- Employee Sheet still does not include the asset because assignment is not restored;
+- Employee Sheet does not expose Unarchive actions.
+
+Preserved boundaries:
+
+- no restore to `ACTIVE`;
+- no reactivation;
+- no Retire rollback;
+- no previous assignee restoration;
+- no assignment restoration;
+- no location restoration;
+- no inventory/warehouse movement;
+- no `DELETE /api/v1/assets/{id}`;
+- no hard delete;
+- no Correction Delete;
+- no bulk unarchive;
+- no destructive erase;
+- no generic PATCH archive manipulation;
+- no generic status editor;
+- no workflow engine;
+- no approval workflow;
+- no cross-service orchestration;
+- no employee self-service;
+- no public lookup;
+- no Asset 360;
+- no reporting/dashboard dependency.
+
+Preserved UI boundaries:
+
+- Unified Create unchanged;
+- Employee Sheet / `Информационный лист` unchanged;
+- Quick Find result rows unchanged;
+- Technical Search result rows unchanged;
+- Asset Overview unchanged as a primary action surface;
+- generic master-record edit unchanged;
+- Setup/Admin unchanged;
+- asset list rows unchanged as direct action surfaces;
+- tree rows unchanged as direct action surfaces.
+
+Required next step:
+
+- no further Recovery / Unarchive implementation is opened by this closeout;
+- if owner wants restore-to-ACTIVE, open a separate lifecycle reactivation decision gate;
+- if owner wants assignment restoration, open a separate responsibility lifecycle decision gate;
+- if owner wants bulk unarchive, open a separate bulk-action decision gate;
+- if owner wants Correction Delete, open a separate strict correction-delete decision gate;
 - otherwise continue to the next owner-selected bounded feature gate or the deferred integrated stabilization / verification gate.
 
 This backlog closeout does not prove release readiness, FTOV start, FTOV exit, production readiness, real tenant validation, or real day-to-day operational validation.

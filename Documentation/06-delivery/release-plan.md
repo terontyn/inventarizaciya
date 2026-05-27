@@ -3501,3 +3501,136 @@ This closeout does not prove:
 The project remains in:
 
 **Project Stabilization / First-Adopter-Gated Hold**
+
+## Recovery / Unarchive Lifecycle Visibility Closeout Clarification
+
+Recovery / Unarchive Lifecycle Visibility is accepted as completed at its approved bounded scope.
+
+### Delivery interpretation
+
+This implementation is accepted as:
+
+**bounded visibility reversal for archived retired assets.**
+
+It adds Unarchive as a command that clears archive visibility without restoring the asset to active operation.
+
+It does not open restore-to-ACTIVE, reactivation, Retire rollback, assignment restoration, hard delete, Correction Delete, bulk unarchive or generic status editing.
+
+### Accepted scope
+
+Implemented scope:
+
+- added dedicated endpoint:
+  - `POST /api/v1/assets/{id}/unarchive`;
+- used existing `archived_at` field;
+- no DB migration was added;
+- added `UNARCHIVE` audit action;
+- used existing asset mutate/lifecycle authorization cutline;
+- preserved read-only restrictions;
+- allowed Unarchive only for archived `RETIRED` assets;
+- rejected Unarchive for `ACTIVE` assets;
+- rejected Unarchive for non-archived assets;
+- preserved response shape:
+  - `{ id }`;
+- updated default / archived list behavior through existing archive predicates;
+- kept detail-by-id readable;
+- added selected Asset Actions lifecycle UI action;
+- updated API tests;
+- updated static UI smoke coverage.
+
+### Unarchive behavior
+
+For eligible archived retired assets, Unarchive:
+
+- clears `archived_at`;
+- keeps `status = RETIRED`;
+- does not restore `assigned_user_id`;
+- does not change `assigned_user_id`;
+- preserves `location_id`;
+- does not append responsibility facts;
+- emits one `UNARCHIVE` audit event;
+- preserves Asset record visibility;
+- preserves responsibility history and audit evidence.
+
+### Repeated Unarchive behavior
+
+Already non-archived assets cannot be unarchived again.
+
+Repeated Unarchive:
+
+- returns a safe conflict/business-rule rejection;
+- does not emit duplicate `UNARCHIVE` audit events;
+- does not append responsibility facts.
+
+### List/detail/search behavior
+
+Accepted behavior:
+
+- default `GET /api/v1/assets` includes the asset again after Unarchive;
+- `GET /api/v1/assets?visibility=archived` excludes the asset after Unarchive;
+- `GET /api/v1/assets/{id}` remains readable before and after Unarchive;
+- Quick Find can include the asset again through refreshed default loaded state;
+- Technical Search can include the asset again only after `archived_at` is null and the query matches;
+- Employee Sheet still does not include the asset because assignment is not restored.
+
+### Frontend behavior
+
+Unarchive is exposed only as:
+
+- selected Asset;
+- Actions tab;
+- lifecycle block/action:
+  - `Разархивировать актив`.
+
+Confirmation copy makes clear:
+
+- the asset will appear again in working lists as a retired asset;
+- the record remains preserved;
+- responsibility history remains preserved;
+- audit remains preserved;
+- this is not restoration to operation.
+
+### Preserved boundaries
+
+This implementation preserves:
+
+- no restore to `ACTIVE`;
+- no reactivation;
+- no previous assignee restoration;
+- no assignment restoration;
+- no location restoration;
+- no Retire rollback;
+- no inventory/warehouse movement;
+- no `DELETE /api/v1/assets/{id}`;
+- no hard delete;
+- no Correction Delete;
+- no bulk unarchive;
+- no generic PATCH archive manipulation;
+- no generic status editor;
+- no workflow engine;
+- no approval workflow;
+- no new role model;
+- no auth/IAM expansion;
+- no cross-service orchestration;
+- no Employee Sheet actions;
+- no Quick Find row actions;
+- no Technical Search row actions;
+- no public lookup;
+- no employee self-service;
+- no Asset 360;
+- no reporting/dashboard dependency.
+
+### Non-claim rule
+
+This closeout does not prove:
+
+- release readiness;
+- FTOV start;
+- FTOV exit;
+- production readiness;
+- real tenant validation;
+- real day-to-day operational validation.
+
+The project remains in:
+
+**Project Stabilization / First-Adopter-Gated Hold**
