@@ -65,6 +65,13 @@ const ASSET_GROUPS = {
     ARCHIVED: "archived"
 };
 
+const ASSET_FILTER_MODES = {
+    ALL: "all",
+    ASSIGNED: "assigned",
+    UNASSIGNED: "unassigned",
+    RETIRED: "retired"
+};
+
 const CREATE_TARGETS = {
     asset: { label: "Актив / устройство" },
     user: { label: "Пользователь", resource: "users" },
@@ -361,6 +368,14 @@ function createEmptyBusyState() {
     };
 }
 
+function createDefaultAssetFilters() {
+    return {
+        mode: ASSET_FILTER_MODES.ALL,
+        type: "",
+        locationId: ""
+    };
+}
+
 const state = {
     context: {
         tenantId: "",
@@ -397,6 +412,7 @@ const state = {
     selectedTreeNode: { type: TREE_NODE_TYPES.WORKSPACE },
     expandedTreeNodes: new Set(),
     treeFilter: "",
+    assetFilters: createDefaultAssetFilters(),
     quickFindQuery: "",
     employeeSheetSearchQuery: "",
     employeeSheetSelectedUserId: "",
@@ -636,6 +652,7 @@ function bindStaticEvents() {
     ui.workspaceTreeBody?.addEventListener("click", onTreeClick);
     ui.workspaceDetail?.addEventListener("click", onWorkspaceDetailClick);
     ui.workspaceDetail?.addEventListener("input", onWorkspaceDetailInput);
+    ui.workspaceDetail?.addEventListener("change", onWorkspaceDetailChange);
     ui.workspaceDetail?.addEventListener("submit", onWorkspaceDetailSubmit);
     ui.screenNav?.addEventListener("click", onScreenNavClick);
     ui.workspaceOverview?.addEventListener("click", onScreenNavClick);
@@ -772,6 +789,7 @@ function clearSession() {
     state.selectedTreeNode = { type: TREE_NODE_TYPES.WORKSPACE };
     state.expandedTreeNodes = new Set();
     state.treeFilter = "";
+    state.assetFilters = createDefaultAssetFilters();
     state.quickFindQuery = "";
     state.employeeSheetSearchQuery = "";
     state.employeeSheetSelectedUserId = "";
@@ -1928,6 +1946,7 @@ function openCreateTarget(target) {
 
 function openAssetCreateTarget() {
     state.selectedTreeNode = { type: TREE_NODE_TYPES.ASSET_GROUP, group: ASSET_GROUPS.UNASSIGNED };
+    state.assetFilters.mode = ASSET_FILTER_MODES.UNASSIGNED;
     state.expandedTreeNodes.add(TREE_GROUPS.ALL_ASSETS);
     render();
 
@@ -2245,6 +2264,20 @@ function onWorkspaceDetailClick(event) {
         return;
     }
 
+    const assetFilterMode = event.target.closest("[data-asset-filter-mode]");
+    if (assetFilterMode) {
+        state.assetFilters.mode = assetFilterMode.dataset.assetFilterMode || ASSET_FILTER_MODES.ALL;
+        render();
+        return;
+    }
+
+    const assetFilterReset = event.target.closest("[data-asset-filter-reset]");
+    if (assetFilterReset) {
+        resetAssetFilters();
+        render();
+        return;
+    }
+
     const employeeSheetResult = event.target.closest("[data-standalone-employee-id]");
     if (employeeSheetResult) {
         selectStandaloneEmployeeSheetUser(employeeSheetResult.dataset.standaloneEmployeeId);
@@ -2322,6 +2355,19 @@ function onWorkspaceDetailInput(event) {
     focusEmployeeSheetSearchInput();
 }
 
+function onWorkspaceDetailChange(event) {
+    if (event.target.matches("[data-asset-filter-type]")) {
+        state.assetFilters.type = event.target.value || "";
+        render();
+        return;
+    }
+
+    if (event.target.matches("[data-asset-filter-location]")) {
+        state.assetFilters.locationId = event.target.value || "";
+        render();
+    }
+}
+
 function onWorkspaceDetailSubmit(event) {
     const form = event.target.closest("form");
     if (!form) {
@@ -2391,7 +2437,11 @@ function selectTreeNodeFromElement(element) {
     } else if (type === TREE_NODE_TYPES.LOCATION) {
         state.selectedTreeNode = { type, id: element.dataset.locationId || "" };
     } else if (type === TREE_NODE_TYPES.ASSET_GROUP) {
-        state.selectedTreeNode = { type, group: element.dataset.group || ASSET_GROUPS.ASSIGNED };
+        const group = element.dataset.group || ASSET_GROUPS.ASSIGNED;
+        state.selectedTreeNode = { type, group };
+        if (group !== ASSET_GROUPS.ARCHIVED) {
+            state.assetFilters.mode = assetGroupToFilterMode(group);
+        }
     } else if (type === TREE_NODE_TYPES.SETUP) {
         state.activeAdminResource = element.dataset.resource || "roles";
         state.selectedAdminItemId = null;
@@ -3732,14 +3782,76 @@ function renderLocationDetail(locationId) {
     `;
 }
 
+function renderAssetFiltersPanel(filteredAssets) {
+    const filters = state.assetFilters || createDefaultAssetFilters();
+    const typeOptions = getAssetTypeFilterOptions();
+    const locationOptions = getAssetLocationFilterOptions();
+    const shownCount = filteredAssets.length;
+    const totalCount = state.assets.length;
+
+    return `
+        <section class="asset-filter-panel" aria-label="Фильтр активов">
+            <div class="panel-heading asset-filter-heading">
+                <div>
+                    <p class="section-kicker">Реестр активов</p>
+                    <h3>Фильтр активов</h3>
+                </div>
+                <span class="summary-pill">${escapeHtml(String(shownCount))} / ${escapeHtml(String(totalCount))}</span>
+            </div>
+            <p class="asset-filter-help">Фильтры применяются только к уже загруженной рабочей выборке активов. Архив остаётся отдельным разделом.</p>
+            <div class="asset-filter-modes local-tabs" role="group" aria-label="Рабочая выборка активов">
+                ${renderAssetFilterModeButton(ASSET_FILTER_MODES.ALL, "Все рабочие")}
+                ${renderAssetFilterModeButton(ASSET_FILTER_MODES.ASSIGNED, "Назначенные")}
+                ${renderAssetFilterModeButton(ASSET_FILTER_MODES.UNASSIGNED, "Неназначенные")}
+                ${renderAssetFilterModeButton(ASSET_FILTER_MODES.RETIRED, "Списанные")}
+            </div>
+            <div class="asset-filter-controls">
+                <label class="field asset-filter-field">
+                    <span>Тип</span>
+                    <select data-asset-filter-type>
+                        <option value="" ${filters.type ? "" : "selected"}>Все типы</option>
+                        ${typeOptions.map((type) => `
+                            <option value="${escapeAttribute(type)}" ${filters.type === type ? "selected" : ""}>${escapeHtml(type)}</option>
+                        `).join("")}
+                    </select>
+                </label>
+                <label class="field asset-filter-field">
+                    <span>Локация</span>
+                    <select data-asset-filter-location>
+                        <option value="" ${filters.locationId ? "" : "selected"}>Все локации</option>
+                        ${locationOptions.map((location) => `
+                            <option value="${escapeAttribute(location.value)}" ${filters.locationId === location.value ? "selected" : ""}>${escapeHtml(location.label)}</option>
+                        `).join("")}
+                    </select>
+                </label>
+                <button class="button button-ghost asset-filter-reset" type="button" data-asset-filter-reset>Сбросить фильтры</button>
+            </div>
+        </section>
+    `;
+}
+
+function renderAssetFilterModeButton(mode, label) {
+    const active = (state.assetFilters?.mode || ASSET_FILTER_MODES.ALL) === mode;
+    return `
+        <button
+            class="local-tab ${active ? "is-active" : ""}"
+            type="button"
+            data-asset-filter-mode="${escapeAttribute(mode)}"
+            aria-pressed="${active ? "true" : "false"}"
+        >${escapeHtml(label)}</button>
+    `;
+}
+
 function renderAllAssetsGroupDetail(groupKey) {
     const group = getAllAssetGroups().find((item) => item.key === groupKey) || getAllAssetGroups()[0];
-    const title = group ? group.label : "Все активы";
-    const assets = group ? group.assets : [];
     const archiveView = group?.key === ASSET_GROUPS.ARCHIVED;
+    const assets = archiveView ? (group ? group.assets : []) : getFilteredWorkingAssets();
+    const title = archiveView
+        ? group.label
+        : getAssetFilterModeLabel(state.assetFilters?.mode || ASSET_FILTER_MODES.ALL);
     const headerCopy = archiveView
         ? "Архив показывает уже скрытые из рабочих списков активы без восстановления и без действий в строках."
-        : "Fallback-группа построена только из уже загруженного списка активов.";
+        : "Рабочая выборка строится только из уже загруженных рабочих активов. Архив остаётся отдельным разделом.";
 
     return `
         <div class="stack">
@@ -3750,7 +3862,14 @@ function renderAllAssetsGroupDetail(groupKey) {
                 ${renderSummaryCard("Без локации", escapeHtml(String(state.assets.filter((asset) => !asset.location_id).length)), "Активы без location_id не скрываются.")}
             </div>
             ${canAssetMutate() && !archiveView ? renderAssetCreatePanelMarkup() : ""}
-            ${renderAssetList(assets, { empty: "В этой группе нет активов из загруженного реестра.", source: "all", group: group?.key || "" })}
+            ${archiveView ? "" : renderAssetFiltersPanel(assets)}
+            ${renderAssetList(assets, {
+                empty: archiveView
+                    ? "В этой группе нет активов из загруженного реестра."
+                    : "По выбранным фильтрам нет активов в загруженной рабочей выборке.",
+                source: "all",
+                group: archiveView ? group?.key || "" : state.assetFilters?.mode || ASSET_FILTER_MODES.ALL
+            })}
         </div>
     `;
 }
@@ -4351,6 +4470,88 @@ function getAllAssetGroups() {
     });
 
     return groups;
+}
+
+function assetGroupToFilterMode(groupKey) {
+    if (groupKey === ASSET_GROUPS.ASSIGNED) {
+        return ASSET_FILTER_MODES.ASSIGNED;
+    }
+    if (groupKey === ASSET_GROUPS.UNASSIGNED) {
+        return ASSET_FILTER_MODES.UNASSIGNED;
+    }
+    if (groupKey === ASSET_GROUPS.RETIRED) {
+        return ASSET_FILTER_MODES.RETIRED;
+    }
+    return ASSET_FILTER_MODES.ALL;
+}
+
+function resetAssetFilters() {
+    state.assetFilters = createDefaultAssetFilters();
+}
+
+function getAssetFilterModeLabel(mode) {
+    const labels = {
+        [ASSET_FILTER_MODES.ALL]: "Все рабочие",
+        [ASSET_FILTER_MODES.ASSIGNED]: "Назначенные",
+        [ASSET_FILTER_MODES.UNASSIGNED]: "Неназначенные",
+        [ASSET_FILTER_MODES.RETIRED]: "Списанные"
+    };
+    return labels[mode] || labels[ASSET_FILTER_MODES.ALL];
+}
+
+function getFilteredWorkingAssets() {
+    const filters = state.assetFilters || createDefaultAssetFilters();
+    return state.assets.filter((asset) => {
+        if (filters.mode === ASSET_FILTER_MODES.ASSIGNED && !asset.assigned_user_id) {
+            return false;
+        }
+        if (filters.mode === ASSET_FILTER_MODES.UNASSIGNED && asset.assigned_user_id) {
+            return false;
+        }
+        if (filters.mode === ASSET_FILTER_MODES.RETIRED && String(asset.status || "").toUpperCase() !== "RETIRED") {
+            return false;
+        }
+        if (filters.type && String(asset.asset_type || "").trim() !== filters.type) {
+            return false;
+        }
+        if (filters.locationId && String(asset.location_id || "") !== filters.locationId) {
+            return false;
+        }
+        return true;
+    });
+}
+
+function getAssetTypeFilterOptions() {
+    return Array.from(new Set(
+        state.assets
+            .map((asset) => String(asset.asset_type || "").trim())
+            .filter(Boolean)
+    )).sort((left, right) => left.localeCompare(right, "ru-RU"));
+}
+
+function getAssetLocationFilterOptions() {
+    return Array.from(new Set(
+        state.assets
+            .map((asset) => String(asset.location_id || ""))
+            .filter(Boolean)
+    ))
+        .map((value) => ({ value, label: resolveAssetFilterLocationLabel(value) }))
+        .sort((left, right) => left.label.localeCompare(right.label, "ru-RU"));
+}
+
+function resolveAssetFilterLocationLabel(locationId) {
+    if (!locationId) {
+        return "Локация не указана";
+    }
+    if (!canReferenceRead()) {
+        return shortenTechnicalValue(locationId);
+    }
+    const location = state.references.locations.find((item) => item.id === locationId);
+    if (!location) {
+        return shortenTechnicalValue(locationId);
+    }
+    const branchName = resolveBranchName(location.branch_id);
+    return `${location.name || shortenTechnicalValue(location.id)}${branchName && branchName !== "-" ? `, ${branchName}` : ""}`;
 }
 
 function hasRetiredStatusSupport() {

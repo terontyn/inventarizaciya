@@ -2103,6 +2103,42 @@ code {
     background: var(--accent);
 }
 
+.asset-filter-panel {
+    display: grid;
+    gap: 0.75rem;
+    padding: 0.85rem;
+    border: 1px solid rgba(15, 118, 110, 0.14);
+    border-radius: var(--radius-sm);
+    background: rgba(240, 253, 250, 0.52);
+}
+
+.asset-filter-heading {
+    margin-bottom: 0;
+}
+
+.asset-filter-help {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.86rem;
+    line-height: 1.45;
+}
+
+.asset-filter-controls {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) auto;
+    gap: 0.65rem;
+    align-items: end;
+}
+
+.asset-filter-field {
+    margin: 0;
+}
+
+.asset-filter-reset {
+    align-self: end;
+    white-space: nowrap;
+}
+
 .asset-section {
     display: grid;
     gap: 1rem;
@@ -2380,8 +2416,14 @@ code {
     .overview-grid,
     .workspace-path-grid,
     .action-grid,
+    .asset-filter-controls,
     .employee-sheet-search-result {
         grid-template-columns: 1fr;
+    }
+
+    .asset-filter-reset {
+        justify-self: start;
+        white-space: normal;
     }
 
     .employee-sheet-result-count {

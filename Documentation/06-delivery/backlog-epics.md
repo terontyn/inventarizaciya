@@ -1166,9 +1166,9 @@ Not approved by this note:
 - Astra Configuration Manager parity.
 
 
-### Planning priority after Recovery / Unarchive Lifecycle Visibility
+### Planning priority after Advanced Asset List Filters
 
-Unified Create Launcher, Simplified Asset Actions UX, ADR-0005 Asset Delete Semantics, Controlled Employee Asset Information Sheet, Operational Search v1 Frontend Quick Find, Asset QR Lite Frontend Derived Display, Asset Type-Specific Technical Attributes v1, Search over Technical Attributes, Employee Sheet Technical Attribute Exposure, Standalone Employee Information Sheet Interface, Quick Find / Technical Search Merge Semantics, Search Scope Expansion / printer_placement_note Technical Search, Retire Exposure / Safe Lifecycle Removal, Archive / Hide Lifecycle Visibility, and Recovery / Unarchive Lifecycle Visibility are implemented/accepted at their approved scope levels.
+Unified Create Launcher, Simplified Asset Actions UX, ADR-0005 Asset Delete Semantics, Controlled Employee Asset Information Sheet, Operational Search v1 Frontend Quick Find, Asset QR Lite Frontend Derived Display, Asset Type-Specific Technical Attributes v1, Search over Technical Attributes, Employee Sheet Technical Attribute Exposure, Standalone Employee Information Sheet Interface, Quick Find / Technical Search Merge Semantics, Search Scope Expansion / printer_placement_note Technical Search, Retire Exposure / Safe Lifecycle Removal, Archive / Hide Lifecycle Visibility, Recovery / Unarchive Lifecycle Visibility, Search Scope Expansion / Asset Note Search, and Advanced Asset List Filters are implemented/accepted at their approved scope levels.
 
 Standalone Employee Information Sheet Interface is accepted as:
 
@@ -1294,6 +1294,72 @@ Recovery / Unarchive Lifecycle Visibility is accepted as:
 - no generic status editor;
 - no bulk unarchive.
 
+Search Scope Expansion / Asset Note Search is accepted as:
+
+- a bounded frontend-only Quick Find scope expansion;
+- local matching against `asset.note`;
+- uses already loaded authorized frontend state only;
+- searches only `state.assets`;
+- does not search `state.archivedAssets`;
+- no backend/API endpoint;
+- no DB migration;
+- no DTO/list expansion;
+- raw note text is not displayed in result rows;
+- note snippets are not displayed;
+- note highlighting is not added;
+- accepted marker:
+  - `Совпадение по комментарию`;
+- result rows remain read-only navigation rows;
+- Technical Search remains unchanged;
+- Technical Search remains technical-attribute-only;
+- Employee Sheet remains unchanged;
+- Employee Sheet does not search or display asset `note`;
+- no global search;
+- no advanced filters;
+- no saved views;
+- no public lookup;
+- no employee self-service.
+
+Advanced Asset List Filters is accepted as:
+
+- a bounded frontend-only working asset list filtering refinement;
+- local filters over already loaded `state.assets`;
+- does not use `state.archivedAssets` as a filter source;
+- keeps `Архив` as a separate discovery path;
+- no backend/API endpoint;
+- no DB migration;
+- no DTO/list expansion;
+- no server-side filtering;
+- no saved views;
+- no persistent preferences;
+- no `localStorage`;
+- filtered rows remain read-only navigation rows;
+- no lifecycle row actions;
+- no bulk actions.
+
+Accepted filters:
+
+- `Все рабочие`;
+- `Назначенные`;
+- `Неназначенные`;
+- `Списанные`;
+- `Тип`;
+- `Локация`;
+- `Сбросить фильтры`.
+
+Preserved boundaries:
+
+- Quick Find remains separate;
+- Technical Search remains separate;
+- asset note matching remains only Quick Find behavior;
+- no technical attribute filtering;
+- no global search;
+- no advanced query language;
+- no reporting/dashboard;
+- no Asset 360;
+- no public lookup;
+- no employee self-service.
+
 Employee Sheet Technical Attribute Exposure is accepted as:
 
 - backend/API tenant-scoped Employee Sheet technical hints endpoint;
@@ -1317,7 +1383,8 @@ The next stage should be the next owner-selected bounded feature gate or the def
 
 Possible optional branches:
 
-- `Search Scope Expansion Decision Gate` for asset `note` only;
+- separate search decision gates only for broader backend/global search, advanced filters, saved views, archived note search, audit/history search or arbitrary field search;
+- separate filter/search decision gates only for backend filtering, saved views, persistent preferences, advanced filters, archived asset filters, technical attribute filters, global search, reporting/dashboard or Asset 360;
 - separate product/architecture gates for global search, advanced filters, reporting/dashboard, discovery/scanner, employee self-service, export/PDF/print or Asset 360.
 
 Do not open these branches implicitly.
@@ -2118,6 +2185,169 @@ Required next step:
 - if owner wants assignment restoration, open a separate responsibility lifecycle decision gate;
 - if owner wants bulk unarchive, open a separate bulk-action decision gate;
 - if owner wants Correction Delete, open a separate strict correction-delete decision gate;
+- otherwise continue to the next owner-selected bounded feature gate or the deferred integrated stabilization / verification gate.
+
+This backlog closeout does not prove release readiness, FTOV start, FTOV exit, production readiness, real tenant validation, or real day-to-day operational validation.
+
+#### Search Scope Expansion / Asset Note Search
+
+Status: implemented and accepted as bounded frontend-only Quick Find note matching.
+
+Intent:
+
+- allow managed workspace users to find assets by existing operational `note` context;
+- keep note search inside already authorized loaded workspace state;
+- avoid raw free-text exposure in result rows;
+- preserve Technical Search as technical-attribute-only;
+- avoid backend/global search, advanced filters, saved views, public lookup or employee self-service.
+
+Accepted implementation:
+
+- added local Quick Find matching against `asset.note`;
+- implementation is frontend-only;
+- uses already loaded authorized frontend state only;
+- searches only `state.assets`;
+- does not search `state.archivedAssets`;
+- no backend/API endpoint was added;
+- no DB migration was added;
+- no DTO/list expansion was added;
+- static UI smoke coverage was updated.
+
+Accepted result behavior:
+
+- asset can match Quick Find query by `note`;
+- result row remains read-only navigation only;
+- clicking opens existing selected Asset detail;
+- raw note text is not displayed;
+- note snippets are not displayed;
+- note highlighting is not added;
+- accepted marker:
+  - `Совпадение по комментарию`.
+
+Preserved boundaries:
+
+- Quick Find remains loaded-state workspace search;
+- Technical Search remains unchanged;
+- Technical Search remains technical-attribute-only;
+- asset `note` is not added to Technical Search;
+- Employee Sheet remains unchanged;
+- Employee Sheet does not search or display asset `note`;
+- archived asset notes are not searched through Quick Find;
+- Archive discovery path remains separate;
+- no backend/API note search endpoint;
+- no global search;
+- no Elasticsearch;
+- no advanced filters;
+- no saved views;
+- no persistent preferences;
+- no reporting/dashboard;
+- no Asset 360;
+- no public lookup;
+- no employee self-service;
+- no audit/history search;
+- no QR search;
+- no arbitrary field search;
+- no user-service data search;
+- no new role model;
+- no auth/IAM expansion;
+- no BFF/UI backend.
+
+Required next step:
+
+- no further Asset Note Search implementation is opened by this closeout;
+- if owner wants backend note search, open a separate backend/API search decision gate;
+- if owner wants archived note search, open a separate archive-aware search decision gate;
+- if owner wants note snippets or raw note result display, open a separate privacy/redaction decision gate;
+- if owner wants global search, advanced filters, saved views, reporting/dashboard, Asset 360, public lookup or employee self-service, open separate product/architecture decision first;
+- otherwise continue to the next owner-selected bounded feature gate or the deferred integrated stabilization / verification gate.
+
+This backlog closeout does not prove release readiness, FTOV start, FTOV exit, production readiness, real tenant validation, or real day-to-day operational validation.
+
+#### Advanced Asset List Filters
+
+Status: implemented and accepted as bounded frontend-only working asset list filtering.
+
+Intent:
+
+- help operators narrow the already loaded working asset list;
+- keep filtering local to the managed workspace UI;
+- avoid backend/API filtering, saved views, advanced query language, global search or reporting scope;
+- preserve archive visibility separation;
+- preserve search surface separation.
+
+Accepted implementation:
+
+- added `Фильтр активов`;
+- implementation is frontend-only;
+- filters operate only on `state.assets`;
+- filters do not operate on `state.archivedAssets`;
+- `Архив` remains a separate discovery path;
+- filter state is in-memory UI state only;
+- no `localStorage` was added;
+- no backend/API endpoint was added;
+- no DB migration was added;
+- no DTO/list expansion was added;
+- static UI smoke coverage was updated.
+
+Accepted filters:
+
+- `Все рабочие`;
+- `Назначенные`;
+- `Неназначенные`;
+- `Списанные`;
+- `Тип`;
+- `Локация`;
+- `Сбросить фильтры`.
+
+Accepted behavior:
+
+- `Все рабочие` shows all loaded non-archived working assets;
+- `Назначенные` shows working assets with current `assigned_user_id`;
+- `Неназначенные` shows working assets without current `assigned_user_id`;
+- `Списанные` shows non-archived assets with `status = RETIRED`;
+- `Тип` uses loaded `asset_type`;
+- `Локация` uses loaded `location_id` and already loaded reference labels where available;
+- unresolved location labels fall back safely without backend lookup.
+
+Preserved boundaries:
+
+- Quick Find remains separate loaded-state text search;
+- Technical Search remains separate technical-attribute endpoint search;
+- asset note matching remains only the accepted Quick Find behavior;
+- technical attributes are not added to filters;
+- archived assets are not mixed into working filters;
+- no archive/non-archive combined filter;
+- no saved views;
+- no persistent preferences;
+- no advanced query language;
+- no global search;
+- no Elasticsearch;
+- no reporting/dashboard;
+- no Asset 360;
+- no public lookup;
+- no employee self-service;
+- no BFF/UI backend;
+- no new role model;
+- no auth/IAM expansion.
+
+Preserved action boundaries:
+
+- filtered rows remain navigation-only;
+- no Assign / Transfer / Return row actions;
+- no Retire / Archive / Unarchive row actions;
+- no Edit / Delete row actions;
+- no bulk actions;
+- no export;
+- no saved view actions.
+
+Required next step:
+
+- no further Advanced Asset List Filters implementation is opened by this closeout;
+- if owner wants backend filtering, open a separate backend/API filtering decision gate;
+- if owner wants saved views or persistent preferences, open a separate saved-view decision gate;
+- if owner wants archived asset filters, open a separate archive-view refinement decision gate;
+- if owner wants technical attribute filters, open a separate technical-filter decision gate;
+- if owner wants global search, advanced query language, reporting/dashboard, Asset 360, public lookup or employee self-service, open separate product/architecture decision first;
 - otherwise continue to the next owner-selected bounded feature gate or the deferred integrated stabilization / verification gate.
 
 This backlog closeout does not prove release readiness, FTOV start, FTOV exit, production readiness, real tenant validation, or real day-to-day operational validation.

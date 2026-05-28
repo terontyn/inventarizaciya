@@ -145,6 +145,14 @@ class MinimalPilotUiSmokeTest {
                 assertThat(body, containsString("Поиск: сотрудник, инвентарный номер, название, серийный номер"));
                 assertThat(body, containsString("Можно искать сотрудника, инвентарный номер, название актива, серийный номер или тип устройства"));
                 assertThat(body, containsString("Совпадение по комментарию"));
+                assertThat(body, containsString("Фильтр активов"));
+                assertThat(body, containsString("Все рабочие"));
+                assertThat(body, containsString("Назначенные"));
+                assertThat(body, containsString("Неназначенные"));
+                assertThat(body, containsString("Списанные"));
+                assertThat(body, containsString("Тип"));
+                assertThat(body, containsString("Локация"));
+                assertThat(body, containsString("Сбросить фильтры"));
                 assertThat(body, containsString("QR Lite"));
                 assertThat(body, containsString("QR по инвентарному номеру"));
                 assertThat(body, containsString("Производный QR"));
@@ -251,6 +259,9 @@ class MinimalPilotUiSmokeTest {
             .andExpect(content().string(not(containsString("data-quick-find-unarchive"))))
             .andExpect(content().string(not(containsString("data-technical-search-unarchive"))))
             .andExpect(content().string(not(containsString("data-employee-sheet-unarchive"))))
+            .andExpect(content().string(not(containsString("data-asset-filter-retire"))))
+            .andExpect(content().string(not(containsString("data-asset-filter-archive"))))
+            .andExpect(content().string(not(containsString("data-asset-filter-unarchive"))))
             .andExpect(content().string(not(containsString("Generic PATCH only"))))
             .andExpect(content().string(not(containsString("Mutate path"))))
             .andExpect(content().string(not(containsString("Master data"))))

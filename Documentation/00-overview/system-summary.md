@@ -2860,3 +2860,170 @@ It does not prove:
 - production readiness;
 - real tenant validation;
 - real day-to-day operational validation.
+
+## Current Baseline Update — Search Scope Expansion / Asset Note Search Closeout
+
+Search Scope Expansion / Asset Note Search has been implemented and accepted as a bounded frontend-only Quick Find expansion.
+
+Accepted implementation:
+
+- `asset.note` is now included in local Quick Find matching;
+- implementation is frontend-only;
+- Quick Find still uses already loaded authorized frontend state only;
+- only `state.assets` is searched;
+- `state.archivedAssets` is not searched;
+- no backend search endpoint was added;
+- no backend/API behavior was changed;
+- no DB migration was added;
+- no DTO/list expansion was added.
+
+Accepted user-facing behavior:
+
+- if a query matches an asset note, the asset can appear in Quick Find results;
+- the result row remains read-only navigation only;
+- selecting the result opens the existing selected Asset detail;
+- raw note text is not displayed in the result row;
+- note snippets are not displayed;
+- note highlighting is not added;
+- the only accepted result marker is:
+  - `Совпадение по комментарию`.
+
+Accepted search boundaries:
+
+- Quick Find remains loaded-state workspace search;
+- Quick Find remains separate from Technical Search;
+- Technical Search remains technical-attribute-only;
+- asset `note` is not added to Technical Search;
+- Employee Sheet remains unchanged;
+- Employee Sheet does not search or display asset `note`;
+- archived assets remain excluded from Quick Find note matching by default.
+
+Preserved boundaries:
+
+- no backend/API note search endpoint;
+- no global search;
+- no Elasticsearch;
+- no advanced filters;
+- no saved views;
+- no persistent preferences;
+- no reporting/dashboard;
+- no Asset 360;
+- no public lookup;
+- no employee self-service;
+- no audit/history search;
+- no QR search;
+- no arbitrary field search;
+- no user-service data search;
+- no new role model;
+- no auth/IAM expansion;
+- no BFF/UI backend;
+- no cross-service orchestration;
+- no raw free-text note exposure in search result rows.
+
+Implementation scope:
+
+- existing static Operational Workspace frontend only;
+- static UI smoke coverage updated;
+- no Documentation change during implementation;
+- no build/package change.
+
+This remains internally validated implementation evidence only.
+
+It does not prove:
+
+- release readiness;
+- FTOV start;
+- FTOV exit;
+- production readiness;
+- real tenant validation;
+- real day-to-day operational validation.
+
+## Current Baseline Update — Advanced Asset List Filters Closeout
+
+Advanced Asset List Filters has been implemented and accepted as a bounded frontend-only working asset list filtering refinement.
+
+Accepted implementation:
+
+- added local `Фильтр активов` UI;
+- implementation is frontend-only;
+- filters operate only on already loaded `state.assets`;
+- `state.archivedAssets` is not used as a filter source;
+- `Архив` remains a separate discovery path;
+- no backend/API behavior was changed;
+- no backend endpoint was added;
+- no DB migration was added;
+- no DTO/list expansion was added;
+- no saved views were added;
+- no persistent preferences were added;
+- no `localStorage` persistence was added.
+
+Accepted first-cut filters:
+
+- `Все рабочие`;
+- `Назначенные`;
+- `Неназначенные`;
+- `Списанные`;
+- `Тип`;
+- `Локация`;
+- `Сбросить фильтры`.
+
+Accepted behavior:
+
+- `Все рабочие` shows loaded non-archived working assets from `state.assets`;
+- `Назначенные` filters loaded working assets with current `assigned_user_id`;
+- `Неназначенные` filters loaded working assets without current `assigned_user_id`;
+- `Списанные` filters loaded non-archived assets with `status = RETIRED`;
+- `Тип` uses loaded `asset_type` values only;
+- `Локация` uses loaded `location_id` and already loaded reference labels where available;
+- unresolved labels fall back safely without backend lookup.
+
+Preserved search boundaries:
+
+- filters are not Quick Find;
+- filters are not Technical Search;
+- filters are not backend/global search;
+- Quick Find remains separate;
+- Technical Search remains separate and technical-attribute-only;
+- asset note search remains only the accepted Quick Find behavior;
+- no technical attribute filtering was added.
+
+Preserved action boundaries:
+
+- filtered rows remain navigation-only;
+- no Assign / Transfer / Return row actions;
+- no Retire / Archive / Unarchive row actions;
+- no Edit / Delete row actions;
+- no bulk actions;
+- no export;
+- no saved view actions.
+
+Preserved product boundaries:
+
+- no global search;
+- no Elasticsearch;
+- no advanced query language;
+- no reporting/dashboard;
+- no Asset 360;
+- no public lookup;
+- no employee self-service;
+- no BFF/UI backend;
+- no new role model;
+- no auth/IAM expansion.
+
+Implementation scope:
+
+- existing static Operational Workspace frontend only;
+- static UI smoke coverage updated;
+- no Documentation change during implementation;
+- no build/package change.
+
+This remains internally validated implementation evidence only.
+
+It does not prove:
+
+- release readiness;
+- FTOV start;
+- FTOV exit;
+- production readiness;
+- real tenant validation;
+- real day-to-day operational validation.

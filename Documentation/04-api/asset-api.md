@@ -889,3 +889,99 @@ Read model:
 - `unarchive` не выполняется через generic PATCH;
 - `unarchive` не доступен для `ACTIVE` assets;
 - `unarchive` не выполняет inventory/warehouse movement.
+
+## Frontend Quick Find / Asset Note Search
+
+Asset note search is accepted only as a frontend-only Quick Find scope expansion.
+
+This does not add a backend/API search endpoint.
+
+Accepted behavior:
+
+- Quick Find may locally match `asset.note`;
+- matching uses already loaded authorized frontend state only;
+- matching uses default non-archived asset state only;
+- archived assets are not searched through Quick Find;
+- raw `note` is not displayed in search result rows;
+- note snippets are not displayed;
+- note highlighting is not added;
+- the accepted marker for a note match is:
+  - `Совпадение по комментарию`.
+
+Preserved API boundaries:
+
+- no new backend endpoint;
+- no DB migration;
+- no DTO/list expansion;
+- no change to `GET /api/v1/assets`;
+- no change to `GET /api/v1/assets/{id}`;
+- no change to `GET /api/v1/assets/technical-attribute-search`;
+- no change to `GET /api/v1/assets/employee-sheet-technical-hints`;
+- no backend/global search;
+- no advanced filters;
+- no saved views;
+- no public lookup;
+- no employee self-service.
+
+Technical Search remains technical-attribute-only.
+
+Asset `note` is not part of Technical Search.
+
+Employee Sheet does not search or expose asset `note`.
+
+## Frontend Asset List Filters
+
+Advanced Asset List Filters is accepted only as a frontend-only working asset list filtering refinement.
+
+This does not add a backend/API filtering endpoint.
+
+Accepted behavior:
+
+- filters operate only on already loaded `state.assets`;
+- filters do not operate on `state.archivedAssets`;
+- archived assets remain discoverable only through the accepted archive visibility path;
+- filters are session/in-memory UI state only;
+- no saved views are introduced;
+- no persistent preferences are introduced;
+- no `localStorage` persistence is introduced.
+
+Accepted first-cut filters:
+
+- `Все рабочие`;
+- `Назначенные`;
+- `Неназначенные`;
+- `Списанные`;
+- `Тип`;
+- `Локация`;
+- `Сбросить фильтры`.
+
+Preserved API boundaries:
+
+- no new backend endpoint;
+- no DB migration;
+- no DTO/list expansion;
+- no server-side filtering;
+- no change to `GET /api/v1/assets`;
+- no change to `GET /api/v1/assets?visibility=archived`;
+- no change to `GET /api/v1/assets/{id}`;
+- no change to `GET /api/v1/assets/technical-attribute-search`;
+- no change to `GET /api/v1/assets/employee-sheet-technical-hints`;
+- no backend/global search;
+- no advanced filters;
+- no saved views;
+- no reporting/dashboard;
+- no public lookup;
+- no employee self-service.
+
+Search boundaries:
+
+- Quick Find remains separate loaded-state text search;
+- Technical Search remains separate technical-attribute search;
+- Asset note matching remains only the accepted Quick Find behavior;
+- technical attributes are not added to asset list filters.
+
+Action boundaries:
+
+- filtered rows remain navigation-only;
+- no lifecycle row actions are introduced;
+- no bulk actions are introduced.

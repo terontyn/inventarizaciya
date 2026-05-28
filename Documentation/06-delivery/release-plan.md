@@ -3637,3 +3637,199 @@ This closeout does not prove:
 The project remains in:
 
 **Project Stabilization / First-Adopter-Gated Hold**
+
+## Search Scope Expansion / Asset Note Search Closeout Clarification
+
+Search Scope Expansion / Asset Note Search is accepted as completed at its approved bounded scope.
+
+### Delivery interpretation
+
+This implementation is accepted as:
+
+**frontend-only Quick Find note matching with no raw note result display.**
+
+It does not open backend search, global search, Technical Search expansion, Employee Sheet expansion, advanced filters, saved views, reporting/dashboard, Asset 360, public lookup or employee self-service.
+
+### Accepted scope
+
+Implemented scope:
+
+- added local Quick Find matching against `asset.note`;
+- kept implementation frontend-only;
+- used existing loaded authorized frontend state;
+- searched only `state.assets`;
+- did not search `state.archivedAssets`;
+- kept result rows read-only navigation only;
+- added the safe match marker:
+  - `Совпадение по комментарию`;
+- updated static UI smoke coverage.
+
+### Accepted display behavior
+
+When a Quick Find query matches an asset note:
+
+- the asset can appear in Quick Find results;
+- raw note text is not displayed;
+- note snippets are not displayed;
+- note highlighting is not added;
+- only the safe marker may be shown:
+  - `Совпадение по комментарию`.
+
+### Preserved boundaries
+
+This implementation preserves:
+
+- no backend/API endpoint;
+- no DB migration;
+- no DTO/list expansion;
+- no Technical Search change;
+- no Employee Sheet change;
+- no archived asset note search;
+- no raw note display in result rows;
+- no note snippets;
+- no note highlighting;
+- no global search;
+- no Elasticsearch;
+- no advanced filters;
+- no saved views;
+- no persistent preferences;
+- no reporting/dashboard;
+- no Asset 360;
+- no public lookup;
+- no employee self-service;
+- no audit/history search;
+- no QR search;
+- no arbitrary field search;
+- no user-service data search;
+- no new role model;
+- no auth/IAM expansion;
+- no BFF/UI backend.
+
+### Non-claim rule
+
+This closeout does not prove:
+
+- release readiness;
+- FTOV start;
+- FTOV exit;
+- production readiness;
+- real tenant validation;
+- real day-to-day operational validation.
+
+The project remains in:
+
+**Project Stabilization / First-Adopter-Gated Hold**
+
+## Advanced Asset List Filters Closeout Clarification
+
+Advanced Asset List Filters is accepted as completed at its approved bounded scope.
+
+### Delivery interpretation
+
+This implementation is accepted as:
+
+**frontend-only working asset list filters over already loaded `state.assets`.**
+
+It does not open backend filtering, server-side search, global search, advanced query language, saved views, persistent preferences, reporting/dashboard, Asset 360, public lookup, employee self-service, bulk actions or lifecycle row actions.
+
+### Accepted scope
+
+Implemented scope:
+
+- added local `Фильтр активов` UI;
+- kept implementation frontend-only;
+- used only existing loaded `state.assets`;
+- did not use `state.archivedAssets` as a filter source;
+- kept `Архив` as a separate discovery path;
+- added in-memory filter state only;
+- added no persistence;
+- added no `localStorage`;
+- kept filtered rows as navigation-only rows;
+- updated static UI smoke coverage.
+
+Accepted filters:
+
+- `Все рабочие`;
+- `Назначенные`;
+- `Неназначенные`;
+- `Списанные`;
+- `Тип`;
+- `Локация`;
+- `Сбросить фильтры`.
+
+### Archive boundary
+
+Working asset filters operate only on non-archived loaded assets from `state.assets`.
+
+Archived assets remain separate through the accepted archive visibility path and `Архив` UI path.
+
+This implementation does not add:
+
+- archive/non-archive combined filtering;
+- archived asset working filters;
+- archived note search;
+- archived technical search.
+
+### Search boundary
+
+Filters are not search.
+
+This implementation preserves:
+
+- Quick Find as separate loaded-state text search;
+- Technical Search as separate endpoint-based technical-attribute search;
+- asset note matching only inside Quick Find;
+- no technical attribute filters;
+- no backend/global search;
+- no advanced query language.
+
+### Action boundary
+
+Filtered asset rows remain navigation-only.
+
+This implementation does not add:
+
+- Assign / Transfer / Return row actions;
+- Retire / Archive / Unarchive row actions;
+- Edit / Delete row actions;
+- bulk actions;
+- export;
+- saved view actions.
+
+### Preserved boundaries
+
+This implementation preserves:
+
+- no backend/API changes;
+- no new endpoint;
+- no DB migration;
+- no DTO/list expansion;
+- no server-side filtering;
+- no saved views;
+- no persistent preferences;
+- no `localStorage`;
+- no global search;
+- no Elasticsearch;
+- no advanced filters / query language;
+- no reporting/dashboard;
+- no Asset 360;
+- no public lookup;
+- no employee self-service;
+- no BFF/UI backend;
+- no new role model;
+- no auth/IAM expansion.
+
+### Non-claim rule
+
+This closeout does not prove:
+
+- release readiness;
+- FTOV start;
+- FTOV exit;
+- production readiness;
+- real tenant validation;
+- real day-to-day operational validation.
+
+The project remains in:
+
+**Project Stabilization / First-Adopter-Gated Hold**
