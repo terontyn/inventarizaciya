@@ -160,6 +160,10 @@ class MinimalPilotUiSmokeTest {
                 assertThat(body, containsString("Не является отдельным идентификатором"));
                 assertThat(body, containsString("Не открывает публичный доступ"));
                 assertThat(body, containsString("Инвентарный тег"));
+                assertThat(body, containsString("Технические подсказки"));
+                assertThat(body, containsString("data-overview-technical-hints"));
+                assertThat(body, containsString("data-overview-technical-hint"));
+                assertThat(body, containsString("ASSET_OVERVIEW_TECHNICAL_HINT_FIELDS"));
                 assertThat(body, containsString("Технические атрибуты"));
                 assertThat(body, containsString("Технические данные"));
                 assertThat(body, containsString("Данные устройства"));
@@ -220,6 +224,19 @@ class MinimalPilotUiSmokeTest {
             .andExpect(content().string(not(containsString("raw note"))))
             .andExpect(content().string(not(containsString("data-employee-sheet-note"))))
             .andExpect(content().string(not(containsString("data-technical-search-note"))))
+            .andExpect(content().string(not(containsString("data-overview-technical-hint=\"anydesk_id\""))))
+            .andExpect(content().string(not(containsString("data-overview-technical-hint=\"ip_address\""))))
+            .andExpect(content().string(not(containsString("data-overview-technical-hint=\"mac_address\""))))
+            .andExpect(content().string(not(containsString("data-overview-technical-hint=\"phone_ip\""))))
+            .andExpect(content().string(not(containsString("data-overview-technical-hint=\"sip_line_id\""))))
+            .andExpect(content().string(not(containsString("data-overview-technical-hint=\"printer_ip\""))))
+            .andExpect(content().string(not(containsString("data-overview-technical-hint=\"printer_placement_note\""))))
+            .andExpect(content().string(not(containsString("data-overview-technical-hint=\"note\""))))
+            .andExpect(content().string(not(containsString("data-overview-technical-hint=\"profile\""))))
+            .andExpect(content().string(not(containsString("data-overview-technical-hint=\"technical_attributes\""))))
+            .andExpect(content().string(not(containsString("data-overview-technical-hint=\"qr\""))))
+            .andExpect(content().string(not(containsString("data-overview-technical-edit"))))
+            .andExpect(content().string(not(containsString("overview-technical-hints-form"))))
             .andExpect(content().string(not(containsString("audit/history search"))))
             .andExpect(content().string(not(containsString("scanner"))))
             .andExpect(content().string(not(containsString("scan"))))

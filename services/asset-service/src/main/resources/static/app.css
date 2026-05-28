@@ -1474,6 +1474,63 @@ code {
     background: rgba(255, 255, 255, 0.58);
 }
 
+.asset-overview-technical-hints {
+    display: grid;
+    gap: 0.75rem;
+    margin: 1rem 0;
+    padding: 0.9rem;
+    border: 1px solid rgba(14, 116, 144, 0.16);
+    border-radius: var(--radius-md);
+    background: rgba(236, 254, 255, 0.42);
+}
+
+.asset-overview-technical-hints-heading {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.75rem;
+    align-items: flex-start;
+}
+
+.asset-overview-technical-hints-heading h4 {
+    margin: 0.2rem 0 0;
+}
+
+.asset-overview-technical-hints-help {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.86rem;
+    line-height: 1.45;
+}
+
+.asset-overview-technical-hints-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 0.55rem;
+    margin: 0;
+}
+
+.asset-overview-technical-hint {
+    display: grid;
+    gap: 0.22rem;
+    padding: 0.65rem;
+    border: 1px solid rgba(22, 32, 42, 0.08);
+    border-radius: var(--radius-sm);
+    background: rgba(255, 255, 255, 0.72);
+}
+
+.asset-overview-technical-hint dt {
+    color: var(--muted);
+    font-size: 0.78rem;
+    font-weight: 900;
+}
+
+.asset-overview-technical-hint dd {
+    margin: 0;
+    overflow-wrap: anywhere;
+    color: var(--ink);
+    font-weight: 760;
+}
+
 .asset-technical-attributes {
     display: grid;
     gap: 0.9rem;

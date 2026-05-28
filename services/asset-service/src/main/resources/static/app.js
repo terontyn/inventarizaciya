@@ -92,6 +92,11 @@ const EMPLOYEE_SHEET_TECHNICAL_HINT_FIELDS = [
     { key: "extension_number", label: "Внутренний номер" },
     { key: "printer_network_name", label: "Сетевое имя принтера" }
 ];
+const ASSET_OVERVIEW_TECHNICAL_HINT_FIELDS = [
+    { key: "hostname", label: "Hostname" },
+    { key: "extension_number", label: "Внутренний номер" },
+    { key: "printer_network_name", label: "Сетевое имя принтера" }
+];
 const TECHNICAL_ATTRIBUTE_PROFILE_GROUPS = {
     PC_LAPTOP: [
         {
@@ -1425,6 +1430,8 @@ function assetCanonicalTag(asset) {
 function getAssetTechnicalAttributes(asset) {
     const source = asset?.technical_attributes && typeof asset.technical_attributes === "object"
         ? asset.technical_attributes
+        : asset?.technicalAttributes && typeof asset.technicalAttributes === "object"
+            ? asset.technicalAttributes
         : {};
     const profile = TECHNICAL_ATTRIBUTE_PROFILE_GROUPS[source.profile]
         ? source.profile
@@ -1433,6 +1440,23 @@ function getAssetTechnicalAttributes(asset) {
         ? source.values
         : {};
     return { profile, values };
+}
+
+function getAssetOverviewTechnicalHints(asset) {
+    const technicalAttributes = getAssetTechnicalAttributes(asset);
+    return ASSET_OVERVIEW_TECHNICAL_HINT_FIELDS
+        .map((field) => ({
+            ...field,
+            value: normalizeOverviewTechnicalHintValue(technicalAttributes.values?.[field.key])
+        }))
+        .filter((field) => Boolean(field.value));
+}
+
+function normalizeOverviewTechnicalHintValue(value) {
+    if (typeof value !== "string" && typeof value !== "number") {
+        return "";
+    }
+    return String(value).trim();
 }
 
 function getTechnicalAttributeGroups(profile) {
@@ -4933,6 +4957,8 @@ function renderAssetOverviewSection(asset, canMutate) {
                 ${renderSummaryCard("Локация", renderLocationReference(asset.location_id), "Текущая рабочая локация.")}
             </div>
 
+            ${renderAssetOverviewTechnicalHints(asset)}
+
             ${renderAssetNoteBlock(asset)}
 
             <div class="button-row">
@@ -4940,6 +4966,34 @@ function renderAssetOverviewSection(asset, canMutate) {
                 <button class="button button-ghost" type="button" data-asset-section="history">История и аудит</button>
                 <button class="button button-ghost" type="button" data-asset-section="technical">Technical details</button>
             </div>
+        </section>
+    `;
+}
+
+function renderAssetOverviewTechnicalHints(asset) {
+    const hints = getAssetOverviewTechnicalHints(asset);
+    if (hints.length === 0) {
+        return "";
+    }
+
+    return `
+        <section class="asset-overview-technical-hints" data-overview-technical-hints aria-label="Технические подсказки">
+            <div class="asset-overview-technical-hints-heading">
+                <div>
+                    <p class="section-kicker">Технические данные</p>
+                    <h4>Технические подсказки</h4>
+                </div>
+                <span class="summary-pill">только для чтения</span>
+            </div>
+            <p class="asset-overview-technical-hints-help">Показаны только низкочувствительные подсказки из уже загруженной карточки. Полные технические данные остаются в Technical details.</p>
+            <dl class="asset-overview-technical-hints-list">
+                ${hints.map((hint) => `
+                    <div class="asset-overview-technical-hint" data-overview-technical-hint="${escapeAttribute(hint.key)}">
+                        <dt>${escapeHtml(hint.label)}</dt>
+                        <dd>${escapeHtml(hint.value)}</dd>
+                    </div>
+                `).join("")}
+            </dl>
         </section>
     `;
 }
