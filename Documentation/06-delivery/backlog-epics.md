@@ -1166,9 +1166,9 @@ Not approved by this note:
 - Astra Configuration Manager parity.
 
 
-### Planning priority after Advanced Asset List Filters
+### Planning priority after Selected Asset Overview / Low-Sensitivity Technical Hints
 
-Unified Create Launcher, Simplified Asset Actions UX, ADR-0005 Asset Delete Semantics, Controlled Employee Asset Information Sheet, Operational Search v1 Frontend Quick Find, Asset QR Lite Frontend Derived Display, Asset Type-Specific Technical Attributes v1, Search over Technical Attributes, Employee Sheet Technical Attribute Exposure, Standalone Employee Information Sheet Interface, Quick Find / Technical Search Merge Semantics, Search Scope Expansion / printer_placement_note Technical Search, Retire Exposure / Safe Lifecycle Removal, Archive / Hide Lifecycle Visibility, Recovery / Unarchive Lifecycle Visibility, Search Scope Expansion / Asset Note Search, and Advanced Asset List Filters are implemented/accepted at their approved scope levels.
+Unified Create Launcher, Simplified Asset Actions UX, ADR-0005 Asset Delete Semantics, Controlled Employee Asset Information Sheet, Operational Search v1 Frontend Quick Find, Asset QR Lite Frontend Derived Display, Asset Type-Specific Technical Attributes v1, Search over Technical Attributes, Employee Sheet Technical Attribute Exposure, Standalone Employee Information Sheet Interface, Quick Find / Technical Search Merge Semantics, Search Scope Expansion / printer_placement_note Technical Search, Retire Exposure / Safe Lifecycle Removal, Archive / Hide Lifecycle Visibility, Recovery / Unarchive Lifecycle Visibility, Search Scope Expansion / Asset Note Search, Advanced Asset List Filters, and Selected Asset Overview / Low-Sensitivity Technical Hints are implemented/accepted at their approved scope levels.
 
 Standalone Employee Information Sheet Interface is accepted as:
 
@@ -1386,6 +1386,8 @@ Possible optional branches:
 - separate search decision gates only for broader backend/global search, advanced filters, saved views, archived note search, audit/history search or arbitrary field search;
 - separate filter/search decision gates only for backend filtering, saved views, persistent preferences, advanced filters, archived asset filters, technical attribute filters, global search, reporting/dashboard or Asset 360;
 - separate product/architecture gates for global search, advanced filters, reporting/dashboard, discovery/scanner, employee self-service, export/PDF/print or Asset 360.
+- separate exposure decision gates only for full technical attributes in Overview, sensitive technical values in Overview, technical attribute editing from Overview, QR in Overview, Asset 360, reporting/dashboard, public lookup or employee self-service;
+
 
 Do not open these branches implicitly.
 
@@ -2348,6 +2350,160 @@ Required next step:
 - if owner wants archived asset filters, open a separate archive-view refinement decision gate;
 - if owner wants technical attribute filters, open a separate technical-filter decision gate;
 - if owner wants global search, advanced query language, reporting/dashboard, Asset 360, public lookup or employee self-service, open separate product/architecture decision first;
+- otherwise continue to the next owner-selected bounded feature gate or the deferred integrated stabilization / verification gate.
+
+This backlog closeout does not prove release readiness, FTOV start, FTOV exit, production readiness, real tenant validation, or real day-to-day operational validation.
+
+Selected Asset Overview / Low-Sensitivity Technical Hints is accepted as:
+
+- a bounded frontend-only selected Asset Overview refinement;
+- compact read-only `Технические подсказки` block;
+- uses already loaded selected asset detail data only;
+- source data is existing selected asset `technical_attributes` / `technicalAttributes`;
+- no backend/API endpoint;
+- no DB migration;
+- no DTO/list expansion;
+- no new API contract;
+- no technical attribute editing from Overview;
+- no full technical attributes in Overview.
+
+Accepted hint allowlist:
+
+- `hostname` -> `Hostname`;
+- `extension_number` -> `Внутренний номер`;
+- `printer_network_name` -> `Сетевое имя принтера`.
+
+Accepted display behavior:
+
+- missing, null, blank or whitespace-only values are omitted;
+- if no allowed hints are present, the block is omitted;
+- Overview hints are read-only;
+- Technical Details remains the full/editable technical attribute surface.
+
+Explicitly excluded from Overview hints:
+
+- `anydesk_id`;
+- `ip_address`;
+- `mac_address`;
+- `phone_ip`;
+- `sip_line_id`;
+- `printer_ip`;
+- `printer_placement_note`;
+- asset `note`;
+- QR;
+- audit/history;
+- `profile`;
+- arbitrary custom/unsupported technical fields;
+- masked sensitive values.
+
+Preserved boundaries:
+
+- Employee Sheet remains unchanged;
+- Technical Search remains unchanged;
+- Quick Find remains unchanged;
+- no QR in Overview;
+- no Asset 360;
+- no reporting/dashboard;
+- no public lookup;
+- no employee self-service;
+- no BFF/UI backend;
+- no new role model;
+- no auth/IAM expansion.
+
+#### Selected Asset Overview / Low-Sensitivity Technical Hints
+
+Status: implemented and accepted as bounded frontend-only selected Asset Overview low-sensitivity hint display.
+
+Intent:
+
+- give operators a small amount of useful technical context directly in selected Asset Overview;
+- avoid requiring a switch to Technical Details for the safest common hints;
+- preserve Technical Details as the full technical attribute surface;
+- prevent sensitive technical value exposure in Overview;
+- avoid Asset 360, reporting/dashboard, public lookup or employee self-service scope.
+
+Accepted implementation:
+
+- added compact read-only `Технические подсказки` block in selected Asset Overview;
+- implementation is frontend-only;
+- uses already loaded selected asset detail data only;
+- source data is existing selected asset `technical_attributes` / `technicalAttributes`;
+- no backend/API endpoint was added;
+- no DB migration was added;
+- no DTO/list expansion was added;
+- no new API contract was added;
+- static UI smoke coverage was updated.
+
+Accepted hint allowlist:
+
+- `hostname` -> `Hostname`;
+- `extension_number` -> `Внутренний номер`;
+- `printer_network_name` -> `Сетевое имя принтера`.
+
+Accepted behavior:
+
+- only allowlisted low-sensitivity hints are rendered;
+- missing, null, blank or whitespace-only hint values are omitted;
+- if no allowed hints are present, the block is omitted;
+- Overview hints are read-only;
+- Technical Details remains the full technical attribute surface;
+- technical attribute editing remains only in Technical Details.
+
+Explicitly excluded from Overview hints:
+
+- `anydesk_id`;
+- `ip_address`;
+- `mac_address`;
+- `phone_ip`;
+- `sip_line_id`;
+- `printer_ip`;
+- `printer_placement_note`;
+- asset `note`;
+- QR;
+- audit/history;
+- `profile`;
+- arbitrary custom/unsupported technical fields;
+- masked sensitive values.
+
+Preserved boundaries:
+
+- no full technical attributes in Overview;
+- no sensitive technical values in Overview;
+- no masked sensitive values in Overview;
+- no technical attribute editing from Overview;
+- no technical attribute forms in Overview;
+- no `PUT /api/v1/assets/{id}/technical-attributes` call from Overview;
+- Employee Sheet remains unchanged;
+- Technical Search remains unchanged;
+- Quick Find remains unchanged;
+- Asset list rows remain unchanged;
+- Technical Search result rows remain unchanged;
+- no QR in Overview;
+- no Asset 360;
+- no reporting/dashboard;
+- no public lookup;
+- no employee self-service;
+- no BFF/UI backend;
+- no new role model;
+- no auth/IAM expansion.
+
+Archive / Retire behavior:
+
+- if a retired or archived asset is selected and readable, low-sensitivity Overview hints may show read-only;
+- this does not imply restore-to-ACTIVE;
+- this does not imply reactivation;
+- this does not restore assignment;
+- this does not change lifecycle action placement;
+- this does not change archive/list/search behavior.
+
+Required next step:
+
+- no further Selected Asset Overview technical hints implementation is opened by this closeout;
+- if owner wants full technical attributes in Overview, open a separate Asset Overview exposure decision gate;
+- if owner wants sensitive technical values in Overview, open a separate redaction/sensitivity decision gate;
+- if owner wants technical attribute editing from Overview, open a separate UX/API boundary decision gate;
+- if owner wants QR in Overview, open a separate QR placement decision gate;
+- if owner wants Asset 360, reporting/dashboard, public lookup or employee self-service, open separate product/architecture decision first;
 - otherwise continue to the next owner-selected bounded feature gate or the deferred integrated stabilization / verification gate.
 
 This backlog closeout does not prove release readiness, FTOV start, FTOV exit, production readiness, real tenant validation, or real day-to-day operational validation.

@@ -3833,3 +3833,137 @@ This closeout does not prove:
 The project remains in:
 
 **Project Stabilization / First-Adopter-Gated Hold**
+
+## Selected Asset Overview / Low-Sensitivity Technical Hints Closeout Clarification
+
+Selected Asset Overview / Low-Sensitivity Technical Hints is accepted as completed at its approved bounded scope.
+
+### Delivery interpretation
+
+This implementation is accepted as:
+
+**frontend-only selected Asset Overview low-sensitivity technical hint display using already loaded selected asset detail data.**
+
+It does not open backend/API changes, full technical attributes in Overview, sensitive technical value exposure, technical attribute editing from Overview, QR in Overview, Employee Sheet expansion, Technical Search expansion, Quick Find expansion, Asset 360, reporting/dashboard, public lookup or employee self-service.
+
+### Accepted scope
+
+Implemented scope:
+
+- added compact read-only `Технические подсказки` block in selected Asset Overview;
+- kept implementation frontend-only;
+- used only already loaded selected asset detail data;
+- used existing selected asset `technical_attributes` / `technicalAttributes`;
+- added no backend endpoint;
+- added no DB migration;
+- added no DTO/list expansion;
+- added no new API contract;
+- updated static UI smoke coverage.
+
+Accepted hints:
+
+- `hostname` -> `Hostname`;
+- `extension_number` -> `Внутренний номер`;
+- `printer_network_name` -> `Сетевое имя принтера`.
+
+### Display behavior
+
+Accepted behavior:
+
+- only present non-blank allowlisted hint values are shown;
+- missing, null, blank or whitespace-only values are omitted;
+- if no allowed hints are present, the hint block is omitted;
+- Overview hints are read-only;
+- Overview does not show noisy empty technical hint cards.
+
+### Sensitive field boundary
+
+This implementation does not render in Overview hints:
+
+- `anydesk_id`;
+- `ip_address`;
+- `mac_address`;
+- `phone_ip`;
+- `sip_line_id`;
+- `printer_ip`;
+- `printer_placement_note`;
+- asset `note`;
+- QR;
+- audit/history;
+- `profile`;
+- arbitrary custom/unsupported technical fields;
+- masked sensitive values.
+
+### Relationship with Technical Details
+
+Technical Details remains the full technical attribute surface.
+
+This implementation does not add to Overview:
+
+- technical attribute edit controls;
+- technical attribute forms;
+- save/cancel controls;
+- `PUT /api/v1/assets/{id}/technical-attributes` calls;
+- full profile-based technical data.
+
+### Relationship with other surfaces
+
+This implementation preserves:
+
+- Employee Sheet unchanged;
+- Technical Search unchanged;
+- Quick Find unchanged;
+- Asset list rows unchanged;
+- Technical Search result rows unchanged;
+- Employee Sheet privacy boundaries unchanged.
+
+### Archive / Retire boundary
+
+If a retired or archived asset is selected and readable, the same low-sensitivity hints may show read-only.
+
+This does not open:
+
+- restore-to-ACTIVE;
+- reactivation;
+- assignment restoration;
+- lifecycle action placement changes;
+- archive/list/search behavior changes.
+
+### Preserved boundaries
+
+This implementation preserves:
+
+- no backend/API changes;
+- no new endpoint;
+- no DB migration;
+- no DTO/list expansion;
+- no full technical attributes in Overview;
+- no sensitive technical values in Overview;
+- no masked sensitive values in Overview;
+- no editing technical attributes from Overview;
+- no QR in Overview;
+- no Employee Sheet changes;
+- no Technical Search changes;
+- no Quick Find changes;
+- no Asset 360;
+- no reporting/dashboard;
+- no public lookup;
+- no employee self-service;
+- no BFF/UI backend;
+- no new role model;
+- no auth/IAM expansion.
+
+### Non-claim rule
+
+This closeout does not prove:
+
+- release readiness;
+- FTOV start;
+- FTOV exit;
+- production readiness;
+- real tenant validation;
+- real day-to-day operational validation.
+
+The project remains in:
+
+**Project Stabilization / First-Adopter-Gated Hold**

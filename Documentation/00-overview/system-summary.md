@@ -3027,3 +3027,96 @@ It does not prove:
 - production readiness;
 - real tenant validation;
 - real day-to-day operational validation.
+
+## Current Baseline Update — Selected Asset Overview / Low-Sensitivity Technical Hints Closeout
+
+Selected Asset Overview / Low-Sensitivity Technical Hints has been implemented and accepted as a bounded frontend-only selected Asset Overview refinement.
+
+Accepted implementation:
+
+- added compact read-only `Технические подсказки` block in selected Asset Overview;
+- implementation is frontend-only;
+- hints use only already loaded selected asset detail data;
+- source data is existing selected asset `technical_attributes` / `technicalAttributes`;
+- no backend/API behavior was changed;
+- no backend endpoint was added;
+- no DB migration was added;
+- no DTO/list expansion was added.
+
+Accepted hint allowlist:
+
+- `hostname` -> `Hostname`;
+- `extension_number` -> `Внутренний номер`;
+- `printer_network_name` -> `Сетевое имя принтера`.
+
+Accepted behavior:
+
+- only present non-blank allowlisted values are rendered;
+- missing, null, blank or whitespace-only values are omitted;
+- if no allowed hints are present, the whole block is omitted;
+- the block is read-only;
+- selected Asset Technical details remains the full technical attribute surface;
+- technical attribute editing remains only in Technical details.
+
+Explicitly excluded from Overview hints:
+
+- `anydesk_id`;
+- `ip_address`;
+- `mac_address`;
+- `phone_ip`;
+- `sip_line_id`;
+- `printer_ip`;
+- `printer_placement_note`;
+- asset `note`;
+- QR;
+- audit/history;
+- `profile`;
+- arbitrary custom/unsupported technical fields;
+- masked sensitive values.
+
+Preserved boundaries:
+
+- no full technical attributes in Overview;
+- no sensitive technical values in Overview;
+- no masked sensitive values in Overview;
+- no edit controls in Overview hints;
+- no technical attribute forms in Overview;
+- no `PUT /api/v1/assets/{id}/technical-attributes` call from Overview;
+- no Employee Sheet change;
+- no Technical Search change;
+- no Quick Find change;
+- no QR in Overview;
+- no Asset 360;
+- no reporting/dashboard;
+- no public lookup;
+- no employee self-service;
+- no BFF/UI backend;
+- no new role model;
+- no auth/IAM expansion.
+
+Archive / Retire behavior:
+
+- if a retired or archived asset detail is readable and selected, Overview hints may show as read-only selected-detail context;
+- this does not imply restore-to-ACTIVE;
+- this does not imply reactivation;
+- this does not restore assignment;
+- this does not change lifecycle action placement;
+- this does not change archive/list/search behavior.
+
+Implementation scope:
+
+- existing static Operational Workspace frontend only;
+- static UI smoke coverage updated;
+- no Documentation change during implementation;
+- no build/package change.
+
+This remains internally validated implementation evidence only.
+
+It does not prove:
+
+- release readiness;
+- FTOV start;
+- FTOV exit;
+- production readiness;
+- real tenant validation;
+- real day-to-day operational validation.

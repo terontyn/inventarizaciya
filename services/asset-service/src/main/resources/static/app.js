@@ -72,6 +72,15 @@ const ASSET_FILTER_MODES = {
     RETIRED: "retired"
 };
 
+const ASSET_SORT_KEYS = {
+    NONE: "",
+    TITLE: "title",
+    ASSET_TAG: "asset_tag",
+    TYPE: "asset_type",
+    STATUS: "status",
+    LOCATION: "location"
+};
+
 const CREATE_TARGETS = {
     asset: { label: "Актив / устройство" },
     user: { label: "Пользователь", resource: "users" },
@@ -381,6 +390,12 @@ function createDefaultAssetFilters() {
     };
 }
 
+function createDefaultAssetSort() {
+    return {
+        key: ASSET_SORT_KEYS.NONE
+    };
+}
+
 const state = {
     context: {
         tenantId: "",
@@ -418,6 +433,7 @@ const state = {
     expandedTreeNodes: new Set(),
     treeFilter: "",
     assetFilters: createDefaultAssetFilters(),
+    assetSort: createDefaultAssetSort(),
     quickFindQuery: "",
     employeeSheetSearchQuery: "",
     employeeSheetSelectedUserId: "",
@@ -795,6 +811,7 @@ function clearSession() {
     state.expandedTreeNodes = new Set();
     state.treeFilter = "";
     state.assetFilters = createDefaultAssetFilters();
+    state.assetSort = createDefaultAssetSort();
     state.quickFindQuery = "";
     state.employeeSheetSearchQuery = "";
     state.employeeSheetSelectedUserId = "";
@@ -2302,6 +2319,13 @@ function onWorkspaceDetailClick(event) {
         return;
     }
 
+    const assetSortReset = event.target.closest("[data-asset-sort-reset]");
+    if (assetSortReset) {
+        resetAssetSort();
+        render();
+        return;
+    }
+
     const employeeSheetResult = event.target.closest("[data-standalone-employee-id]");
     if (employeeSheetResult) {
         selectStandaloneEmployeeSheetUser(employeeSheetResult.dataset.standaloneEmployeeId);
@@ -2388,6 +2412,12 @@ function onWorkspaceDetailChange(event) {
 
     if (event.target.matches("[data-asset-filter-location]")) {
         state.assetFilters.locationId = event.target.value || "";
+        render();
+        return;
+    }
+
+    if (event.target.matches("[data-asset-sort-key]")) {
+        state.assetSort.key = event.target.value || ASSET_SORT_KEYS.NONE;
         render();
     }
 }
@@ -3866,10 +3896,47 @@ function renderAssetFilterModeButton(mode, label) {
     `;
 }
 
+function renderAssetSortingPanel() {
+    const sort = state.assetSort || createDefaultAssetSort();
+    const options = [
+        { key: ASSET_SORT_KEYS.NONE, label: "По умолчанию" },
+        { key: ASSET_SORT_KEYS.TITLE, label: "По названию" },
+        { key: ASSET_SORT_KEYS.ASSET_TAG, label: "По инвентарному номеру" },
+        { key: ASSET_SORT_KEYS.TYPE, label: "По типу" },
+        { key: ASSET_SORT_KEYS.STATUS, label: "По статусу" },
+        { key: ASSET_SORT_KEYS.LOCATION, label: "По локации" }
+    ];
+
+    return `
+        <section class="asset-sort-panel" aria-label="Сортировка активов">
+            <div class="panel-heading asset-sort-heading">
+                <div>
+                    <p class="section-kicker">Реестр активов</p>
+                    <h3>Сортировка активов</h3>
+                </div>
+                <span class="summary-pill">${escapeHtml(getAssetSortLabel(sort.key))}</span>
+            </div>
+            <p class="asset-sort-help">Сортировка применяется только к уже загруженной рабочей выборке активов после фильтров. Архив остаётся отдельным разделом.</p>
+            <div class="asset-sort-controls">
+                <label class="field asset-sort-field">
+                    <span>Сортировка активов</span>
+                    <select data-asset-sort-key>
+                        ${options.map((option) => `
+                            <option value="${escapeAttribute(option.key)}" ${sort.key === option.key ? "selected" : ""}>${escapeHtml(option.label)}</option>
+                        `).join("")}
+                    </select>
+                </label>
+                <button class="button button-ghost asset-sort-reset" type="button" data-asset-sort-reset>Сбросить сортировку</button>
+            </div>
+        </section>
+    `;
+}
+
 function renderAllAssetsGroupDetail(groupKey) {
     const group = getAllAssetGroups().find((item) => item.key === groupKey) || getAllAssetGroups()[0];
     const archiveView = group?.key === ASSET_GROUPS.ARCHIVED;
-    const assets = archiveView ? (group ? group.assets : []) : getFilteredWorkingAssets();
+    const filteredAssets = archiveView ? (group ? group.assets : []) : getFilteredWorkingAssets();
+    const assets = archiveView ? filteredAssets : getSortedWorkingAssets(filteredAssets);
     const title = archiveView
         ? group.label
         : getAssetFilterModeLabel(state.assetFilters?.mode || ASSET_FILTER_MODES.ALL);
@@ -3886,7 +3953,8 @@ function renderAllAssetsGroupDetail(groupKey) {
                 ${renderSummaryCard("Без локации", escapeHtml(String(state.assets.filter((asset) => !asset.location_id).length)), "Активы без location_id не скрываются.")}
             </div>
             ${canAssetMutate() && !archiveView ? renderAssetCreatePanelMarkup() : ""}
-            ${archiveView ? "" : renderAssetFiltersPanel(assets)}
+            ${archiveView ? "" : renderAssetFiltersPanel(filteredAssets)}
+            ${archiveView ? "" : renderAssetSortingPanel()}
             ${renderAssetList(assets, {
                 empty: archiveView
                     ? "В этой группе нет активов из загруженного реестра."
@@ -4513,6 +4581,22 @@ function resetAssetFilters() {
     state.assetFilters = createDefaultAssetFilters();
 }
 
+function resetAssetSort() {
+    state.assetSort = createDefaultAssetSort();
+}
+
+function getAssetSortLabel(sortKey) {
+    const labels = {
+        [ASSET_SORT_KEYS.NONE]: "По умолчанию",
+        [ASSET_SORT_KEYS.TITLE]: "По названию",
+        [ASSET_SORT_KEYS.ASSET_TAG]: "По инвентарному номеру",
+        [ASSET_SORT_KEYS.TYPE]: "По типу",
+        [ASSET_SORT_KEYS.STATUS]: "По статусу",
+        [ASSET_SORT_KEYS.LOCATION]: "По локации"
+    };
+    return labels[sortKey] || labels[ASSET_SORT_KEYS.NONE];
+}
+
 function getAssetFilterModeLabel(mode) {
     const labels = {
         [ASSET_FILTER_MODES.ALL]: "Все рабочие",
@@ -4543,6 +4627,58 @@ function getFilteredWorkingAssets() {
         }
         return true;
     });
+}
+
+function getSortedWorkingAssets(filteredAssets) {
+    const sortKey = state.assetSort?.key || ASSET_SORT_KEYS.NONE;
+    if (!sortKey) {
+        return filteredAssets;
+    }
+
+    return filteredAssets
+        .map((asset, index) => ({ asset, index }))
+        .sort((left, right) => {
+            const comparison = compareAssetSortValues(
+                getAssetSortValue(left.asset, sortKey),
+                getAssetSortValue(right.asset, sortKey)
+            );
+            return comparison || left.index - right.index;
+        })
+        .map((item) => item.asset);
+}
+
+function getAssetSortValue(asset, sortKey) {
+    if (sortKey === ASSET_SORT_KEYS.TITLE) {
+        return assetDisplayTitle(asset);
+    }
+    if (sortKey === ASSET_SORT_KEYS.ASSET_TAG) {
+        return assetCanonicalTag(asset);
+    }
+    if (sortKey === ASSET_SORT_KEYS.TYPE) {
+        return asset.asset_type;
+    }
+    if (sortKey === ASSET_SORT_KEYS.STATUS) {
+        return asset.status;
+    }
+    if (sortKey === ASSET_SORT_KEYS.LOCATION) {
+        return resolveAssetFilterLocationLabel(asset.location_id);
+    }
+    return "";
+}
+
+function compareAssetSortValues(leftValue, rightValue) {
+    const left = String(leftValue || "").trim();
+    const right = String(rightValue || "").trim();
+    if (!left && !right) {
+        return 0;
+    }
+    if (!left) {
+        return 1;
+    }
+    if (!right) {
+        return -1;
+    }
+    return left.localeCompare(right, "ru-RU", { numeric: true, sensitivity: "base" });
 }
 
 function getAssetTypeFilterOptions() {

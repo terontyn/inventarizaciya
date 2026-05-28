@@ -985,3 +985,65 @@ Action boundaries:
 - filtered rows remain navigation-only;
 - no lifecycle row actions are introduced;
 - no bulk actions are introduced.
+
+## Frontend Selected Asset Overview Technical Hints
+
+Selected Asset Overview / Low-Sensitivity Technical Hints is accepted only as a frontend-only selected Asset Overview refinement.
+
+This does not add a backend/API endpoint.
+
+Accepted behavior:
+
+- selected Asset Overview may display a compact read-only `Технические подсказки` block;
+- hints are read from already loaded selected asset detail data;
+- source data is existing selected asset `technical_attributes` / `technicalAttributes`;
+- only low-sensitivity allowlisted hints may be rendered;
+- missing, null, blank or whitespace-only values are omitted;
+- if no allowlisted hints are present, the block is omitted.
+
+Accepted hint allowlist:
+
+- `hostname` -> `Hostname`;
+- `extension_number` -> `Внутренний номер`;
+- `printer_network_name` -> `Сетевое имя принтера`.
+
+Explicitly excluded from Overview hints:
+
+- `anydesk_id`;
+- `ip_address`;
+- `mac_address`;
+- `phone_ip`;
+- `sip_line_id`;
+- `printer_ip`;
+- `printer_placement_note`;
+- asset `note`;
+- QR payload;
+- audit/history;
+- `profile`;
+- arbitrary custom/unsupported technical fields;
+- masked sensitive values.
+
+Preserved API boundaries:
+
+- no new backend endpoint;
+- no DB migration;
+- no DTO/list expansion;
+- no change to `GET /api/v1/assets`;
+- no change to `GET /api/v1/assets?visibility=archived`;
+- no change to `GET /api/v1/assets/{id}`;
+- no change to `GET /api/v1/assets/technical-attribute-search`;
+- no change to `GET /api/v1/assets/employee-sheet-technical-hints`;
+- no change to `PUT /api/v1/assets/{id}/technical-attributes`;
+- no backend/global search;
+- no Asset 360;
+- no reporting/dashboard;
+- no public lookup;
+- no employee self-service.
+
+Technical Details remains the full technical attribute surface.
+
+Overview hints are not an edit surface.
+
+Employee Sheet remains unchanged and continues to use its own accepted low-sensitivity hint rules.
+
+Technical Search remains unchanged and continues to apply its own masking rules.

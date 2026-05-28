@@ -2160,7 +2160,8 @@ code {
     background: var(--accent);
 }
 
-.asset-filter-panel {
+.asset-filter-panel,
+.asset-sort-panel {
     display: grid;
     gap: 0.75rem;
     padding: 0.85rem;
@@ -2169,11 +2170,18 @@ code {
     background: rgba(240, 253, 250, 0.52);
 }
 
-.asset-filter-heading {
+.asset-sort-panel {
+    border-color: rgba(37, 99, 235, 0.14);
+    background: rgba(239, 246, 255, 0.58);
+}
+
+.asset-filter-heading,
+.asset-sort-heading {
     margin-bottom: 0;
 }
 
-.asset-filter-help {
+.asset-filter-help,
+.asset-sort-help {
     margin: 0;
     color: var(--muted);
     font-size: 0.86rem;
@@ -2187,11 +2195,20 @@ code {
     align-items: end;
 }
 
-.asset-filter-field {
+.asset-sort-controls {
+    display: grid;
+    grid-template-columns: minmax(12rem, 1fr) auto;
+    gap: 0.65rem;
+    align-items: end;
+}
+
+.asset-filter-field,
+.asset-sort-field {
     margin: 0;
 }
 
-.asset-filter-reset {
+.asset-filter-reset,
+.asset-sort-reset {
     align-self: end;
     white-space: nowrap;
 }
@@ -2474,11 +2491,13 @@ code {
     .workspace-path-grid,
     .action-grid,
     .asset-filter-controls,
+    .asset-sort-controls,
     .employee-sheet-search-result {
         grid-template-columns: 1fr;
     }
 
-    .asset-filter-reset {
+    .asset-filter-reset,
+    .asset-sort-reset {
         justify-self: start;
         white-space: normal;
     }

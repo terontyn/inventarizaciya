@@ -153,6 +153,13 @@ class MinimalPilotUiSmokeTest {
                 assertThat(body, containsString("Тип"));
                 assertThat(body, containsString("Локация"));
                 assertThat(body, containsString("Сбросить фильтры"));
+                assertThat(body, containsString("Сортировка активов"));
+                assertThat(body, containsString("По названию"));
+                assertThat(body, containsString("По инвентарному номеру"));
+                assertThat(body, containsString("По типу"));
+                assertThat(body, containsString("По статусу"));
+                assertThat(body, containsString("По локации"));
+                assertThat(body, containsString("Сбросить сортировку"));
                 assertThat(body, containsString("QR Lite"));
                 assertThat(body, containsString("QR по инвентарному номеру"));
                 assertThat(body, containsString("Производный QR"));
@@ -279,12 +286,20 @@ class MinimalPilotUiSmokeTest {
             .andExpect(content().string(not(containsString("data-asset-filter-retire"))))
             .andExpect(content().string(not(containsString("data-asset-filter-archive"))))
             .andExpect(content().string(not(containsString("data-asset-filter-unarchive"))))
+            .andExpect(content().string(not(containsString("data-asset-sort-retire"))))
+            .andExpect(content().string(not(containsString("data-asset-sort-archive"))))
+            .andExpect(content().string(not(containsString("data-asset-sort-unarchive"))))
+            .andExpect(content().string(not(containsString("data-asset-sort-bulk"))))
+            .andExpect(content().string(not(containsString("data-asset-sort-export"))))
+            .andExpect(content().string(not(containsString("data-asset-sort-persist"))))
+            .andExpect(content().string(not(containsString("assetSortLocalStorage"))))
             .andExpect(content().string(not(containsString("Generic PATCH only"))))
             .andExpect(content().string(not(containsString("Mutate path"))))
             .andExpect(content().string(not(containsString("Master data"))))
             .andExpect(content().string(not(containsString("data-technical-search-action"))))
             .andExpect(content().string(not(containsString("data-employee-sheet-action"))))
             .andExpect(content().string(not(containsString("saved views"))))
+            .andExpect(content().string(not(containsString("persistent preferences"))))
             .andExpect(content().string(not(containsString("bulk actions"))))
             .andExpect(content().string(not(containsString("dashboard"))))
             .andExpect(content().string(not(containsString("Asset 360"))))
