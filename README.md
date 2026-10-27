@@ -1,4 +1,25 @@
-# IT Asset Management SaaS Monorepo
+# Учёт IT-оборудования
+
+Система учёта оборудования, организационной структуры и ответственности за активы. Реализованы реестр и карточка актива, выдача, передача и возврат, история изменений, складской учёт, обслуживание, учёт ПО, тикеты и операционная сводка.
+
+**Стек:** Java 17, Spring Boot, Gradle, PostgreSQL, JDBC, Flyway, JUnit, Docker Compose.
+
+## Архитектура
+
+Семь сервисов разделяют пользователей и роли (`user-service`), активы (`asset-service`), склад (`inventory-service`), обслуживание (`maintenance-service`), ПО (`software-service`), тикеты (`ticket-service`) и отчёты (`reporting-service`). Минимальный веб-интерфейс доступен из `asset-service` на `/`.
+
+## Знакомство с проектом
+
+- [Реестр и операции с оборудованием](services/asset-service/README.md).
+- [Пользователи и организационная структура](services/user-service/README.md).
+- [Складской учёт](services/inventory-service/README.md).
+- Локальная конфигурация окружения: `ops/docker/docker-compose.local.yml`.
+- Проверка сервиса: `./gradlew :services:asset-service:test` (Windows: `gradlew.bat :services:asset-service:test`).
+
+Текущая публичная версия содержит ограниченный пилотный интерфейс. Расширенные QR-сценарии, SIM-карты и картриджи не входят в эту основную ветку. Контекст пользователя в пилоте не заменяет готовую систему аутентификации; Kubernetes и мониторинг представлены заготовками. Это не подтверждение готовности к работе с реальными данными организации.
+
+## Подробности реализации
+
 
 This repository is the working monorepo for the IT Asset Management SaaS project.
 Canonical product, architecture, domain, data, API, and ADR documents stay in the
