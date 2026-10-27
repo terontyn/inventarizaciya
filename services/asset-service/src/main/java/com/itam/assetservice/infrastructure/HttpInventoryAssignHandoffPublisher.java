@@ -17,6 +17,8 @@ import org.springframework.http.RequestEntity;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
@@ -27,6 +29,10 @@ import org.springframework.web.client.RestTemplate;
     havingValue = "true"
 )
 public class HttpInventoryAssignHandoffPublisher implements InventoryAssignHandoffPublisher {
+
+    private static final Logger log = LoggerFactory.getLogger(HttpInventoryAssignHandoffPublisher.class);
+    private static final int MAX_DISPATCH_ATTEMPTS = 3;
+    private static final long RETRY_BACKOFF_MILLIS = 500;
 
     private final RestTemplate restTemplate;
     private final Executor executor;
@@ -52,10 +58,31 @@ public class HttpInventoryAssignHandoffPublisher implements InventoryAssignHando
                 .header(AUTHENTICATED_ACTOR_HEADER, auditMetadata.actor())
                 .header(CORRELATION_ID_HEADER, auditMetadata.correlationId())
                 .build();
-            try {
-                restTemplate.exchange(request, Void.class);
-            } catch (RestClientException exception) {
-                // First contour accepts eventual consistency and does not roll back assign.
+            for (int attempt = 1; attempt <= MAX_DISPATCH_ATTEMPTS; attempt++) {
+                try {
+                    restTemplate.exchange(request, Void.class);
+                    return;
+                } catch (RestClientException exception) {
+                    // First contour accepts eventual consistency and does not roll back assign,
+                    // but failures must be visible and retried instead of silently dropped.
+                    if (attempt == MAX_DISPATCH_ATTEMPTS) {
+                        log.error(
+                            "Assign handoff for asset {} (tenant {}, correlation {}) failed after {} attempts; event lost",
+                            assetId, tenantId, auditMetadata.correlationId(), MAX_DISPATCH_ATTEMPTS, exception
+                        );
+                        return;
+                    }
+                    log.warn(
+                        "Assign handoff for asset {} (tenant {}, correlation {}) failed on attempt {}/{}; retrying",
+                        assetId, tenantId, auditMetadata.correlationId(), attempt, MAX_DISPATCH_ATTEMPTS
+                    );
+                    try {
+                        Thread.sleep(RETRY_BACKOFF_MILLIS * attempt);
+                    } catch (InterruptedException interrupted) {
+                        Thread.currentThread().interrupt();
+                        return;
+                    }
+                }
             }
         };
 

@@ -55,6 +55,22 @@ public class UserRoleApplicationService {
         }
     }
 
+    @Transactional
+    public void setRoles(UUID tenantId, UUID userId, java.util.List<UUID> roleIds, AuditMetadata auditMetadata) {
+        requireUserInSameTenant(tenantId, userId);
+        userRoleRepository.deleteByUserId(tenantId, userId);
+        if (roleIds != null) {
+            for (UUID roleId : roleIds) {
+                bind(tenantId, userId, roleId, auditMetadata);
+            }
+        }
+    }
+
+    public java.util.List<String> getRoleNames(UUID tenantId, UUID userId) {
+        return userRoleRepository.findRoleNamesByUserId(tenantId, userId);
+    }
+
+
     private void requireUserInSameTenant(UUID tenantId, UUID userId) {
         if (!userRepository.exists(tenantId, userId)) {
             throw new ResponseStatusException(

@@ -15,4 +15,6 @@ public interface UserRepository {
     Optional<User> update(UUID tenantId, UUID id, String name, UUID departmentId);
 
     boolean exists(UUID tenantId, UUID id);
+
+    void delete(UUID tenantId, UUID id);
 }

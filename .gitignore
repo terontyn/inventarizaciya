@@ -27,3 +27,6 @@ ops/docker/.env
 .gradle/
 build/
 out/
+node_modules/
+gradle-8.7/
+**/demo-state/

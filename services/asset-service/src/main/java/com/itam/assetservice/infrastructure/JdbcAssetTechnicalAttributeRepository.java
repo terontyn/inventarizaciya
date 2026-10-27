@@ -60,21 +60,27 @@ public class JdbcAssetTechnicalAttributeRepository implements AssetTechnicalAttr
             deleteParameters
         );
 
-        for (Map.Entry<String, String> entry : values.entrySet()) {
-            MapSqlParameterSource parameters = new MapSqlParameterSource()
+        if (values.isEmpty()) {
+            return;
+        }
+
+        // Batch insert — one round-trip instead of N
+        MapSqlParameterSource[] batchParams = values.entrySet().stream()
+            .map(entry -> new MapSqlParameterSource()
                 .addValue("tenantId", scopedTenantId)
                 .addValue("assetId", assetId)
                 .addValue("attributeKey", entry.getKey())
-                .addValue("attributeValue", entry.getValue());
-            jdbcTemplate.update(
-                "INSERT INTO asset_technical_attributes ("
-                    + "tenant_id, asset_id, attribute_key, attribute_value, created_at, updated_at"
-                    + ") VALUES ("
-                    + ":tenantId, :assetId, :attributeKey, :attributeValue, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP"
-                    + ")",
-                parameters
-            );
-        }
+                .addValue("attributeValue", entry.getValue()))
+            .toArray(MapSqlParameterSource[]::new);
+
+        jdbcTemplate.batchUpdate(
+            "INSERT INTO asset_technical_attributes ("
+                + "tenant_id, asset_id, attribute_key, attribute_value, created_at, updated_at"
+                + ") VALUES ("
+                + ":tenantId, :assetId, :attributeKey, :attributeValue, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP"
+                + ")",
+            batchParams
+        );
     }
 
     @Override

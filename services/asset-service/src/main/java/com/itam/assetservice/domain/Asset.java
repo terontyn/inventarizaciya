@@ -14,6 +14,9 @@ public record Asset(
     UUID locationId,
     String displayName,
     String note,
-    Instant archivedAt
+    String qrData,
+    Instant archivedAt,
+    UUID parentAssetId,
+    String ipAddress
 ) {
 }

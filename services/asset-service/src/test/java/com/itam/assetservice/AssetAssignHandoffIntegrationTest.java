@@ -81,6 +81,23 @@ class AssetAssignHandoffIntegrationTest extends IntegrationTestSupport {
 
         expectRoleLookup(tenantId, tenantAdminId, List.of(PilotRoleNames.TENANT_ADMIN));
         expectUserLookup(tenantId, tenantAdminId, targetUserId, HttpStatus.OK);
+        // Publisher retries failed handoffs (3 attempts) before giving up.
+        expectInventoryAssignHandoff(
+            tenantId,
+            tenantAdminId,
+            assetId,
+            "tenant-admin",
+            "corr-assign-no-rollback",
+            HttpStatus.INTERNAL_SERVER_ERROR
+        );
+        expectInventoryAssignHandoff(
+            tenantId,
+            tenantAdminId,
+            assetId,
+            "tenant-admin",
+            "corr-assign-no-rollback",
+            HttpStatus.INTERNAL_SERVER_ERROR
+        );
         expectInventoryAssignHandoff(
             tenantId,
             tenantAdminId,

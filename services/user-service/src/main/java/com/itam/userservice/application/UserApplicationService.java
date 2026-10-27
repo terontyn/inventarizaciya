@@ -83,6 +83,20 @@ public class UserApplicationService {
         }
     }
 
+    @Transactional
+    public void delete(UUID tenantId, UUID id, AuditMetadata auditMetadata) {
+        User user = findById(tenantId, id);
+        userRepository.delete(tenantId, id);
+        auditWriter.record(
+            tenantId,
+            auditMetadata,
+            AuditEntity.USER,
+            user.id(),
+            AuditAction.DELETE,
+            new UserAuditPayload(user.id(), user.name(), user.departmentId())
+        );
+    }
+
     private record UserAuditPayload(UUID id, String name, UUID departmentId) {
     }
 }

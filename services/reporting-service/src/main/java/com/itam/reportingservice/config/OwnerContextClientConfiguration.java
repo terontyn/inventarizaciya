@@ -1,5 +1,6 @@
 package com.itam.reportingservice.config;
 
+import java.time.Duration;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -10,31 +11,49 @@ public class OwnerContextClientConfiguration {
 
     @Bean
     public RestTemplate userServiceRestTemplate(RestTemplateBuilder builder) {
-        return builder.build();
+        return builder
+            .setConnectTimeout(Duration.ofSeconds(2))
+            .setReadTimeout(Duration.ofSeconds(5))
+            .build();
     }
 
     @Bean
     public RestTemplate assetServiceRestTemplate(RestTemplateBuilder builder) {
-        return builder.build();
+        return builder
+            .setConnectTimeout(Duration.ofSeconds(2))
+            .setReadTimeout(Duration.ofSeconds(5))
+            .build();
     }
 
     @Bean
     public RestTemplate inventoryServiceRestTemplate(RestTemplateBuilder builder) {
-        return builder.build();
+        return builder
+            .setConnectTimeout(Duration.ofSeconds(2))
+            .setReadTimeout(Duration.ofSeconds(5))
+            .build();
     }
 
     @Bean
     public RestTemplate maintenanceServiceRestTemplate(RestTemplateBuilder builder) {
-        return builder.build();
+        return builder
+            .setConnectTimeout(Duration.ofSeconds(2))
+            .setReadTimeout(Duration.ofSeconds(5))
+            .build();
     }
 
     @Bean
     public RestTemplate softwareServiceRestTemplate(RestTemplateBuilder builder) {
-        return builder.build();
+        return builder
+            .setConnectTimeout(Duration.ofSeconds(2))
+            .setReadTimeout(Duration.ofSeconds(5))
+            .build();
     }
 
     @Bean
     public RestTemplate ticketServiceRestTemplate(RestTemplateBuilder builder) {
-        return builder.build();
+        return builder
+            .setConnectTimeout(Duration.ofSeconds(2))
+            .setReadTimeout(Duration.ofSeconds(5))
+            .build();
     }
 }

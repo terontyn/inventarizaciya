@@ -296,12 +296,23 @@ public class AssetTechnicalAttributeApplicationService {
 
     private MatchedField matchedField(AssetTechnicalAttributeKey key, String value) {
         boolean sensitive = SENSITIVE_SEARCH_KEYS.contains(key);
+        // masked is true only when value is actually masked (non-null/non-blank sensitive value)
+        String displayValue;
+        boolean masked;
+        if (sensitive) {
+            displayValue = maskSensitiveValue(key, value);
+            // masked=true when actual value exists and was replaced with a mask
+            masked = value != null && !value.isBlank();
+        } else {
+            displayValue = value;
+            masked = false;
+        }
         return new MatchedField(
             key.key(),
             labelFor(key),
-            sensitive ? maskSensitiveValue(key, value) : value,
+            displayValue,
             sensitive,
-            sensitive
+            masked
         );
     }
 
@@ -353,7 +364,6 @@ public class AssetTechnicalAttributeApplicationService {
             case PRINTER_IP -> "IP принтера";
             case PRINTER_NETWORK_NAME -> "Сетевое имя принтера";
             case PRINTER_PLACEMENT_NOTE -> "Примечание по размещению";
-            default -> throw new IllegalArgumentException("Unsupported technical attribute search key");
         };
     }
 

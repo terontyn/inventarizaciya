@@ -9,13 +9,17 @@ public interface AssetRepository {
 
     Asset create(
         UUID tenantId,
+        UUID id,
         String assetTag,
         String serialNumber,
         String assetType,
         UUID assignedUserId,
         UUID locationId,
         String displayName,
-        String note
+        String note,
+        String qrData,
+        UUID parentAssetId,
+        String ipAddress
     );
 
     List<Asset> findAll(UUID tenantId);
@@ -23,6 +27,8 @@ public interface AssetRepository {
     List<Asset> findArchived(UUID tenantId);
 
     Optional<Asset> findById(UUID tenantId, UUID id);
+
+    Optional<Asset> findByIdForUpdate(UUID tenantId, UUID id);
 
     Optional<Asset> update(
         UUID tenantId,

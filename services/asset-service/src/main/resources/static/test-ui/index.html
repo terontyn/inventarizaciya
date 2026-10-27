@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ITAM — IT Asset Management · Inventory</title>
+  <meta name="description" content="Премиальная система управления IT-активами. Инвентаризация, жизненный цикл оборудования, ролевой доступ." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ═══════════════════════════════════════════════════
+       LOGIN SCREEN
+  ═══════════════════════════════════════════════════ -->
+  <div id="login-screen" class="login-screen">
+    <div class="login-bg-grid"></div>
+    <div class="login-orb login-orb-1"></div>
+    <div class="login-orb login-orb-2"></div>
+
+    <div class="login-card">
+      <div class="login-logo">
+        <div class="login-logo-icon">
+          <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+            <path d="M16 2L28 9V23L16 30L4 23V9L16 2Z" stroke="url(#logoGrad)" stroke-width="1.5" fill="none"/>
+            <path d="M16 8L22 12V20L16 24L10 20V12L16 8Z" fill="url(#logoGradFill)" opacity="0.6"/>
+            <defs>
+              <linearGradient id="logoGrad" x1="4" y1="2" x2="28" y2="30" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stop-color="#14b8a6"/>
+                <stop offset="100%" stop-color="#0ea5e9"/>
+              </linearGradient>
+              <linearGradient id="logoGradFill" x1="10" y1="8" x2="22" y2="24" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stop-color="#0d9488"/>
+                <stop offset="100%" stop-color="#0284c7"/>
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+        <div class="login-logo-text">
+          <span class="login-logo-brand">ITAM</span>
+          <span class="login-logo-sub">Asset Inventory</span>
+        </div>
+      </div>
+
+      <div class="login-header">
+        <h1>Добро пожаловать</h1>
+        <p>Войдите в систему управления активами</p>
+      </div>
+
+      <form id="login-form" class="login-form" autocomplete="off">
+        <div class="form-group">
+          <label for="login-username">Логин</label>
+          <div class="input-wrapper">
+            <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+            </svg>
+            <input id="login-username" type="text" placeholder="Введите логин" autocomplete="off" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="login-password">Пароль</label>
+          <div class="input-wrapper">
+            <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+            <input id="login-password" type="password" placeholder="Введите пароль" autocomplete="off" />
+            <button type="button" class="pwd-toggle" id="pwd-toggle" title="Показать пароль">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div id="login-error" class="login-error hidden">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+          </svg>
+          Введите логин и пароль
+        </div>
+
+        <button type="submit" class="btn-primary btn-full" id="login-btn">
+          <span class="btn-text">Войти в систему</span>
+          <div class="btn-spinner hidden"></div>
+        </button>
+      </form>
+
+      <div class="login-divider">
+        <span>Быстрый вход для тестирования</span>
+      </div>
+
+      <div class="login-quick-buttons">
+        <button class="btn-quick btn-quick-admin" id="quick-admin" title="Полный административный доступ">
+          <div class="quick-btn-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
+            </svg>
+          </div>
+          <div class="quick-btn-info">
+            <span class="quick-btn-title">Администратор</span>
+            <span class="quick-btn-desc">Полный доступ к реестру</span>
+          </div>
+          <svg class="quick-btn-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M5 12h14M12 5l7 7-7 7"/>
+          </svg>
+        </button>
+
+        <button class="btn-quick btn-quick-employee" id="quick-employee" title="Личный кабинет сотрудника">
+          <div class="quick-btn-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+            </svg>
+          </div>
+          <div class="quick-btn-info">
+            <span class="quick-btn-title">Сотрудник</span>
+            <span class="quick-btn-desc">Личный кабинет и заявки</span>
+          </div>
+          <svg class="quick-btn-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M5 12h14M12 5l7 7-7 7"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="login-footer">
+        <span>ITAM Inventory Sandbox v0.8</span>
+        <span class="dot">·</span>
+        <span>UI/UX Preview</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════
+       MAIN APP (hidden until login)
+  ═══════════════════════════════════════════════════ -->
+  <div id="app" class="app hidden">
+
+    <!-- TOP BAR -->
+    <header class="topbar" id="topbar">
+      <div class="topbar-left">
+        <button class="sidebar-toggle" id="sidebar-toggle" title="Свернуть / развернуть меню">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+          </svg>
+        </button>
+        <div class="topbar-brand">
+          <svg width="22" height="22" viewBox="0 0 32 32" fill="none">
+            <path d="M16 2L28 9V23L16 30L4 23V9L16 2Z" stroke="url(#tbLogoGrad)" stroke-width="1.5" fill="none"/>
+            <path d="M16 8L22 12V20L16 24L10 20V12L16 8Z" fill="url(#tbLogoFill)" opacity="0.7"/>
+            <defs>
+              <linearGradient id="tbLogoGrad" x1="4" y1="2" x2="28" y2="30" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stop-color="#14b8a6"/><stop offset="100%" stop-color="#0ea5e9"/>
+              </linearGradient>
+              <linearGradient id="tbLogoFill" x1="10" y1="8" x2="22" y2="24" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stop-color="#0d9488"/><stop offset="100%" stop-color="#0284c7"/>
+              </linearGradient>
+            </defs>
+          </svg>
+          <span class="topbar-brand-name">ITAM</span>
+          <span class="topbar-brand-sep">·</span>
+          <span class="topbar-brand-module" id="topbar-module">Инвентаризация</span>
+        </div>
+      </div>
+
+      <div class="topbar-center" id="topbar-search-zone">
+        <!-- Admin only search bar injected here -->
+      </div>
+
+      <div class="topbar-right">
+        <div class="topbar-role-badge" id="topbar-role-badge"></div>
+        <div class="topbar-user" id="topbar-user">
+          <div class="topbar-avatar" id="topbar-avatar"></div>
+          <span class="topbar-username" id="topbar-username"></span>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+          <div class="topbar-dropdown" id="topbar-dropdown">
+            <button class="dropdown-item" id="logout-btn">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+              </svg>
+              Выйти из системы
+            </button>
+          </div>
+        </div>
+        <div class="topbar-requests-badge hidden" id="topbar-requests-badge" title="Новые заявки от сотрудников">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+          </svg>
+          <span id="requests-count-badge">0</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- WORKSPACE -->
+    <div class="workspace" id="workspace">
+
+      <!-- ── SIDEBAR (admin only) ── -->
+      <aside class="sidebar" id="sidebar">
+        <nav class="sidebar-nav">
+          <div class="sidebar-section">
+            <span class="sidebar-section-label">Реестр</span>
+            <ul class="sidebar-tree" id="sidebar-tree">
+              <li class="tree-item tree-item-active" data-section="all-assets" id="nav-all-assets">
+                <button class="tree-btn">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                    <rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>
+                  </svg>
+                  <span>Все активы</span>
+                  <span class="tree-badge" id="tree-badge-all">0</span>
+                </button>
+              </li>
+              <li class="tree-item" data-section="archive" id="nav-archive">
+                <button class="tree-btn">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                    <polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/>
+                  </svg>
+                  <span>Архив</span>
+                  <span class="tree-badge tree-badge-muted" id="tree-badge-archive">0</span>
+                </button>
+              </li>
+            </ul>
+          </div>
+
+          <div class="sidebar-section">
+            <span class="sidebar-section-label">Структура</span>
+            <ul class="sidebar-tree">
+              <li class="tree-item tree-group" data-section="org" id="nav-org">
+                <button class="tree-btn tree-group-btn" id="org-group-toggle">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                    <rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/>
+                  </svg>
+                  <span>Оргструктура</span>
+                  <svg class="tree-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                </button>
+                <ul class="tree-children" id="org-tree">
+                  <!-- populated by JS -->
+                </ul>
+              </li>
+              <li class="tree-item tree-group" data-section="locations" id="nav-locations">
+                <button class="tree-btn tree-group-btn" id="loc-group-toggle">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+                  </svg>
+                  <span>Локации</span>
+                  <svg class="tree-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                </button>
+                <ul class="tree-children" id="loc-tree">
+                  <!-- populated by JS -->
+                </ul>
+              </li>
+            </ul>
+          </div>
+
+          <div class="sidebar-section">
+            <span class="sidebar-section-label">Управление</span>
+            <ul class="sidebar-tree">
+              <li class="tree-item" data-section="requests" id="nav-requests">
+                <button class="tree-btn">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                  </svg>
+                  <span>Заявки</span>
+                  <span class="tree-badge tree-badge-accent" id="tree-badge-requests">0</span>
+                </button>
+              </li>
+              <li class="tree-item" data-section="settings" id="nav-settings">
+                <button class="tree-btn">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                    <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                  </svg>
+                  <span>Настройки</span>
+                </button>
+              </li>
+            </ul>
+          </div>
+        </nav>
+
+        <div class="sidebar-footer">
+          <div class="sidebar-footer-env">
+            <span class="env-badge">Sandbox</span>
+            <span class="env-version">v0.8 · UI Preview</span>
+          </div>
+        </div>
+      </aside>
+
+      <!-- ── MAIN CONTENT ── -->
+      <main class="main-content" id="main-content">
+
+        <!-- ══ SECTION: ALL ASSETS (Admin) ══ -->
+        <section class="section" id="section-all-assets">
+          <div class="section-header">
+            <div class="section-title-group">
+              <h2 class="section-title">Все активы</h2>
+              <span class="section-subtitle" id="assets-summary-line">Загрузка...</span>
+            </div>
+            <div class="section-actions">
+              <button class="btn-secondary" id="btn-add-asset">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Добавить актив
+              </button>
+            </div>
+          </div>
+
+          <!-- Filter bar -->
+          <div class="filter-bar">
+            <div class="filter-group">
+              <label class="filter-label">Тип устройства</label>
+              <div class="filter-chips" id="filter-type-chips">
+                <button class="chip chip-active" data-filter="type" data-value="ALL">Все</button>
+                <button class="chip" data-filter="type" data-value="LAPTOP">Ноутбуки</button>
+                <button class="chip" data-filter="type" data-value="DESKTOP">ПК</button>
+                <button class="chip" data-filter="type" data-value="MONITOR">Мониторы</button>
+                <button class="chip" data-filter="type" data-value="PRINTER">Принтеры</button>
+                <button class="chip" data-filter="type" data-value="PHONE">Телефоны</button>
+                <button class="chip" data-filter="type" data-value="OTHER">Прочее</button>
+              </div>
+            </div>
+            <div class="filter-group">
+              <label class="filter-label">Статус</label>
+              <div class="filter-chips">
+                <button class="chip chip-active" data-filter="status" data-value="ALL">Все</button>
+                <button class="chip" data-filter="status" data-value="ACTIVE">ACTIVE</button>
+                <button class="chip" data-filter="status" data-value="RETIRED">RETIRED</button>
+              </div>
+            </div>
+            <div class="filter-group filter-sort">
+              <label class="filter-label">Сортировка</label>
+              <select class="sort-select" id="sort-select">
+                <option value="tag-asc">Тег ↑</option>
+                <option value="tag-desc">Тег ↓</option>
+                <option value="type-asc">Тип ↑</option>
+                <option value="name-asc">Имя ↑</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Active filter chips (populated by JS, hidden when no filters active) -->
+          <div class="active-filter-chips-bar" id="active-filter-chips" style="display:none;" aria-live="polite"></div>
+
+          <!-- Assets list -->
+          <div class="assets-layout">
+            <div class="assets-list-pane" id="assets-list-pane">
+              <div class="assets-list" id="assets-list">
+                <!-- populated by JS -->
+              </div>
+            </div>
+            <div class="asset-detail-pane hidden" id="asset-detail-pane">
+              <!-- populated by JS -->
+            </div>
+          </div>
+        </section>
+
+        <!-- ══ SECTION: ARCHIVE (Admin) ══ -->
+        <section class="section hidden" id="section-archive">
+          <div class="section-header">
+            <div class="section-title-group">
+              <h2 class="section-title">Архив активов</h2>
+              <span class="section-subtitle" id="archive-summary-line">Заархивированные активы</span>
+            </div>
+          </div>
+          <div class="assets-layout">
+            <div class="assets-list-pane">
+              <div class="assets-list" id="archive-list"></div>
+            </div>
+            <div class="asset-detail-pane hidden" id="archive-detail-pane"></div>
+          </div>
+        </section>
+
+        <!-- ══ SECTION: ORG (Admin) ══ -->
+        <section class="section hidden" id="section-org">
+          <div class="section-header">
+            <div class="section-title-group">
+              <h2 class="section-title" id="org-section-title">Оргструктура</h2>
+              <span class="section-subtitle" id="org-subtitle"></span>
+            </div>
+          </div>
+          <div class="assets-list" id="org-assets-list"></div>
+        </section>
+
+        <!-- ══ SECTION: LOCATIONS (Admin) ══ -->
+        <section class="section hidden" id="section-locations">
+          <div class="section-header">
+            <div class="section-title-group">
+              <h2 class="section-title" id="loc-section-title">Локации</h2>
+              <span class="section-subtitle" id="loc-subtitle"></span>
+            </div>
+          </div>
+          <div class="assets-list" id="loc-assets-list"></div>
+        </section>
+
+        <!-- ══ SECTION: REQUESTS (Admin) ══ -->
+        <section class="section hidden" id="section-requests">
+          <div class="section-header">
+            <div class="section-title-group">
+              <h2 class="section-title">Заявки от сотрудников</h2>
+              <span class="section-subtitle" id="requests-summary-line">Входящие запросы на оборудование и услуги</span>
+            </div>
+          </div>
+          <div class="requests-grid" id="admin-requests-list">
+            <div class="empty-state" id="requests-empty">
+              <div class="empty-icon">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                </svg>
+              </div>
+              <p>Заявок пока нет</p>
+              <span>Заявки от сотрудников появятся здесь</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- ══ SECTION: SETTINGS (Admin) ══ -->
+        <section class="section hidden" id="section-settings">
+          <div class="section-header">
+            <div class="section-title-group">
+              <h2 class="section-title">Настройки системы</h2>
+              <span class="section-subtitle">Конфигурация Sandbox окружения</span>
+            </div>
+          </div>
+          <div class="settings-grid">
+            <div class="settings-card">
+              <div class="settings-card-header">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                  <rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>
+                </svg>
+                <h3>Режим данных</h3>
+              </div>
+              <p>Все операции выполняются in-memory. Изменения не сохраняются в localStorage и не мутируют backend-таблицы.</p>
+              <div class="settings-badge-row">
+                <span class="badge badge-emerald">In-Memory</span>
+                <span class="badge badge-slate">No Persistence</span>
+              </div>
+            </div>
+            <div class="settings-card">
+              <div class="settings-card-header">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                </svg>
+                <h3>Роли и доступ</h3>
+              </div>
+              <p>Доступны роли: Администратор (полный доступ) и Сотрудник (личный кабинет). Переключение через экран входа.</p>
+              <div class="settings-badge-row">
+                <span class="badge badge-indigo">RBAC</span>
+                <span class="badge badge-slate">Sandbox Auth</span>
+              </div>
+            </div>
+            <div class="settings-card">
+              <div class="settings-card-header">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                  <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                </svg>
+                <h3>API статус</h3>
+              </div>
+              <p>Backend API не подключен в данном sandbox-режиме. Используются мок-данные для демонстрации UX/UI.</p>
+              <div class="settings-badge-row">
+                <span class="badge badge-amber">Mock Data</span>
+                <span class="badge badge-slate">No API</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ══ SECTION: EMPLOYEE VIEW ══ -->
+        <section class="section hidden" id="section-employee">
+          <div class="employee-layout">
+            <!-- Employee card -->
+            <div class="employee-card" id="employee-card">
+              <!-- populated by JS -->
+            </div>
+            <!-- Request form -->
+            <div class="employee-request-panel">
+              <div class="request-form-card" id="request-form-card">
+                <div class="request-form-header">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                  </svg>
+                  <h3>Запрос / Сообщение о проблеме</h3>
+                </div>
+                <form id="employee-request-form">
+                  <div class="form-group">
+                    <label for="req-type">Тип запроса</label>
+                    <div class="req-type-grid" id="req-type-grid">
+                      <label class="req-type-option">
+                        <input type="radio" name="req-type" value="Ноутбук" id="req-laptop" />
+                        <span class="req-type-card">
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                            <rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>
+                          </svg>
+                          Ноутбук
+                        </span>
+                      </label>
+                      <label class="req-type-option">
+                        <input type="radio" name="req-type" value="Монитор" id="req-monitor" />
+                        <span class="req-type-card">
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                            <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+                          </svg>
+                          Монитор
+                        </span>
+                      </label>
+                      <label class="req-type-option">
+                        <input type="radio" name="req-type" value="Аксессуары" id="req-accessories" />
+                        <span class="req-type-card">
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                          </svg>
+                          Аксессуары
+                        </span>
+                      </label>
+                      <label class="req-type-option">
+                        <input type="radio" name="req-type" value="Смена локации" id="req-location" />
+                        <span class="req-type-card">
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+                          </svg>
+                          Смена локации
+                        </span>
+                      </label>
+                      <label class="req-type-option">
+                        <input type="radio" name="req-type" value="Проблема с техникой" id="req-issue" />
+                        <span class="req-type-card">
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                          </svg>
+                          Проблема с техникой
+                        </span>
+                      </label>
+                      <label class="req-type-option">
+                        <input type="radio" name="req-type" value="Другое" id="req-other" />
+                        <span class="req-type-card">
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                            <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                          </svg>
+                          Другое
+                        </span>
+                      </label>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label for="req-description">Описание</label>
+                    <textarea id="req-description" placeholder="Опишите ваш запрос или проблему подробно..." rows="4"></textarea>
+                  </div>
+                  <div id="req-error" class="login-error hidden">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                    Выберите тип запроса и добавьте описание
+                  </div>
+                  <button type="submit" class="btn-primary btn-full" id="submit-request-btn">
+                    <span class="btn-text">Отправить запрос</span>
+                    <div class="btn-spinner hidden"></div>
+                  </button>
+                </form>
+                <div id="req-success" class="req-success hidden">
+                  <div class="req-success-icon">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="20 6 9 17 4 12"/>
+                    </svg>
+                  </div>
+                  <h4>Запрос отправлен!</h4>
+                  <p>Ваш запрос принят и передан администратору. Ожидайте ответа.</p>
+                  <button class="btn-secondary" id="req-new-btn">Новый запрос</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </main>
+    </div>
+
+    <!-- ══ MODAL: ADD ASSET ══ -->
+    <div class="modal-overlay hidden" id="add-asset-modal">
+      <div class="modal">
+        <div class="modal-header">
+          <h3>Добавить актив</h3>
+          <button class="modal-close" id="close-add-modal">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+        <div class="modal-body">
+          <form id="add-asset-form">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="new-asset-tag">Asset Tag *</label>
+                <input id="new-asset-tag" type="text" placeholder="Напр. ASSET-1234" />
+              </div>
+              <div class="form-group">
+                <label for="new-serial">Серийный номер</label>
+                <input id="new-serial" type="text" placeholder="SN-XXXX" />
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="new-type">Тип устройства *</label>
+                <select id="new-type">
+                  <option value="">Выберите тип...</option>
+                  <option value="LAPTOP">Ноутбук</option>
+                  <option value="DESKTOP">Настольный ПК</option>
+                  <option value="MONITOR">Монитор</option>
+                  <option value="PRINTER">Принтер</option>
+                  <option value="PHONE">Телефон</option>
+                  <option value="OTHER">Прочее</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="new-location">Локация</label>
+                <select id="new-location">
+                  <option value="">Не указана</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="new-display-name">Отображаемое имя</label>
+              <input id="new-display-name" type="text" placeholder="Напр. Рабочий ноутбук Иванова" />
+            </div>
+            <div class="form-group">
+              <label for="new-note">Примечание</label>
+              <textarea id="new-note" placeholder="Оперативная заметка..." rows="2"></textarea>
+            </div>
+            <div class="form-group">
+              <label for="new-assigned-user">Назначен пользователю</label>
+              <select id="new-assigned-user">
+                <option value="">Не назначен</option>
+              </select>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" id="cancel-add-modal">Отмена</button>
+          <button class="btn-primary" id="confirm-add-asset">Добавить актив</button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /app -->
+
+  <script src="app.js"></script>
+</body>
+</html>

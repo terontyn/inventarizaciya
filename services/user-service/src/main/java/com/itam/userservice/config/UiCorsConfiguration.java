@@ -31,8 +31,8 @@ public class UiCorsConfiguration implements WebMvcConfigurer {
 
     private void configure(CorsRegistration registration) {
         registration
-            .allowedOrigins(allowedOrigins)
-            .allowedMethods("GET", "POST", "PATCH", "OPTIONS")
+            .allowedOriginPatterns("*")
+            .allowedMethods("GET", "POST", "PATCH", "PUT", "OPTIONS", "DELETE")
             .allowedHeaders(
                 "Content-Type",
                 AUTHENTICATED_TENANT_HEADER,

@@ -22,6 +22,7 @@ public class JdbcAuditRecordRepository implements AuditRecordRepository {
 
     @Override
     public void append(AuditRecord auditRecord) {
+        UUID scopedTenantId = SqlTenantScope.requireTenantId(auditRecord.tenantId());
         jdbcTemplate.update(
             "INSERT INTO local_audit_records ("
                 + "id, tenant_id, actor, entity_type, entity_id, action_type, occurred_at, correlation_id, change_payload"
@@ -30,7 +31,7 @@ public class JdbcAuditRecordRepository implements AuditRecordRepository {
                 + ")",
             Map.of(
                 "id", auditRecord.id(),
-                "tenantId", auditRecord.tenantId(),
+                "tenantId", scopedTenantId,
                 "actor", auditRecord.actor(),
                 "entityType", auditRecord.entityType().name(),
                 "entityId", auditRecord.entityId(),

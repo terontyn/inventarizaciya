@@ -31,13 +31,13 @@ public class JdbcUserRoleRepository implements UserRoleRepository {
     @Override
     public boolean exists(UUID tenantId, UUID userId, UUID roleId) {
         UUID scopedTenantId = SqlTenantScope.requireTenantId(tenantId);
-        Integer count = jdbcTemplate.queryForObject(
-            "SELECT COUNT(*) FROM user_roles "
-                + "WHERE tenant_id = :tenantId AND user_id = :userId AND role_id = :roleId",
+        Boolean result = jdbcTemplate.queryForObject(
+            "SELECT EXISTS(SELECT 1 FROM user_roles "
+                + "WHERE tenant_id = :tenantId AND user_id = :userId AND role_id = :roleId)",
             Map.of("tenantId", scopedTenantId, "userId", userId, "roleId", roleId),
-            Integer.class
+            Boolean.class
         );
-        return count != null && count > 0;
+        return Boolean.TRUE.equals(result);
     }
 
     @Override
@@ -50,6 +50,15 @@ public class JdbcUserRoleRepository implements UserRoleRepository {
                 + "ORDER BY r.name, r.id",
             Map.of("tenantId", scopedTenantId, "userId", userId),
             (resultSet, rowNum) -> resultSet.getString("name")
+        );
+    }
+
+    @Override
+    public void deleteByUserId(UUID tenantId, UUID userId) {
+        UUID scopedTenantId = SqlTenantScope.requireTenantId(tenantId);
+        jdbcTemplate.update(
+            "DELETE FROM user_roles WHERE tenant_id = :tenantId AND user_id = :userId",
+            Map.of("tenantId", scopedTenantId, "userId", userId)
         );
     }
 }

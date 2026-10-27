@@ -83,6 +83,8 @@ public class AssetController {
             request.locationId(),
             request.displayName(),
             request.note(),
+            request.parentAssetId(),
+            request.ipAddress(),
             requestContextExtractor.requireAuditMetadata(servletRequest)
         );
         return ResponseEntity
@@ -327,7 +329,9 @@ public class AssetController {
         UUID assignedUserId,
         UUID locationId,
         String displayName,
-        String note
+        String note,
+        UUID parentAssetId,
+        String ipAddress
     ) {
     }
 
@@ -399,7 +403,10 @@ public class AssetController {
         UUID locationId,
         String displayName,
         String note,
-        Instant archivedAt
+        String qrData,
+        Instant archivedAt,
+        UUID parentAssetId,
+        String ipAddress
     ) {
 
         private static AssetResponse from(Asset asset) {
@@ -413,7 +420,10 @@ public class AssetController {
                 asset.locationId(),
                 asset.displayName(),
                 asset.note(),
-                asset.archivedAt()
+                asset.qrData(),
+                asset.archivedAt(),
+                asset.parentAssetId(),
+                asset.ipAddress()
             );
         }
     }
@@ -428,7 +438,10 @@ public class AssetController {
         UUID locationId,
         String displayName,
         String note,
+        String qrData,
         Instant archivedAt,
+        UUID parentAssetId,
+        String ipAddress,
         TechnicalAttributesResponse technicalAttributes
     ) {
 
@@ -446,7 +459,10 @@ public class AssetController {
                 asset.locationId(),
                 asset.displayName(),
                 asset.note(),
+                asset.qrData(),
                 asset.archivedAt(),
+                asset.parentAssetId(),
+                asset.ipAddress(),
                 TechnicalAttributesResponse.from(technicalAttributes)
             );
         }

@@ -93,4 +93,13 @@ public class JdbcUserRepository implements UserRepository {
         );
         return count != null && count > 0;
     }
+
+    @Override
+    public void delete(UUID tenantId, UUID id) {
+        UUID scopedTenantId = SqlTenantScope.requireTenantId(tenantId);
+        jdbcTemplate.update(
+            "DELETE FROM users WHERE tenant_id = :tenantId AND id = :id",
+            Map.of("tenantId", scopedTenantId, "id", id)
+        );
+    }
 }

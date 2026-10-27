@@ -10,4 +10,6 @@ public interface UserRoleRepository {
     boolean exists(UUID tenantId, UUID userId, UUID roleId);
 
     List<String> findRoleNamesByUserId(UUID tenantId, UUID userId);
+
+    void deleteByUserId(UUID tenantId, UUID userId);
 }

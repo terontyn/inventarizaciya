@@ -49,6 +49,8 @@ public class AssetApplicationService {
         UUID locationId,
         String displayName,
         String note,
+        UUID parentAssetId,
+        String ipAddress,
         AuditMetadata auditMetadata
     ) {
         String normalizedAssetTag = InputNormalizer.requiredTrimmed(assetTag, "asset_tag");
@@ -69,17 +71,27 @@ public class AssetApplicationService {
             locationId,
             "location_id"
         );
+        requireParentAssetInSameTenant(tenantId, parentAssetId);
 
         try {
+            // QR payload is intentionally based on the immutable asset id only:
+            // one code per asset, never changes even if tag/name/type are edited.
+            UUID assetId = UUID.randomUUID();
+            String qrData = "ITAM-ASSET:" + assetId;
+
             Asset asset = assetRepository.create(
                 tenantId,
+                assetId,
                 normalizedAssetTag,
                 normalizedSerialNumber,
                 normalizedAssetType,
                 assignedUserId,
                 locationId,
                 normalizedDisplayName,
-                normalizedNote
+                normalizedNote,
+                qrData,
+                parentAssetId,
+                ipAddress
             );
             auditWriter.record(
                 tenantId,
@@ -101,11 +113,7 @@ public class AssetApplicationService {
             );
             return asset;
         } catch (DataIntegrityViolationException exception) {
-            throw new ResponseStatusException(
-                HttpStatus.CONFLICT,
-                "asset_tag must be unique within tenant",
-                exception
-            );
+            throw mapDataIntegrityViolation(exception);
         }
     }
 
@@ -196,17 +204,15 @@ public class AssetApplicationService {
             );
             return asset;
         } catch (DataIntegrityViolationException exception) {
-            throw new ResponseStatusException(
-                HttpStatus.CONFLICT,
-                "asset_tag must be unique within tenant",
-                exception
-            );
+            throw mapDataIntegrityViolation(exception);
         }
     }
 
     @Transactional
     public ArchiveResult archive(UUID tenantId, UUID id, AuditMetadata auditMetadata) {
-        Asset asset = findById(tenantId, id);
+        // Use FOR UPDATE to prevent race conditions on concurrent archive calls
+        Asset asset = assetRepository.findByIdForUpdate(tenantId, id)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Asset not found"));
         if (!AssetStatus.RETIRED.equalsIgnoreCase(asset.status())) {
             throw new ResponseStatusException(
                 HttpStatus.CONFLICT,
@@ -240,11 +246,13 @@ public class AssetApplicationService {
 
     @Transactional
     public UnarchiveResult unarchive(UUID tenantId, UUID id, AuditMetadata auditMetadata) {
-        Asset asset = findById(tenantId, id);
+        // Use FOR UPDATE to prevent race conditions on concurrent unarchive calls
+        Asset asset = assetRepository.findByIdForUpdate(tenantId, id)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Asset not found"));
         if (!AssetStatus.RETIRED.equalsIgnoreCase(asset.status())) {
             throw new ResponseStatusException(
                 HttpStatus.CONFLICT,
-                "Only archived retired assets can be unarchived"
+                "Only retired assets can be unarchived"
             );
         }
         if (asset.archivedAt() == null) {
@@ -271,6 +279,42 @@ public class AssetApplicationService {
             )
         );
         return new UnarchiveResult(unarchivedAsset.id());
+    }
+
+    private void requireParentAssetInSameTenant(UUID tenantId, UUID parentAssetId) {
+        if (parentAssetId == null) {
+            return;
+        }
+        assetRepository.findById(tenantId, parentAssetId)
+            .orElseThrow(() -> new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "parent_asset_id must reference an existing asset in the same tenant"
+            ));
+    }
+
+    private ResponseStatusException mapDataIntegrityViolation(DataIntegrityViolationException exception) {
+        String message = exception.getMostSpecificCause() == null
+            ? ""
+            : String.valueOf(exception.getMostSpecificCause().getMessage()).toLowerCase();
+        if (message.contains("uq_assets_tenant_asset_tag")) {
+            return new ResponseStatusException(
+                HttpStatus.CONFLICT,
+                "asset_tag must be unique within tenant",
+                exception
+            );
+        }
+        if (message.contains("parent_asset_id")) {
+            return new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "parent_asset_id must reference an existing asset in the same tenant",
+                exception
+            );
+        }
+        return new ResponseStatusException(
+            HttpStatus.CONFLICT,
+            "Request violates a data integrity constraint",
+            exception
+        );
     }
 
     private String normalizeDisplayName(String displayName) {

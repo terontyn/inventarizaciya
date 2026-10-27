@@ -18,7 +18,7 @@ import org.springframework.stereotype.Repository;
 public class JdbcAssetRepository implements AssetRepository {
 
     private static final String ASSET_COLUMNS = "id, tenant_id, asset_tag, serial_number, asset_type, "
-        + "status, assigned_user_id, location_id, display_name, note, archived_at";
+        + "status, assigned_user_id, location_id, display_name, note, qr_data, archived_at, parent_asset_id, ip_address";
 
     private static final RowMapper<Asset> ASSET_ROW_MAPPER = (resultSet, rowNum) -> new Asset(
         resultSet.getObject("id", UUID.class),
@@ -31,7 +31,10 @@ public class JdbcAssetRepository implements AssetRepository {
         resultSet.getObject("location_id", UUID.class),
         resultSet.getString("display_name"),
         resultSet.getString("note"),
-        toInstant(resultSet.getTimestamp("archived_at"))
+        resultSet.getString("qr_data"),
+        toInstant(resultSet.getTimestamp("archived_at")),
+        resultSet.getObject("parent_asset_id", UUID.class),
+        resultSet.getString("ip_address")
     );
 
     private final NamedParameterJdbcTemplate jdbcTemplate;
@@ -43,16 +46,19 @@ public class JdbcAssetRepository implements AssetRepository {
     @Override
     public Asset create(
         UUID tenantId,
+        UUID id,
         String assetTag,
         String serialNumber,
         String assetType,
         UUID assignedUserId,
         UUID locationId,
         String displayName,
-        String note
+        String note,
+        String qrData,
+        UUID parentAssetId,
+        String ipAddress
     ) {
         UUID scopedTenantId = SqlTenantScope.requireTenantId(tenantId);
-        UUID id = UUID.randomUUID();
         MapSqlParameterSource parameters = new MapSqlParameterSource()
             .addValue("id", id)
             .addValue("tenantId", scopedTenantId)
@@ -62,14 +68,17 @@ public class JdbcAssetRepository implements AssetRepository {
             .addValue("assignedUserId", assignedUserId)
             .addValue("locationId", locationId)
             .addValue("displayName", displayName)
-            .addValue("note", note);
+            .addValue("note", note)
+            .addValue("qrData", qrData)
+            .addValue("parentAssetId", parentAssetId)
+            .addValue("ipAddress", ipAddress);
         jdbcTemplate.update(
             "INSERT INTO assets ("
                 + "id, tenant_id, asset_tag, serial_number, asset_type, status, assigned_user_id, "
-                + "location_id, display_name, note"
+                + "location_id, display_name, note, qr_data, parent_asset_id, ip_address"
                 + ") VALUES ("
                 + ":id, :tenantId, :assetTag, :serialNumber, :assetType, '" + AssetStatus.ACTIVE
-                + "', :assignedUserId, :locationId, :displayName, :note"
+                + "', :assignedUserId, :locationId, :displayName, :note, :qrData, :parentAssetId, :ipAddress"
                 + ")",
             parameters
         );
@@ -84,7 +93,10 @@ public class JdbcAssetRepository implements AssetRepository {
             locationId,
             displayName,
             note,
-            null
+            qrData,
+            null,
+            parentAssetId,
+            ipAddress
         );
     }
 
@@ -125,6 +137,18 @@ public class JdbcAssetRepository implements AssetRepository {
     }
 
     @Override
+    public Optional<Asset> findByIdForUpdate(UUID tenantId, UUID id) {
+        UUID scopedTenantId = SqlTenantScope.requireTenantId(tenantId);
+        List<Asset> assets = jdbcTemplate.query(
+            "SELECT " + ASSET_COLUMNS + " "
+                + "FROM assets WHERE tenant_id = :tenantId AND id = :id FOR UPDATE",
+            Map.of("tenantId", scopedTenantId, "id", id),
+            ASSET_ROW_MAPPER
+        );
+        return assets.stream().findFirst();
+    }
+
+    @Override
     public Optional<Asset> update(
         UUID tenantId,
         UUID id,
@@ -143,13 +167,14 @@ public class JdbcAssetRepository implements AssetRepository {
             .addValue("assetType", assetType)
             .addValue("displayName", displayName)
             .addValue("note", note);
-        int updated = jdbcTemplate.update(
+        int changed = jdbcTemplate.update(
             "UPDATE assets SET asset_tag = :assetTag, serial_number = :serialNumber, asset_type = :assetType, "
                 + "display_name = :displayName, note = :note "
-                + "WHERE tenant_id = :tenantId AND id = :id",
+                + "WHERE tenant_id = :tenantId AND id = :id "
+                ,
             parameters
         );
-        return updated == 0 ? Optional.empty() : findById(scopedTenantId, id);
+        return changed == 0 ? Optional.empty() : findById(scopedTenantId, id);
     }
 
     @Override
@@ -167,12 +192,13 @@ public class JdbcAssetRepository implements AssetRepository {
             .addValue("status", status)
             .addValue("assignedUserId", assignedUserId)
             .addValue("locationId", locationId);
-        int updated = jdbcTemplate.update(
+        int changed = jdbcTemplate.update(
             "UPDATE assets SET status = :status, assigned_user_id = :assignedUserId, location_id = :locationId "
-                + "WHERE tenant_id = :tenantId AND id = :id",
+                + "WHERE tenant_id = :tenantId AND id = :id "
+                ,
             parameters
         );
-        return updated == 0 ? Optional.empty() : findById(scopedTenantId, id);
+        return changed == 0 ? Optional.empty() : findById(scopedTenantId, id);
     }
 
     @Override
@@ -182,12 +208,13 @@ public class JdbcAssetRepository implements AssetRepository {
             .addValue("tenantId", scopedTenantId)
             .addValue("id", id)
             .addValue("archivedAt", Timestamp.from(archivedAt));
-        int updated = jdbcTemplate.update(
+        int changed = jdbcTemplate.update(
             "UPDATE assets SET archived_at = :archivedAt "
-                + "WHERE tenant_id = :tenantId AND id = :id AND archived_at IS NULL",
+                + "WHERE tenant_id = :tenantId AND id = :id AND archived_at IS NULL "
+                ,
             parameters
         );
-        return updated == 0 ? Optional.empty() : findById(scopedTenantId, id);
+        return changed == 0 ? Optional.empty() : findById(scopedTenantId, id);
     }
 
     @Override
@@ -196,12 +223,13 @@ public class JdbcAssetRepository implements AssetRepository {
         MapSqlParameterSource parameters = new MapSqlParameterSource()
             .addValue("tenantId", scopedTenantId)
             .addValue("id", id);
-        int updated = jdbcTemplate.update(
+        int changed = jdbcTemplate.update(
             "UPDATE assets SET archived_at = NULL "
-                + "WHERE tenant_id = :tenantId AND id = :id AND archived_at IS NOT NULL",
+                + "WHERE tenant_id = :tenantId AND id = :id AND archived_at IS NOT NULL "
+                ,
             parameters
         );
-        return updated == 0 ? Optional.empty() : findById(scopedTenantId, id);
+        return changed == 0 ? Optional.empty() : findById(scopedTenantId, id);
     }
 
     private static Instant toInstant(Timestamp timestamp) {

@@ -50,7 +50,8 @@ public class AssetResponsibilityApplicationService {
         UUID targetUserId,
         AuditMetadata auditMetadata
     ) {
-        Asset asset = requireAsset(tenantId, assetId);
+        Asset asset = requireAssetForUpdate(tenantId, assetId);
+        requireNotRetired(asset, "Asset is retired and cannot be assigned");
         assetReferenceValidator.requireUserInSameTenant(
             tenantId,
             authenticatedUserId,
@@ -100,7 +101,11 @@ public class AssetResponsibilityApplicationService {
         UUID targetLocationId,
         AuditMetadata auditMetadata
     ) {
-        Asset asset = requireAsset(tenantId, assetId);
+        Asset asset = requireAssetForUpdate(tenantId, assetId);
+        // A retired device may move physically, but must never acquire user responsibility.
+        if (targetUserId != null) {
+            requireNotRetired(asset, "Asset is retired and cannot be transferred to a user");
+        }
         if (targetUserId == null && targetLocationId == null) {
             throw new ResponseStatusException(
                 HttpStatus.BAD_REQUEST,
@@ -179,7 +184,7 @@ public class AssetResponsibilityApplicationService {
         UUID assetId,
         AuditMetadata auditMetadata
     ) {
-        Asset asset = requireAsset(tenantId, assetId);
+        Asset asset = requireAssetForUpdate(tenantId, assetId);
         if (asset.assignedUserId() == null) {
             throw new ResponseStatusException(
                 HttpStatus.BAD_REQUEST,
@@ -190,7 +195,7 @@ public class AssetResponsibilityApplicationService {
         Asset updatedAsset = assetRepository.updateCurrentState(
             tenantId,
             assetId,
-            AssetStatus.ACTIVE,
+            asset.status(),
             null,
             asset.locationId()
         ).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Asset not found"));
@@ -220,7 +225,7 @@ public class AssetResponsibilityApplicationService {
         UUID assetId,
         AuditMetadata auditMetadata
     ) {
-        Asset asset = requireAsset(tenantId, assetId);
+        Asset asset = requireAssetForUpdate(tenantId, assetId);
         if (AssetStatus.RETIRED.equalsIgnoreCase(asset.status())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Asset is already retired");
         }
@@ -252,9 +257,15 @@ public class AssetResponsibilityApplicationService {
         return new RetireResult(updatedAsset.id());
     }
 
-    private Asset requireAsset(UUID tenantId, UUID assetId) {
-        return assetRepository.findById(tenantId, assetId)
+    private Asset requireAssetForUpdate(UUID tenantId, UUID assetId) {
+        return assetRepository.findByIdForUpdate(tenantId, assetId)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Asset not found"));
+    }
+
+    private void requireNotRetired(Asset asset, String message) {
+        if (AssetStatus.RETIRED.equalsIgnoreCase(asset.status())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, message);
+        }
     }
 
     private void appendFact(
