@@ -1,0 +1,41 @@
+name: inventory-service-test
+
+on:
+  push:
+    branches:
+      - main
+      - "codex/**"
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test-inventory-service:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+
+      - name: Make Gradle wrapper executable
+        run: chmod +x ./gradlew
+
+      - name: Run inventory-service tests
+        run: ./gradlew --no-daemon :services:inventory-service:test --stacktrace --info
+
+      - name: Upload inventory-service test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: inventory-service-test-report
+          path: |
+            services/inventory-service/build/reports/tests/test/**
+            services/inventory-service/build/test-results/test/**

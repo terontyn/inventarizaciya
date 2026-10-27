@@ -1,0 +1,2 @@
+ALTER TABLE assets ADD COLUMN display_name VARCHAR(160);
+ALTER TABLE assets ADD COLUMN note TEXT;

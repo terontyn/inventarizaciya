@@ -1,0 +1,17 @@
+spring:
+  jackson:
+    property-naming-strategy: SNAKE_CASE
+
+integration:
+  user-service:
+    base-url: http://user-service.test
+  asset-service:
+    base-url: http://asset-service.test
+  inventory-service:
+    base-url: http://inventory-service.test
+  maintenance-service:
+    base-url: http://maintenance-service.test
+  software-service:
+    base-url: http://software-service.test
+  ticket-service:
+    base-url: http://ticket-service.test

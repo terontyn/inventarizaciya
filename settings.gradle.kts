@@ -1,0 +1,22 @@
+rootProject.name = "it-asset-management-saas"
+
+include(":services:user-service")
+project(":services:user-service").projectDir = file("services/user-service")
+
+include(":services:asset-service")
+project(":services:asset-service").projectDir = file("services/asset-service")
+
+include(":services:inventory-service")
+project(":services:inventory-service").projectDir = file("services/inventory-service")
+
+include(":services:maintenance-service")
+project(":services:maintenance-service").projectDir = file("services/maintenance-service")
+
+include(":services:software-service")
+project(":services:software-service").projectDir = file("services/software-service")
+
+include(":services:ticket-service")
+project(":services:ticket-service").projectDir = file("services/ticket-service")
+
+include(":services:reporting-service")
+project(":services:reporting-service").projectDir = file("services/reporting-service")

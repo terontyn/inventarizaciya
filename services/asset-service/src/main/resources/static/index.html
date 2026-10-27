@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ITAM Operational Workspace</title>
+    <link rel="stylesheet" href="app.css">
+    <script src="app.js" defer></script>
+</head>
+<body>
+    <div
+        class="app-shell"
+        data-ui-surface="operational-workspace-tree-detail"
+        data-existing-surface="minimal-pilot-ui"
+        data-navigation-model="revised-tree-and-detail"
+        data-tree-derivation="client-side-only"
+        data-edit-boundary="asset-master-record-only"
+        data-responsibility-flows="assign,transfer,return"
+    >
+        <header class="app-header">
+            <div class="header-copy">
+                <p class="eyebrow">IT Asset Management SaaS</p>
+                <h1>Операционное рабочее место</h1>
+                <p class="header-text">
+                    Единый вход в уже существующие рабочие поверхности: реестр и карточка актива,
+                    создание и редактирование данных актива, отдельные assign / transfer / return, историю и аудит
+                    и настройку справочников tenant.
+                </p>
+
+                <div class="create-launcher" id="create-launcher">
+                    <button
+                        class="button button-primary create-launcher-toggle"
+                        id="create-launcher-toggle"
+                        type="button"
+                        aria-haspopup="menu"
+                        aria-expanded="false"
+                        aria-controls="create-launcher-menu"
+                    >
+                        Создать
+                    </button>
+                    <div
+                        class="create-launcher-menu"
+                        id="create-launcher-menu"
+                        role="menu"
+                        aria-label="Создать запись"
+                        hidden
+                    >
+                        <button class="create-launcher-item" type="button" role="menuitem" data-create-target="asset">Актив / устройство</button>
+                        <button class="create-launcher-item" type="button" role="menuitem" data-create-target="user">Пользователь</button>
+                        <button class="create-launcher-item" type="button" role="menuitem" data-create-target="department">Подразделение</button>
+                        <button class="create-launcher-item" type="button" role="menuitem" data-create-target="branch">Филиал</button>
+                        <button class="create-launcher-item" type="button" role="menuitem" data-create-target="location">Локация</button>
+                    </div>
+                </div>
+            </div>
+
+            <form id="session-form" class="session-card">
+                <div class="panel-heading">
+                    <div>
+                        <p class="section-kicker">Сессия</p>
+                        <h2>Контекст доступа</h2>
+                    </div>
+                    <span id="role-summary-badge" class="summary-badge">UI-профиль ещё не определён</span>
+                </div>
+
+                <p class="helper-copy">
+                    Укажите текущий tenant, пользователя и адрес сервиса пользователей. Интерфейс использует только
+                    уже доступные рабочие пути и не расширяет модель доступа.
+                </p>
+
+                <div class="field-grid">
+                    <label class="field">
+                        <span>Tenant</span>
+                        <input id="tenant-id" name="tenant_id" type="text" autocomplete="off" placeholder="UUID тенанта" required>
+                    </label>
+
+                    <label class="field">
+                        <span>Пользователь</span>
+                        <input id="user-id" name="user_id" type="text" autocomplete="off" placeholder="UUID пользователя" required>
+                    </label>
+
+                    <label class="field">
+                        <span>Действующее лицо</span>
+                        <input id="actor" name="actor" type="text" autocomplete="off" placeholder="pilot-ui" required>
+                    </label>
+
+                    <label class="field">
+                        <span>Адрес сервиса пользователей</span>
+                        <input
+                            id="user-service-base-url"
+                            name="user_service_base_url"
+                            type="url"
+                            autocomplete="off"
+                            placeholder="http://localhost:8080"
+                            required
+                        >
+                        <small id="user-service-url-preview" class="technical-preview"></small>
+                    </label>
+                </div>
+
+                <div class="button-row">
+                    <button class="button button-primary" id="connect-session" type="submit">Подключить</button>
+                    <button class="button button-secondary" id="refresh-all" type="button">Обновить</button>
+                    <button class="button button-ghost" id="clear-session" type="button">Сбросить</button>
+                </div>
+
+                <div class="inline-meta">
+                    <span id="connection-status-badge" class="connection-badge connection-disconnected">Не подключено</span>
+                    <span><strong>Сервис активов:</strong> <code id="asset-service-origin">same origin</code></span>
+                    <span><strong>Текущий экран:</strong> <code id="active-screen-label">assets</code></span>
+                    <span id="context-technical-summary"></span>
+                </div>
+            </form>
+        </header>
+
+        <div id="flash-stack" class="flash-stack" aria-live="polite"></div>
+
+        <main class="workspace tree-workspace" data-tree-detail-shell="true">
+            <aside id="workspace-tree" class="tree-pane panel" aria-label="Иерархическая навигация рабочего места">
+                <div class="panel-heading">
+                    <div>
+                        <p class="section-kicker">Навигация</p>
+                        <h2>Дерево рабочего места</h2>
+                    </div>
+                    <button class="button button-secondary" id="refresh-assets" type="button">Обновить данные</button>
+                </div>
+                <p class="muted-note">
+                    Группы строятся только из уже загруженных данных. Счётчики помогают ориентироваться и не являются отчётами.
+                </p>
+                <label class="tree-filter field">
+                    <span>Фильтр дерева</span>
+                    <input id="tree-filter" type="text" autocomplete="off" placeholder="По открытым строкам">
+                    <small id="tree-filter-status">Локально, без поиска на сервере.</small>
+                </label>
+                <div id="workspace-tree-body" class="tree-body" aria-live="polite"></div>
+            </aside>
+
+            <section id="workspace-detail" class="detail-pane panel" aria-live="polite">
+                <div class="empty-state">
+                    <p class="empty-kicker">Рабочее место</p>
+                    <h3>Подключите контекст доступа</h3>
+                    <p>После подключения здесь появится выбранный узел дерева, карточка актива или настройка tenant.</p>
+                </div>
+            </section>
+        </main>
+    </div>
+</body>
+</html>

@@ -1,0 +1,22 @@
+spring:
+  application:
+    name: reporting-service
+  jackson:
+    property-naming-strategy: SNAKE_CASE
+
+integration:
+  user-service:
+    base-url: ${USER_SERVICE_BASE_URL:http://localhost:8080}
+  asset-service:
+    base-url: ${ASSET_SERVICE_BASE_URL:http://localhost:8081}
+  inventory-service:
+    base-url: ${INVENTORY_SERVICE_BASE_URL:http://localhost:8082}
+  maintenance-service:
+    base-url: ${MAINTENANCE_SERVICE_BASE_URL:http://localhost:8083}
+  software-service:
+    base-url: ${SOFTWARE_SERVICE_BASE_URL:http://localhost:8084}
+  ticket-service:
+    base-url: ${TICKET_SERVICE_BASE_URL:http://localhost:8085}
+
+server:
+  port: ${SERVER_PORT:8086}

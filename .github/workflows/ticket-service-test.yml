@@ -1,0 +1,41 @@
+name: ticket-service-test
+
+on:
+  push:
+    branches:
+      - main
+      - "codex/**"
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test-ticket-service:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+
+      - name: Make Gradle wrapper executable
+        run: chmod +x ./gradlew
+
+      - name: Run ticket-service tests
+        run: ./gradlew --no-daemon :services:ticket-service:test --stacktrace --info
+
+      - name: Upload ticket-service test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ticket-service-test-report
+          path: |
+            services/ticket-service/build/reports/tests/test/**
+            services/ticket-service/build/test-results/test/**

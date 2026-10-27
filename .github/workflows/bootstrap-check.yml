@@ -1,0 +1,21 @@
+name: bootstrap-check
+
+on:
+  push:
+    branches:
+      - main
+      - "codex/**"
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  verify-bootstrap:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Verify repository baseline structure
+        shell: pwsh
+        run: ./scripts/ci/verify-bootstrap.ps1
